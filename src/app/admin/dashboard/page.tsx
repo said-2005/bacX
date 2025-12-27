@@ -17,11 +17,9 @@ import { uploadFile } from "@/lib/storage";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-// Mock Data (Would be real Firestore query in production)
-const PENDING_PAYMENTS = [
-    { id: 1, student: "سعيد عدلي", date: "2023-10-25", amount: "2000 DA", img: "https://via.placeholder.com/150" },
-    { id: 2, student: "مريم بن", date: "2023-10-24", amount: "4000 DA", img: "https://via.placeholder.com/150" },
-];
+// Mock Data (Removed in favor of real component)
+import { PendingPaymentsView } from "@/components/admin/PendingPaymentsView";
+
 
 export default function AdminDashboard() {
     const { user, role, loading } = useAuth();
@@ -153,49 +151,7 @@ export default function AdminDashboard() {
                 <AnimatePresence mode="wait">
                     {/* PAYMENTS */}
                     {activeTab === 'payments' && (
-                        <motion.div
-                            key="payments"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-4"
-                        >
-                            <h2 className="text-lg font-bold mb-4">طلبات الاشتراك المعلقة</h2>
-                            {PENDING_PAYMENTS.map((payment) => (
-                                <GlassCard key={payment.id} className="p-4 flex flex-col gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-600 cursor-pointer hover:bg-zinc-700 transition-colors">
-                                            <FileText className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold">{payment.student}</h3>
-                                            <p className="text-sm text-zinc-400">{payment.date}</p>
-                                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full mt-1 inline-block">
-                                                {payment.amount}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2 mt-2">
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() => handleRejectPayment(payment.id)}
-                                            className="flex-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
-                                        >
-                                            <XCircle className="w-4 h-4 ml-2" />
-                                            رفض
-                                        </Button>
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => handleApprovePayment(payment.id)}
-                                            className="flex-1"
-                                        >
-                                            <CheckCircle2 className="w-4 h-4 ml-2" />
-                                            قبول
-                                        </Button>
-                                    </div>
-                                </GlassCard>
-                            ))}
-                        </motion.div>
+                        <PendingPaymentsView />
                     )}
 
                     {/* CONTENT UPLOAD */}

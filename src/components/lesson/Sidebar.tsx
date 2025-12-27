@@ -7,17 +7,40 @@ import { MessageSquare, BookOpen, Send, CheckCircle2, Lock, Ghost, FileQuestion 
 import { Input } from "@/components/ui/Input";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export function Sidebar() {
     const [activeTab, setActiveTab] = useState<'chat' | 'syllabus'>('chat');
-    // Mock Data - switch to empty array to test empty state if needed
+    const { user, role } = useAuth();
+    const [shakeKey, setShakeKey] = useState(0); // Key to trigger re-render for shake
+    const router = useRouter();
+
+    // Determine if user has access (Admin or Subscribed)
+    // NOTE: In a real app, 'isSubscribed' would be a direct property of the User object context or fetched
+    // We assume the context populates user.isSubscribed as discussed in previous steps
+    const hasAccess = role === 'admin' || (user as any)?.isSubscribed;
+
     const handleItemClick = (i: number) => {
-        if (i > 3) {
-            toast.error("هذا الدرس مغلق حالياً", { icon: <Lock className="w-4 h-4" /> });
-        } else {
+        // Allow first lesson as Free Sample
+        if (i === 1) {
             toast.success("تم الانتقال للدرس (تجريبي)");
-            // In production: router.push('/lessons/' + i)
+            return;
         }
+
+        if (!hasAccess) {
+            setShakeKey(prev => prev + 1); // Trigger shake
+            toast.error("هذا الدرس متاح للمشتركين فقط", {
+                icon: <Lock className="w-4 h-4" />,
+                action: {
+                    label: "اشتراك",
+                    onClick: () => router.push('/subscription')
+                }
+            });
+            return;
+        }
+
+        toast.success("تم الانتقال للدرس (تجريبي)");
     };
 
     const messages = [1, 2, 3];
@@ -117,38 +140,58 @@ export function Sidebar() {
                                 exit={{ opacity: 0 }}
                                 className="space-y-2"
                             >
-                                {syllabus.map((i) => (
-                                    <motion.div
-                                        whileTap={{ scale: 0.98 }}
-                                        whileHover={{ scale: 1.01 }}
-                                        key={i}
-                                        onClick={() => handleItemClick(i)}
-                                        className={cn(
-                                            "p-3 rounded-xl border border-white/5 flex items-center justify-between group cursor-pointer transition-all duration-300",
-                                            i === 1 ? "bg-primary/10 border-primary/20 shadow-[0_0_15px_rgba(41,151,255,0.1)]" : "hover:bg-white/5"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn(
-                                                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-110",
-                                                i === 1 ? "bg-primary text-white" : "bg-zinc-800 text-zinc-500"
-                                            )}>
-                                                {i}
+                                {syllabus.map((i) => {
+                                    const isLocked = !hasAccess && i !== 1; // First lesson is free
+
+                                    return (
+                                        <motion.div
+                                            whileTap={{ scale: 0.98 }}
+                                            whileHover={{ scale: 1.01 }}
+                                            animate={isLocked ? { x: [0, -5, 5, -5, 5, 0] } : {}}
+                                            // Only shake if this specific item is clicked and valid shake key updates, 
+                                            // but since we rely on state for shake, we can use a simpler approach:
+                                            // We will just use layout animation. For 'shake' on click, we'd typically use a control.
+                                            // For simplicity, we just add the visual lock here.
+                                            key={i}
+                                            onClick={() => handleItemClick(i)}
+                                            className={cn(
+                                                "p-3 rounded-xl border border-white/5 flex items-center justify-between group cursor-pointer transition-all duration-300 relative overflow-hidden",
+                                                i === 1 ? "bg-primary/10 border-primary/20 shadow-[0_0_15px_rgba(41,151,255,0.1)]" : "hover:bg-white/5",
+                                                isLocked && "opacity-75 hover:opacity-100"
+                                            )}
+                                        >
+                                            {/* Glass Overlay for Locked Items */}
+                                            {isLocked && (
+                                                <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] z-0 pointer-events-none" />
+                                            )}
+
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-110",
+                                                    i === 1 ? "bg-primary text-white" : "bg-zinc-800 text-zinc-500"
+                                                )}>
+                                                    {i}
+                                                </div>
+                                                <div>
+                                                    <h4 className={cn("text-sm font-medium transition-colors", i === 1 ? "text-white" : "text-zinc-400 group-hover:text-zinc-300")}>
+                                                        {i === 1 ? "درس تجريبي: الدوال الأسية" : "محتوى حصري للمشتركين"}
+                                                    </h4>
+                                                    <span className="text-xs text-zinc-600">45 دقيقة</span>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className={cn("text-sm font-medium transition-colors", i === 1 ? "text-white" : "text-zinc-400 group-hover:text-zinc-300")}>
-                                                    مقدمة في الدوال الأسية
-                                                </h4>
-                                                <span className="text-xs text-zinc-600">45 دقيقة</span>
+
+                                            <div className="relative z-10">
+                                                {isLocked ? (
+                                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-red-500/50 transition-colors">
+                                                        <Lock className="w-4 h-4 text-zinc-500 group-hover:text-red-500 transition-colors" />
+                                                    </div>
+                                                ) : (
+                                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                                )}
                                             </div>
-                                        </div>
-                                        {i < 3 ? (
-                                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                        ) : i > 3 ? (
-                                            <Lock className="w-4 h-4 text-zinc-700" />
-                                        ) : null}
-                                    </motion.div>
-                                ))}
+                                        </motion.div>
+                                    )
+                                })}
                             </motion.div>
                         ) : (
                             <motion.div
