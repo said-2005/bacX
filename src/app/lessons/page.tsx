@@ -2,11 +2,10 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { Button } from "@/components/ui/Button";
-import { PlayCircle, Lock, Search, Filter, Clock } from "lucide-react";
+import { PlayCircle, Lock, Search, Clock } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
 import { useRouter } from "next/navigation";

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { Component, ErrorInfo, Fragment } from "react";
+import React, { Component, ErrorInfo } from "react";
 import { logErrorToFirestore } from "@/lib/logging";
 import { GlassCard } from "./ui/GlassCard";
 import { AlertOctagon, RefreshCw } from "lucide-react";
@@ -20,7 +20,8 @@ export class GlobalErrorBoundary extends Component<Props, State> {
         this.state = { hasError: false };
     }
 
-    static getDerivedStateFromError(error: Error): State {
+    static getDerivedStateFromError(_error: Error): State {
+        void _error;
         return { hasError: true };
     }
 

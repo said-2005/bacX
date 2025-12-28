@@ -4,7 +4,7 @@ import { useLiveStatus } from "@/hooks/useLiveStatus";
 import { useAuth } from "@/context/AuthContext";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { Radio, SignalHigh, CalendarClock, Lock, ShieldAlert } from "lucide-react";
+import { Radio, SignalHigh, CalendarClock, Lock } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { DynamicWatermark } from "@/components/security/DynamicWatermark";
 import { useEffect, useState } from "react";

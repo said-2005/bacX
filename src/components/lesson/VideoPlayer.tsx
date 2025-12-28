@@ -13,7 +13,7 @@ export default function EncodedVideoPlayer({ encodedVideoId }: EncodedVideoPlaye
     const [decodedId, setDecodedId] = useState<string | null>(null);
     const [securityWarning, setSecurityWarning] = useState(false);
     const { user } = useAuth();
-    const [sessionIp, setSessionIp] = useState("192.168.x.x");
+    const [sessionIp] = useState("192.168.x.x");
 
     useEffect(() => {
         let mounted = true;

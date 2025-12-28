@@ -24,24 +24,19 @@ export async function validateFile(file: File): Promise<{ valid: boolean; error?
         const arrayBuffer = await file.slice(0, 4).arrayBuffer();
         const header = new Uint8Array(arrayBuffer);
         let validHeader = false;
-        let detectedType = "unknown";
-
         const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 
         // JPEG: FF D8 FF
         if (headerHex.startsWith('FFD8FF')) {
             validHeader = true;
-            detectedType = "image/jpeg";
         }
         // PNG: 89 50 4E 47
         else if (headerHex === '89504E47') {
             validHeader = true;
-            detectedType = "image/png";
         }
         // PDF: 25 50 44 46 (%PDF)
         else if (headerHex.startsWith('25504446')) {
             validHeader = true;
-            detectedType = "application/pdf";
         }
 
         if (!validHeader) {

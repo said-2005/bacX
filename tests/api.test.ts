@@ -17,7 +17,7 @@ describe('API Health Check', () => {
             expect(data.status).toBe('ok');
             expect(data.timestamp).toBeDefined();
             expect(data.checks).toBeDefined();
-        } catch (error) {
+        } catch {
             // If server is not running, skip gracefully
             console.warn('Server not running, skipping health check test');
         }
@@ -30,7 +30,7 @@ describe('API Health Check', () => {
 
             expect(data.checks.environment).toBeDefined();
             // In test, we don't require all env vars
-        } catch (error) {
+        } catch {
             console.warn('Server not running, skipping environment check test');
         }
     });
@@ -49,7 +49,7 @@ describe('API Security', () => {
 
             // Should be 401 Unauthorized without session
             expect(response.status).toBe(401);
-        } catch (error) {
+        } catch {
             console.warn('Server not running, skipping security test');
         }
     });
@@ -70,7 +70,7 @@ describe('API Security', () => {
 
             // At least some should be rate limited
             expect(rateLimited.length).toBeGreaterThan(0);
-        } catch (error) {
+        } catch {
             console.warn('Server not running, skipping rate limit test');
         }
     });

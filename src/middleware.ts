@@ -41,7 +41,7 @@ async function verifySessionCookie(cookie: string) {
         // Better approach for Google's x509 endpoint with jose:
         // We need to find the correct key for the token's header.kid
 
-        const { payload, protectedHeader } = await jose.jwtVerify(cookie, async (protectedHeader, token) => {
+        const { payload } = await jose.jwtVerify(cookie, async (protectedHeader) => {
             if (!protectedHeader.kid) throw new Error("No kid in header");
             const pem = keys[protectedHeader.kid];
             if (!pem) throw new Error("Key not found");

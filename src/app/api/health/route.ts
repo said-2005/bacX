@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { admin, db } from '@/lib/firebase-admin'; // Use centralized init
+import { db } from '@/lib/firebase-admin'; // Use centralized init
 
 export async function GET() {
     const timestamp = new Date().toISOString();

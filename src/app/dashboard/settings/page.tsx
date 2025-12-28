@@ -10,7 +10,6 @@ import {
     User, Smartphone, Shield, Eye, Lock,
     Camera, LogOut, Laptop, Bell, Moon
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { uploadFile } from "@/lib/storage";
@@ -73,7 +72,7 @@ export default function SettingsPage() {
             await updateProfile(user, { photoURL: url });
             setAvatarUrl(url);
             toast.success("تم تحديث الصورة الشخصية");
-        } catch (error) {
+        } catch {
             toast.error("فشل رفع الصورة");
         } finally {
             setUploadingAvatar(false);
@@ -89,7 +88,7 @@ export default function SettingsPage() {
             });
             setDevices(prev => prev.filter(d => d !== deviceId));
             toast.success("تم تسجيل الخروج من الجهاز");
-        } catch (error) {
+        } catch {
             toast.error("حدث خطأ");
         }
     };

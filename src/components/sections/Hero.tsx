@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { Button } from "@/components/ui/Button";
 import { SmartButton } from "@/components/ui/SmartButton";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { ArrowLeft } from "lucide-react";

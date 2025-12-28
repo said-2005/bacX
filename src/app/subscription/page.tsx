@@ -8,7 +8,6 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, Upload, CreditCard, Loader2, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
 import { compressImage } from "@/lib/compression";
 import { validateFile } from "@/lib/file-validation";
 import { uploadFile as uploadFileToStorage } from "@/lib/storage";

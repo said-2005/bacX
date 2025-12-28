@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp, collection, addDoc, writeBatch } from "firebase/firestore";
+import { doc, serverTimestamp, collection, writeBatch } from "firebase/firestore";
 
 interface LiveConfig {
     isLive: boolean;

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { Loader2, Lock, FileText, Download, PlayCircle, ChevronLeft } from "lucide-react";
+import { Lock, FileText, Download, ChevronLeft } from "lucide-react";
 import { DynamicWatermark } from "@/components/security/DynamicWatermark";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
     const [denied, setDenied] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchLesson = async () => {
+    const fetchLesson = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -75,7 +75,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, id, router]);
 
     useEffect(() => {
         if (authLoading) return;
@@ -84,7 +84,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
             return;
         }
         fetchLesson();
-    }, [user, authLoading, id, router]);
+    }, [user, authLoading, router, fetchLesson]);
 
 
     // --- LOADING STATE (SKELETON) ---

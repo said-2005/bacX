@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, doc, serverTimestamp, setDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 
 export interface PaymentRequest {
     userId: string;

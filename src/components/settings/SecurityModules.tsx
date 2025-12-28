@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/Dialog"; // Will need to quickly mock a Dialog or use a simple modal overlay
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
