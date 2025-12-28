@@ -29,7 +29,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
         // Log to Firestore
         // We'll pass a mock user object or rely on a global context if accessible, 
         // but here we just log what we have.
-        logErrorToFirestore(error, errorInfo, { uid: "client-crashed" });
+        logErrorToFirestore(error, { componentStack: errorInfo.componentStack ?? undefined }, { uid: "client-crashed" });
     }
 
     render() {

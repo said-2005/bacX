@@ -3,7 +3,7 @@ import { db } from "./firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { User } from "firebase/auth";
 
-export async function logErrorToFirestore(error: Error, info?: { componentStack?: string }, user?: User | null) {
+export async function logErrorToFirestore(error: Error, info?: { componentStack?: string }, user?: User | { uid: string } | null) {
     try {
         const errorsRef = collection(db, "system_errors");
         await addDoc(errorsRef, {
