@@ -9,8 +9,6 @@ interface EncodedVideoPlayerProps {
     encodedVideoId: string; // SALT + ID + SALT (Base64)
 }
 
-const SALT = process.env.NEXT_PUBLIC_VIDEO_SALT || "SECRET_SALT_V1"; // Fallback for dev only
-
 export default function EncodedVideoPlayer({ encodedVideoId }: EncodedVideoPlayerProps) {
     const [decodedId, setDecodedId] = useState<string | null>(null);
     const [securityWarning, setSecurityWarning] = useState(false);
@@ -18,21 +16,33 @@ export default function EncodedVideoPlayer({ encodedVideoId }: EncodedVideoPlaye
     const [sessionIp, setSessionIp] = useState("192.168.x.x");
 
     useEffect(() => {
-        try {
-            // Decode Logic: Decode(Base64) -> Remove Salt Prefix/Suffix
-            const decodedString = window.atob(encodedVideoId);
-            if (decodedString.startsWith(SALT) && decodedString.endsWith(SALT)) {
-                const realId = decodedString.slice(SALT.length, -SALT.length);
-                setDecodedId(realId);
-            } else {
-                console.error("Integrity Check Failed: Salt Mismatch");
-                // In production, you might want to show an error or blank player
-                setDecodedId("invalid_token");
+        let mounted = true;
+
+        async function fetchDecodedId() {
+            try {
+                const res = await fetch('/api/video/decrypt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ encodedId: encodedVideoId })
+                });
+
+                if (!res.ok) throw new Error("Decryption failed");
+
+                const data = await res.json();
+                if (mounted && data.videoId) {
+                    setDecodedId(data.videoId);
+                } else {
+                    setDecodedId("invalid_token");
+                }
+            } catch (e) {
+                console.error("Video Load Error", e);
+                if (mounted) setDecodedId("error");
             }
-        } catch (e) {
-            console.error("Decoding Failed", e);
-            setDecodedId("error");
         }
+
+        fetchDecodedId();
+
+        return () => { mounted = false; };
     }, [encodedVideoId]);
 
     // 2. Anti-Inspect Logic
@@ -69,18 +79,20 @@ export default function EncodedVideoPlayer({ encodedVideoId }: EncodedVideoPlaye
     return (
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden group select-none">
             <iframe
-                src={`https://www.youtube.com/embed/${decodedId}?rel=0&modestbranding=1&controls=1&showinfo=0&fs=1`}
+                src={`https://www.youtube-nocookie.com/embed/${decodedId}?rel=0&modestbranding=1&controls=1&showinfo=0&fs=1`}
                 className="w-full h-full object-cover"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
             />
+            {/* Hardened Overlay: Blocks clicks on title/share/watch later */}
+            <div className="absolute top-0 left-0 right-0 h-[15%] z-20" />
+
             {/* Watermark Overlay */}
             <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden opacity-30">
                 <div className="absolute top-10 left-10 text-[10px] text-white/10 -rotate-12 whitespace-nowrap">{user?.email} • ID: {user?.uid.substring(0, 8)}</div>
                 <div className="absolute bottom-20 right-20 text-[10px] text-white/10 -rotate-12 whitespace-nowrap">{user?.email} • {sessionIp}</div>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14px] font-bold text-white/5 -rotate-45 whitespace-nowrap">BACX PROTECTION • {user?.email}</div>
             </div>
-            <div className="absolute inset-x-0 top-0 h-16 z-20" />
         </div>
     );
 }

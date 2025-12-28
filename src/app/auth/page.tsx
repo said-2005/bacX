@@ -9,13 +9,24 @@ import { Mail, Lock, Phone, User, ArrowLeft } from "lucide-react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AuthPage() {
+    const { user, loading } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && user) {
+            router.replace("/dashboard");
+        }
+    }, [user, loading, router]);
+
+    if (loading) return null; // Or a spinner
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

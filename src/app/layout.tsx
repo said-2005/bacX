@@ -5,7 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import { BackButton } from "@/components/ui/BackButton";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 const inter = Inter({
   subsets: ["latin"],

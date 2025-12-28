@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -61,44 +62,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 while (retries > 0 && !success) {
                     try {
                         const userSnap = await getDoc(userRef);
-                        success = true; // Fetch succeeded
+                        success = true;
                         setConnectionStatus('online');
 
                         if (userSnap.exists()) {
                             const data = userSnap.data();
-                            const activeDevices = data.activeDevices || [];
                             setRole(data.role || 'student');
 
-                            if (!activeDevices.includes(deviceId)) {
-                                // Check limit before writing (Client check is UX only, Server rules enforce security)
-                                if (activeDevices.length >= 2 && data.role !== 'admin') {
+                            // Use Cloud Function for device registration (server-side enforcement)
+                            try {
+                                const functions = getFunctions();
+                                const registerDevice = httpsCallable(functions, 'registerDevice');
+                                const result = await registerDevice({
+                                    deviceId,
+                                    deviceName: navigator.userAgent.slice(0, 50)
+                                });
+
+                                const response = result.data as any;
+                                if (!response.success) {
+                                    throw new Error(response.message || 'Device registration failed');
+                                }
+                            } catch (deviceError: any) {
+                                // Device limit exceeded
+                                if (deviceError.code === 'functions/resource-exhausted') {
                                     await firebaseSignOut(auth);
                                     alert("تم تجاوز حد الأجهزة المسموح به (2).");
                                     setUser(null);
                                     setRole(null);
                                     setLoading(false);
                                     return;
-                                } else {
-                                    // Register new device with Atomic ArrayUnion
-                                    await updateDoc(userRef, {
-                                        activeDevices: arrayUnion(deviceId)
-                                    });
                                 }
+                                console.error("Device registration:", deviceError);
                             }
                         } else {
-                            // First Login
+                            // First Login - create user document
                             await setDoc(userRef, {
+                                uid: currentUser.uid,
                                 email: currentUser.email,
-                                activeDevices: [deviceId],
                                 role: 'student',
                                 createdAt: new Date(),
-                                isSubscribed: false,
                                 displayName: currentUser.displayName || "",
                                 photoURL: currentUser.photoURL || ""
                             });
                             setRole('student');
+
+                            // Register device via Cloud Function
+                            try {
+                                const functions = getFunctions();
+                                const registerDevice = httpsCallable(functions, 'registerDevice');
+                                await registerDevice({ deviceId, deviceName: navigator.userAgent.slice(0, 50) });
+                            } catch (e) {
+                                console.error("Initial device registration:", e);
+                            }
                         }
                         setUser(currentUser);
+                        document.cookie = "bacx_auth=1; path=/; max-age=2592000";
 
                     } catch (error: any) {
                         console.error("Auth Error:", error);
@@ -139,8 +157,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = async () => {
         const deviceId = getStableDeviceId();
-        // Optional: Remove device on logout? 
-        // Logic: Usually we keep it until they manually revoke, to prevent "Device Hopping".
+
+        // Clear cookie first
+        document.cookie = "bacx_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        document.cookie = "bacx_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+
+        // Call unregisterDevice Cloud Function to remove device from activeDevices
+        try {
+            const functions = getFunctions();
+            const unregisterDevice = httpsCallable(functions, 'unregisterDevice');
+            await unregisterDevice({ deviceId });
+        } catch (error) {
+            // Don't block logout if unregister fails
+            console.error("Failed to unregister device:", error);
+        }
+
+        // Clear server session
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+        } catch {
+            // Ignore errors
+        }
+
         await firebaseSignOut(auth);
         router.push('/auth');
     };

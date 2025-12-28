@@ -1,0 +1,34 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper Functions
+    function isAuth() {
+        return request.auth != null;
+    }
+
+    function isImageOrPdf() {
+        return request.resource.contentType.matches('image/jpeg')
+            || request.resource.contentType.matches('image/png')
+            || request.resource.contentType.matches('application/pdf');
+    }
+
+    function isSmallEnough() {
+        return request.resource.size < 1 * 1024 * 1024; // 1MB
+    }
+
+    // Receipts: user can upload only their own receipt
+    match /receipts/{fileName} {
+      allow read: if isAuth() && fileName.matches(request.auth.uid + '_.*');
+      allow write: if isAuth() 
+                   && fileName.matches(request.auth.uid + '_.*')
+                   && isImageOrPdf()
+                   && isSmallEnough();
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

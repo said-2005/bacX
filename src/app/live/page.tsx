@@ -6,6 +6,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { Radio, SignalHigh, CalendarClock, Lock, ShieldAlert } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { DynamicWatermark } from "@/components/security/DynamicWatermark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
@@ -18,7 +19,7 @@ export default function LivePage() {
 
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkingSub, setCheckingSub] = useState(true);
-    const [securityWarning, setSecurityWarning] = useState(false);
+
 
     // --- 1. SECURITY: SUBSCRIPTION CHECK ---
     useEffect(() => {
@@ -49,25 +50,7 @@ export default function LivePage() {
         }
     }, [user, authLoading]);
 
-    // --- 2. ANTI-THEFT: DISABLE INSPECT/CONTEXT ---
-    useEffect(() => {
-        if (!isLive) return; // Only enforce on live page
 
-        const handleContextMenu = (e: MouseEvent) => e.preventDefault();
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) || (e.ctrlKey && e.key === "U")) {
-                e.preventDefault();
-                setSecurityWarning(true);
-            }
-        };
-
-        document.addEventListener("contextmenu", handleContextMenu);
-        document.addEventListener("keydown", handleKeyDown);
-        return () => {
-            document.removeEventListener("contextmenu", handleContextMenu);
-            document.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isLive]);
 
     // --- LOADING STATES ---
     if (statusLoading || authLoading || checkingSub) {
@@ -104,21 +87,7 @@ export default function LivePage() {
         );
     }
 
-    // --- GUARD: SECURITY TRIGGERED ---
-    if (securityWarning) {
-        return (
-            <div className="min-h-screen bg-red-950/20 flex items-center justify-center p-4">
-                <GlassCard className="max-w-md w-full p-8 text-center border-red-500/20 bg-black/80">
-                    <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
-                    <h1 className="text-xl font-bold text-white mb-2">تنبيه أمني</h1>
-                    <p className="text-zinc-400 mb-6">تم تسجيل محاولة غير مصرح بها. يرجى احترام حقوق الملكية الفكرية.</p>
-                    <Button variant="secondary" onClick={() => setSecurityWarning(false)} className="w-full">
-                        العودة للبث
-                    </Button>
-                </GlassCard>
-            </div>
-        )
-    }
+
 
     return (
         <main className="min-h-screen bg-[#050505] text-white overflow-hidden relative select-none">
@@ -131,15 +100,15 @@ export default function LivePage() {
                     {/* Header */}
                     <header className="absolute top-0 left-0 right-0 z-50 p-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
                         <div className="flex items-center gap-3 pointer-events-auto">
-                            <div className="bg-red-600 px-3 py-1 rounded flex items-center gap-2 shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-pulse">
+                            <div className="bg-red-600 px-3 py-1 rounded flex items-center gap-2 shadow-sm animate-pulse">
                                 <SignalHigh className="w-4 h-4 text-white" />
                                 <span className="text-xs font-bold text-white uppercase tracking-wider">Live</span>
                             </div>
-                            <h1 className="text-lg font-tajawal font-bold text-white/90 drop-shadow-md">{title}</h1>
+                            <h1 className="text-lg font-tajawal font-bold text-white drop-shadow-md">{title}</h1>
                         </div>
 
-                        {/* Viewer Count Mockup */}
-                        <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-xs font-mono text-zinc-300">
+                        {/* Viewer Count Mockup - Removed Blur for Performance */}
+                        <div className="bg-black/80 px-3 py-1 rounded-full border border-white/10 text-xs font-mono text-zinc-300">
                             ● LIVE
                         </div>
                     </header>
@@ -155,11 +124,7 @@ export default function LivePage() {
                         />
 
                         {/* --- WATERMARK OVERLAY --- */}
-                        <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden mix-blend-overlay opacity-20">
-                            <div className="absolute top-1/4 left-1/4 text-[12px] text-white -rotate-12 whitespace-nowrap font-mono">{user.email} • {user.uid.slice(0, 6)}</div>
-                            <div className="absolute bottom-1/4 right-1/4 text-[12px] text-white -rotate-12 whitespace-nowrap font-mono">{user.email} • Protected</div>
-                            {/* Random floating element logic could proceed here for stronger production security */}
-                        </div>
+                        <DynamicWatermark user={user} />
                     </div>
                 </div>
             ) : (

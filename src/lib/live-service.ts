@@ -9,26 +9,42 @@ interface LiveConfig {
 }
 
 export const toggleLiveStream = async ({ isLive, youtubeId, title, subject }: LiveConfig) => {
-    const liveRef = doc(db, "config", "live_stream");
+    const batch = writeBatch(db);
 
-    await setDoc(liveRef, {
+    // 1. PUBLIC CONFIG (SAFE): Only Status
+    const publicRef = doc(db, "config", "live_stream");
+    batch.set(publicRef, {
         isLive,
-        youtubeId: youtubeId || "",
-        title: title || "",
+        title: title || "", // Title is public
         subject: subject || "General",
         updatedAt: serverTimestamp(),
         ...(isLive && { startedAt: serverTimestamp() })
     }, { merge: true });
+
+    // 2. SECRET STREAM (PROTECTED): Youtube ID
+    const secretRef = doc(db, "secret_stream", "current");
+    batch.set(secretRef, {
+        youtubeId: youtubeId || "",
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    await batch.commit();
 };
 
 export const archiveStream = async (youtubeId: string, title: string, subject: string) => {
     const batch = writeBatch(db);
 
     // 1. Turn off Live
+    // 1. Turn off Live (Public & Private)
     const liveRef = doc(db, "config", "live_stream");
     batch.update(liveRef, {
         isLive: false,
         endedAt: serverTimestamp()
+    });
+
+    const secretRef = doc(db, "secret_stream", "current");
+    batch.update(secretRef, {
+        youtubeId: "" // Clear secret ID
     });
 
     // 2. Create Lesson Document

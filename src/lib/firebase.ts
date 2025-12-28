@@ -20,3 +20,26 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Initialize App Check
+if (typeof window !== "undefined") {
+    import("firebase/app-check").then(({ initializeAppCheck, ReCaptchaEnterpriseProvider }) => {
+        // You must manually create valid Recapcha Key in Firebase Console -> App Check
+        // Using a placeholder dev key here if env var missing
+        // Initialize App Check with ReCaptcha Enterprise
+        // Ensure you have enabled the "ReCAPTCHA Enterprise" API in Google Cloud Console
+        // and created a key in Firebase Console -> App Check
+        const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_KEY;
+
+        if (siteKey) {
+            initializeAppCheck(app, {
+                provider: new ReCaptchaEnterpriseProvider(siteKey),
+                isTokenAutoRefreshEnabled: true
+            });
+            console.log("🛡️ App Check Initialized with Enterprise Provider");
+        } else {
+            console.warn("⚠️ App Check skipped: NEXT_PUBLIC_RECAPTCHA_KEY missing");
+        }
+        console.log("🛡️ App Check Initialized");
+    }).catch(err => console.error("App Check Init Failed", err));
+}

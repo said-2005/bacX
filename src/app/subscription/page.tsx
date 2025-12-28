@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { uploadFile } from "@/lib/storage"; // Assuming this helper exists from previous context
+
 import { submitPayment } from "@/lib/payment-service";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/Input";
 import { CheckCircle2, Upload, CreditCard, Loader2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { compressImage } from "@/lib/compression";
+import { validateFile } from "@/lib/file-validation";
+import { uploadFile as uploadFileToStorage } from "@/lib/storage";
 
 export default function SubscriptionPage() {
     const { user } = useAuth();
@@ -30,10 +33,25 @@ export default function SubscriptionPage() {
         setLoading(true);
 
         try {
-            // 1. Upload Image
-            const url = await uploadFile(file, `receipts/${user.uid}_${Date.now()}`, () => { });
+            // 1. Validate File (Size + Magic Bytes)
+            const validation = await validateFile(file);
+            if (!validation.valid) {
+                toast.error(validation.error || "Invalid file.");
+                setLoading(false);
+                return;
+            }
 
-            // 2. Submit Request
+            // 2. Compress Image (if image)
+            toast.message("جاري ضغط الصورة لتقليل الحجم...");
+            let uploadFile = file;
+            if (file.type.startsWith('image/')) {
+                uploadFile = await compressImage(file);
+            }
+
+            // 3. Upload Image
+            const url = await uploadFileToStorage(uploadFile, `receipts/${user.uid}_${Date.now()}`, () => { });
+
+            // 3. Submit Request
             await submitPayment({
                 userId: user.uid,
                 userName: user.displayName || user.email || "Unknown",

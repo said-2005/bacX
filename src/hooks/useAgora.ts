@@ -5,12 +5,12 @@ export const useAgora = (client: any) => {
     const [active, setActive] = useState(false);
 
     const joinChannel = async (channelName: string, uid: string | number) => {
-        console.log("Mock Join Channel:", channelName, uid);
+        // Mock Implementation
         setActive(true);
     };
 
     const leaveChannel = async () => {
-        console.log("Mock Leave Channel");
+        // Mock Implementation
         setActive(false);
     };
 
