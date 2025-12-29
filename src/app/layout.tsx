@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Tajawal } from "next/font/google";
+import { Inter, Vazirmatn } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import { BackButton } from "@/components/ui/BackButton";
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { AppShell } from "@/components/layout/AppShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,10 +14,10 @@ const inter = Inter({
   display: 'swap',
 });
 
-const tajawal = Tajawal({
+const vazirmatn = Vazirmatn({
   subsets: ["arabic"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-tajawal",
+  weight: ["300", "400", "500", "700", "900"],
+  variable: "--font-vazirmatn",
   display: 'swap',
 });
 
@@ -44,14 +45,7 @@ export const metadata: Metadata = {
     siteName: "BacX",
     title: "BacX - منصة النخبة التعليمية",
     description: "استعد للبكالوريا مع أفضل الأساتذة في بيئة تعليمية متطورة.",
-    images: [
-      {
-        url: "/og-image.jpg", // Needs to be added to public folder
-        width: 1200,
-        height: 630,
-        alt: "BacX Platform Preview",
-      },
-    ],
+    images: ["/og-image.jpg"],
   },
   twitter: {
     card: "summary_large_image",
@@ -72,7 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${inter.variable} ${tajawal.variable} antialiased bg-[#050505] text-[#EDEDED]`}>
+      <body className={`${inter.variable} ${vazirmatn.variable} antialiased bg-[#050505] text-[#EDEDED]`}>
         <NextTopLoader
           color="#2997FF"
           initialPosition={0.08}
@@ -86,8 +80,10 @@ export default function RootLayout({
         />
         <AuthProvider>
           <ErrorBoundary>
-            <BackButton />
-            {children}
+            <AppShell>
+              <BackButton />
+              {children}
+            </AppShell>
             <Toaster
               position="bottom-center"
               richColors
@@ -98,7 +94,7 @@ export default function RootLayout({
                   backdropFilter: 'blur(16px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   color: '#EDEDED',
-                  fontFamily: 'var(--font-tajawal)',
+                  fontFamily: 'var(--font-vazirmatn)',
                 }
               }}
             />

@@ -50,10 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        // Use onIdTokenChanged to handle token refreshes automatically
+        const unsubscribe = auth.onIdTokenChanged(async (currentUser) => {
             if (currentUser) {
+                const token = await currentUser.getIdToken();
                 const deviceId = getStableDeviceId();
                 const userRef = doc(db, 'users', currentUser.uid);
+
+                // Set the session cookie for Middleware
+                document.cookie = `bacx_session=${token}; path=/; max-age=3600; SameSite=Lax; Secure`;
 
                 // --- RETRY LOGIC FOR NETWORK RESILIENCE ---
                 let retries = 3;
@@ -70,29 +75,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             setRole(data.role || 'student');
 
                             // Use Server Action for device registration (server-side enforcement)
+                            // Only run this occasionally or check local storage to avoid spamming? 
+                            // For now, we run it on every refresh to be safe, but ideally we dampen this.
+                            // We can rely on the server validation to be fast.
                             try {
-                                const result = await registerDevice(currentUser.uid, {
+                                await registerDevice(currentUser.uid, {
                                     deviceId,
                                     deviceName: navigator.userAgent.slice(0, 50)
                                 });
-
-                                if (!result.success) {
-                                    throw new Error(result.message || 'Device registration failed');
-                                }
                             } catch (deviceError: unknown) {
-                                // Device limit exceeded
+                                // Device limit logic
                                 const errorMessage = deviceError instanceof Error ? deviceError.message : String(deviceError);
-
                                 if (errorMessage.includes('Device limit') || errorMessage.includes('resource-exhausted')) {
-
                                     await firebaseSignOut(auth);
                                     alert("تم تجاوز حد الأجهزة المسموح به (2).");
+                                    document.cookie = "bacx_session=; path=/; max-age=0";
                                     setUser(null);
                                     setRole(null);
                                     setLoading(false);
                                     return;
                                 }
-                                console.error("Device registration:", deviceError);
                             }
                         } else {
                             // First Login - create user document
@@ -105,55 +107,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 photoURL: currentUser.photoURL || ""
                             });
                             setRole('student');
-
-                            // Register device via Server Action
-                            try {
-                                await registerDevice(currentUser.uid, {
-                                    deviceId,
-                                    deviceName: navigator.userAgent.slice(0, 50)
-                                });
-                            } catch (e: unknown) {
-                                console.error("Initial device registration:", e);
-                            }
+                            await registerDevice(currentUser.uid, {
+                                deviceId,
+                                deviceName: navigator.userAgent.slice(0, 50)
+                            });
                         }
                         setUser(currentUser);
-                        document.cookie = "bacx_auth=1; path=/; max-age=2592000";
 
                     } catch (error: unknown) {
                         console.error("Auth Error:", error);
-                        // Only retry if it looks like a network error
                         const errorMessage = error instanceof Error ? error.message : String(error);
-                        const errorCode = (typeof error === 'object' && error !== null && 'code' in error)
-                            ? (error as { code: string }).code
-                            : '';
 
-                        if (errorCode === 'unavailable' || errorMessage.includes('offline')) {
+                        if (errorMessage.includes('offline') || errorMessage.includes('unavailable')) {
                             setConnectionStatus('reconnecting');
-                            toast("جاري إعادة الاتصال...", { icon: <WifiOff className="w-4 h-4" /> });
                             retries--;
-                            await new Promise(r => setTimeout(r, 2000)); // Wait 2s
+                            await new Promise(r => setTimeout(r, 2000));
                         } else {
-                            // Fatal Error (Permission Denied etc)
-                            await firebaseSignOut(auth);
-                            setUser(null);
-                            setRole(null);
+                            // Critical error
                             setLoading(false);
                             return;
                         }
                     }
                 }
-
-                if (!success) {
-                    // Failed after retries
-                    setConnectionStatus('offline');
-                    toast.error("يبدو أن هناك مشكلة في الاتصال بالانترنت");
-                    // We don't force logout here to be nice, just show offline state? 
-                    // Or force logout for security? Let's keep user session but disable features.
-                }
-
             } else {
+                // Logged out
                 setUser(null);
                 setRole(null);
+                document.cookie = "bacx_session=; path=/; max-age=0";
             }
             setLoading(false);
         });
