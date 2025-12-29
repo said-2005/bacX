@@ -34,8 +34,8 @@ export async function submitPayment(data: PaymentData) {
         await batch.commit();
 
         return { success: true, paymentId: paymentRef.id };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Submit Payment Error:", error);
-        throw new Error(error.message);
+        throw new Error(error instanceof Error ? error.message : String(error));
     }
 }

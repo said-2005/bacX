@@ -1,4 +1,4 @@
-import { storage } from "@/lib/firebase"; // Keep this if used elsewhere, or remove if unused. Checking usage showed imports in storage.ts. Actually `storage` import was used in `storage.ts`. I should remove it from here if I'm rewriting the whole file.
+
 // Wait, I am REPLACING the content of storage.ts entirely.
 
 export const uploadFile = async (
@@ -25,7 +25,7 @@ export const uploadFile = async (
         // but the user's existing paths seem safe (alphanumeric + slashes).
         // Let's sanitize the path basic chars just in case, but keep slashes for folders.
         // Actually, let's try to use the path as provided to maintain folder structure.
-        formData.append("public_id", path); 
+        formData.append("public_id", path);
 
         const xhr = new XMLHttpRequest();
 

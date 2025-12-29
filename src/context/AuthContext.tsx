@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                             // Use Server Action for device registration (server-side enforcement)
                             try {
-                                const result: any = await registerDevice(currentUser.uid, {
+                                const result = await registerDevice(currentUser.uid, {
                                     deviceId,
                                     deviceName: navigator.userAgent.slice(0, 50)
                                 });
@@ -79,9 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 if (!result.success) {
                                     throw new Error(result.message || 'Device registration failed');
                                 }
-                            } catch (deviceError: any) {
+                            } catch (deviceError: unknown) {
                                 // Device limit exceeded
-                                const errorMessage = deviceError.message || '';
+                                const errorMessage = deviceError instanceof Error ? deviceError.message : String(deviceError);
 
                                 if (errorMessage.includes('Device limit') || errorMessage.includes('resource-exhausted')) {
 

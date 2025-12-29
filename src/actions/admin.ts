@@ -76,9 +76,9 @@ export async function approvePayment(paymentId: string, userId: string, duration
         });
 
         return { success: true, message: 'Payment approved.' };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Approve Payment Error:", error);
-        return { success: false, message: error.message };
+        return { success: false, message: error instanceof Error ? error.message : String(error) };
     }
 }
 
@@ -103,8 +103,8 @@ export async function rejectPayment(paymentId: string, userId: string, reason: s
         });
 
         return { success: true, message: 'Payment rejected.' };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Reject Payment Error:", error);
-        return { success: false, message: error.message };
+        return { success: false, message: error instanceof Error ? error.message : String(error) };
     }
 }

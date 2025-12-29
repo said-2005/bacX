@@ -38,7 +38,7 @@ export async function deleteUserData(userId: string) {
 
         return { success: true, message: 'User data deleted.' };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Delete user data error:", error);
         throw new Error('Failed to delete user data.');
     }

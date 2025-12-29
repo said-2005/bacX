@@ -8,6 +8,13 @@ interface DeviceData {
     deviceName: string;
 }
 
+interface RegisteredDevice {
+    deviceId: string;
+    deviceName: string;
+    registeredAt: string;
+    lastSeen: string;
+}
+
 export async function registerDevice(userId: string, data: DeviceData) {
     if (!userId) throw new Error("User ID required");
 
@@ -22,10 +29,10 @@ export async function registerDevice(userId: string, data: DeviceData) {
             }
 
             const userData = userSnap.data();
-            const currentDevices: any[] = (userData?.activeDevices as any[]) || [];
+            const currentDevices: RegisteredDevice[] = (userData?.activeDevices as RegisteredDevice[]) || [];
 
             // Check if device already exists
-            const existingIndex = currentDevices.findIndex((d: any) => d.deviceId === data.deviceId);
+            const existingIndex = currentDevices.findIndex((d: RegisteredDevice) => d.deviceId === data.deviceId);
             if (existingIndex !== -1) {
                 // Update last seen
                 currentDevices[existingIndex].lastSeen = new Date().toISOString();
@@ -61,9 +68,9 @@ export async function registerDevice(userId: string, data: DeviceData) {
         }
         return result;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Device registration error:", error);
-        throw new Error(error.message || 'Failed to register device.');
+        throw new Error(error instanceof Error ? error.message : 'Failed to register device.');
     }
 }
 
@@ -78,9 +85,9 @@ export async function unregisterDevice(userId: string, deviceId: string) {
             if (!userSnap.exists) return;
 
             const userData = userSnap.data();
-            const currentDevices: any[] = (userData?.activeDevices as any[]) || [];
+            const currentDevices: RegisteredDevice[] = (userData?.activeDevices as RegisteredDevice[]) || [];
 
-            const updatedDevices = currentDevices.filter((d: any) => d.deviceId !== deviceId);
+            const updatedDevices = currentDevices.filter((d: RegisteredDevice) => d.deviceId !== deviceId);
 
             if (updatedDevices.length !== currentDevices.length) {
                 t.update(userRef, { activeDevices: updatedDevices });
@@ -88,7 +95,7 @@ export async function unregisterDevice(userId: string, deviceId: string) {
         });
 
         return { success: true, message: 'Device unregistered.' };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Device unregister error:", error);
         throw new Error('Failed to unregister device.');
     }
