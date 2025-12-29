@@ -14,16 +14,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] flex font-vazirmatn text-[#EDEDED] relative overflow-hidden">
-            {/* Ambient Background Mesh (Global for AppShell) */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full opacity-50" />
-                <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-purple-500/5 blur-[120px] rounded-full opacity-50" />
+        <div className="min-h-screen bg-background flex font-sans text-foreground relative overflow-hidden">
+            {/* Ambient Background Mesh (Subtle for Light Mode) */}
+            <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
+                <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full mix-blend-multiply" />
+                <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full mix-blend-multiply" />
             </div>
 
             <Sidebar />
 
-            <div className="flex-1 flex flex-col mr-64 relative z-10">
+            <div className="flex-1 flex flex-col mr-64 relative z-10 transition-all duration-300">
                 <TopNav />
                 <main className="flex-1 p-8 overflow-y-auto">
                     {children}

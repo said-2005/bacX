@@ -1,118 +1,58 @@
-import Image from "next/image";
-import Link from "next/link";
+import { Hero } from "@/components/sections/Hero";
+import { Features } from "@/components/sections/Features";
+import { Pricing } from "@/components/sections/Pricing";
+import { TopNav } from "@/components/layout/TopNav"; // We can reuse TopNav or create a specific LandingTopNav. Using TopNav for now as it looks good.
 
 export default function Page() {
   return (
-    <div
-      dir="rtl"
-      lang="ar"
-      className="min-h-screen bg-[radial-gradient(1200px_700px_at_20%_20%,rgba(120,180,255,0.35),transparent_55%),radial-gradient(900px_600px_at_90%_85%,rgba(255,170,210,0.25),transparent_55%),linear-gradient(180deg,#f7fbff,white)] flex items-center justify-center p-6"
-    >
-      {/* Outer frame */}
-      <div className="w-full max-w-6xl">
-        {/* Big rounded hero card */}
-        <div className="relative rounded-[42px] bg-white/55 border border-white/60 shadow-[0_40px_120px_rgba(15,23,42,0.18)] overflow-hidden">
-          {/* subtle inner glow */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_400px_at_50%_0%,rgba(59,130,246,0.08),transparent_60%)]" />
-
-          {/* content */}
-          <div className="relative px-10 md:px-14 py-12 md:py-14">
-            {/* Top brand */}
-            <div className="flex items-start justify-end">
-              <div className="flex items-center gap-2 text-slate-800">
-                <span className="text-2xl font-black tracking-tight">
-                  bac<span className="text-blue-600">X</span>
-                </span>
-                <Image
-                  src="/bacx-book.svg"
-                  alt="book"
-                  width={28}
-                  height={28}
-                  className="opacity-70"
-                />
-              </div>
-            </div>
-
-            {/* Main grid */}
-            <div className="mt-8 grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
-              {/* LEFT: Poem Card */}
-              <div className="flex justify-start lg:justify-start">
-                <div className="w-full max-w-md">
-                  <div className="rounded-[28px] bg-white/70 border border-white/70 shadow-[0_20px_60px_rgba(15,23,42,0.12)] p-4">
-                    <div className="relative overflow-hidden rounded-[22px]">
-                      <Image
-                        src="/poem-card.jpg"
-                        alt="poem background"
-                        width={900}
-                        height={1200}
-                        className="h-[420px] w-full object-cover"
-                        priority
-                      />
-                      {/* Poem overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center px-10">
-                        <div className="text-center text-slate-700 leading-[2.1] font-semibold drop-shadow-sm">
-                          <p>وما الحياةُ سوى حُلمٍ أَلَمَّ بنا</p>
-                          <p>قد مَرَّ كالحُلمِ ساعاتِ وأيامِ</p>
-                          <p>هل عشتُ حقاً؟! يكادُ الشكُّ يَغلبُني</p>
-                          <p>أم كان ما عشتُه أضغاثَ أحلامِ</p>
-                          <p>في مِثلِ غَمضةِ عينٍ وانتباهتِها</p>
-                          <p>قد أصبح الطفلُ شيخاً أبيضَ الهامِ</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT: Headline + Buttons */}
-              <div className="text-right">
-                <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
-                  حضِّر للبكالوريا بثقة
-                </h1>
-                <h2 className="mt-2 text-3xl md:text-4xl font-extrabold text-slate-700">
-                  وافتح باب مستقبلك
-                </h2>
-
-                <div className="mt-6 flex flex-wrap gap-4 justify-end">
-                  {/* Primary */}
-                  <Link
-                    href="/auth?mode=login"
-                    className="inline-flex items-center justify-center rounded-full bg-blue-700 px-8 py-3 text-white font-bold shadow-[0_16px_40px_rgba(37,99,235,0.35)] hover:bg-blue-800 transition"
-                  >
-                    تسجيل الدخول
-                  </Link>
-
-                  {/* Secondary */}
-                  <Link
-                    href="/auth?mode=signup"
-                    className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-8 py-3 text-slate-700 font-bold hover:bg-white transition"
-                  >
-                    تسجيل حساب
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom: Desk scene */}
-            <div className="mt-10 md:mt-12 flex justify-center">
-              <div className="w-full max-w-4xl">
-                <div className="rounded-[28px] bg-white/55 border border-white/70 shadow-[0_22px_70px_rgba(15,23,42,0.16)] overflow-hidden">
-                  <Image
-                    src="/desk.jpg"
-                    alt="desk scene"
-                    width={1600}
-                    height={900}
-                    className="w-full h-[240px] md:h-[280px] object-cover"
-                  />
-                </div>
-              </div>
-            </div>
+    <div dir="rtl" className="min-h-screen bg-background font-sans selection:bg-primary/30">
+      {/* We generally put TopNav in the layout or here. Since AppShell has TopNav, and AppShell handles generic layout, 
+            we need to verify if the Home page uses AppShell. 
+            The AppShell component excludes '/' (Home) from the dashboard layout.
+            So we need to add a Navbar here for the Landing Page.
+        */}
+      <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="text-2xl font-black tracking-tight text-foreground">
+            BAC<span className="text-primary">X</span>
+          </div>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+            <a href="#" className="hover:text-primary transition-colors">الرئيسية</a>
+            <a href="#features" className="hover:text-primary transition-colors">المميزات</a>
+            <a href="#pricing" className="hover:text-primary transition-colors">الأسعار</a>
+            <a href="/about" className="hover:text-primary transition-colors">من نحن</a>
+          </nav>
+          <div className="flex items-center gap-4">
+            <a href="/auth?mode=login" className="text-sm font-medium text-muted-foreground hover:text-foreground">تسجيل الدخول</a>
+            <a href="/auth?mode=signup" className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all">
+              ابدأ مجاناً
+            </a>
           </div>
         </div>
+      </header>
 
-        {/* Optional: small outside soft shadows */}
-        <div className="pointer-events-none mt-6 h-8 w-full bg-[radial-gradient(60%_100%_at_50%_0%,rgba(15,23,42,0.18),transparent_70%)] blur-2xl" />
-      </div>
+      <main className="pt-20">
+        <Hero />
+        <Features />
+        <Pricing />
+
+        {/* Footer */}
+        <footer className="py-12 bg-muted/30 border-t border-border mt-20">
+          <div className="container mx-auto px-6 text-center">
+            <div className="text-2xl font-black tracking-tight text-foreground mb-6">
+              BAC<span className="text-primary">X</span>
+            </div>
+            <div className="flex justify-center gap-6 mb-8 text-muted-foreground">
+              <a href="#" className="hover:text-foreground">تواصل معنا</a>
+              <a href="#" className="hover:text-foreground">الأحكام والشروط</a>
+              <a href="#" className="hover:text-foreground">الخصوصية</a>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2024 BacX. جميع الحقوق محفوظة.
+            </p>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 }

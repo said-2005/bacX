@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Vazirmatn } from "next/font/google";
+import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
@@ -8,22 +8,16 @@ import { BackButton } from "@/components/ui/BackButton";
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { AppShell } from "@/components/layout/AppShell";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: 'swap',
-});
-
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic"],
-  weight: ["300", "400", "500", "700", "900"],
-  variable: "--font-vazirmatn",
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
+  variable: "--font-sans",
   display: 'swap',
 });
 
 // --- SEO & VIEWPORT ---
 export const viewport: Viewport = {
-  themeColor: '#050505',
+  themeColor: '#1E40AF',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -66,9 +60,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${inter.variable} ${vazirmatn.variable} antialiased bg-[#050505] text-[#EDEDED]`}>
+      <body className={`${ibmPlexSansArabic.variable} antialiased bg-background text-foreground font-sans`}>
         <NextTopLoader
-          color="#2997FF"
+          color="#1E40AF"
           initialPosition={0.08}
           crawlSpeed={200}
           height={3}
@@ -76,7 +70,7 @@ export default function RootLayout({
           showSpinner={false}
           easing="ease"
           speed={200}
-          shadow="0 0 10px #2997FF,0 0 5px #2997FF"
+          shadow="0 0 10px #1E40AF,0 0 5px #1E40AF"
         />
         <AuthProvider>
           <ErrorBoundary>
@@ -87,14 +81,11 @@ export default function RootLayout({
             <Toaster
               position="bottom-center"
               richColors
-              theme="dark"
+              theme="light"
               toastOptions={{
+                className: "glass-premium font-sans",
                 style: {
-                  background: 'rgba(10, 10, 10, 0.8)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: '#EDEDED',
-                  fontFamily: 'var(--font-vazirmatn)',
+                    fontFamily: 'var(--font-sans)',
                 }
               }}
             />

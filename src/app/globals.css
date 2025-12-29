@@ -1,103 +1,122 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap");
-
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #050505;
-  --surface: #0A0A0A;
-  --surface-highlight: #121212;
-  --border: #1F1F1F;
-  --primary: #2997FF;
-  --primary-glow: rgba(41, 151, 255, 0.15);
-  --text-main: #EDEDED;
-  --text-muted: #A1A1AA;
-}
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", sans-serif;
+  --font-arabic: "IBM Plex Sans Arabic", sans-serif;
 
-@theme inline {
   --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-surface-highlight: var(--surface-highlight);
-  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
-  --color-primary-glow: var(--primary-glow);
-  --color-text-main: var(--text-main);
-  --color-text-muted: var(--text-muted);
-  --font-sans: var(--font-inter), var(--font-tajawal), sans-serif;
-  --font-tajawal: var(--font-tajawal), sans-serif;
-  --font-inter: var(--font-inter), sans-serif;
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+:root {
+  /* Core Colors */
+  --background: #F9FAFB; /* Very light gray */
+  --foreground: #111827; /* Dark text */
+
+  /* Surface / Cards */
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+
+  /* Popovers */
+  --popover: #FFFFFF;
+  --popover-foreground: #111827;
+
+  /* Primary: Deep Blue */
+  --primary: #1E40AF;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary: Professional Green (used as secondary or success) or Neutral */
+  --secondary: #059669; 
+  --secondary-foreground: #FFFFFF;
+
+  /* Muted */
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+
+  /* Accent */
+  --accent: #F3F4F6;
+  --accent-foreground: #111827;
+
+  /* Destructive */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  /* Borders & Inputs */
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #1E40AF; /* Matches Primary */
+
+  /* Radius */
+  --radius: 0.75rem; /* rounded-xl */
 }
 
-html {
-  scroll-behavior: smooth;
+.dark {
+  --background: #050505;
+  --foreground: #F9FAFB;
+  --card: #0A0A0A;
+  --card-foreground: #F9FAFB;
+  --popover: #0A0A0A;
+  --popover-foreground: #F9FAFB;
+  --primary: #1E40AF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #059669;
+  --secondary-foreground: #FFFFFF;
+  --muted: #1F2937;
+  --muted-foreground: #9CA3AF;
+  --accent: #1F2937;
+  --accent-foreground: #F9FAFB;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #1F2937;
+  --input: #1F2937;
+  --ring: #1E40AF;
 }
 
-body {
-  background: var(--background);
-  color: var(--text-main);
-  font-family: var(--font-inter), var(--font-tajawal), sans-serif;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
 }
 
-/* --- ADAPTIVE GLASS SYSTEM --- */
+/* Utilities */
 .glass-panel {
-  /* Default base - can be overridden by specific classes below */
-  border-radius: 1.5rem;
-  transition: background 0.3s ease, backdrop-filter 0.3s ease;
+  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
 }
 
-/* High-End Devices: Full Blur */
 .glass-premium {
-  background: rgba(10, 10, 10, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Low-End Devices: Solid/Semi-Transparent Fallback (No Blur) */
-.glass-fallback {
-  background: #0A0A0A;
-  /* Solid fallback */
-  /* OR slightly transparent but without the expensive blur operation */
-  background: rgba(15, 15, 15, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-/* --- APPLE-STYLE SELECTION --- */
-::selection {
-  background: rgba(41, 151, 255, 0.3);
-  /* Primary with opacity */
-  color: white;
-}
-
-/* --- MAC OS SCROLLBAR --- */
-::-webkit-scrollbar {
-  width: 10px;
-  background-color: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-  transition: background-color 0.2s;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-::-webkit-scrollbar-track {
-  background-color: transparent;
+   @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-md;
 }
