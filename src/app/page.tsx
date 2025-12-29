@@ -31,77 +31,80 @@ export default function Page() {
       <main className="relative z-10 mx-auto max-w-[1600px] w-full min-h-[calc(100vh-120px)] grid lg:grid-cols-2 gap-20 xl:gap-40 items-center px-8 md:px-24 py-16">
 
         {/* Right Column: Hero Section */}
-        <div className="order-1 flex flex-col justify-center space-y-12 lg:space-y-16 py-10">
-          <div className="space-y-8">
-            <h2 className="text-6xl md:text-7xl lg:text-8xl font-bold text-slate-900 leading-[1.1] tracking-tight">
-              حضّر للبكالوريا...
+        <div className="order-1 flex flex-col justify-center space-y-8 lg:space-y-10 py-10 relative z-20">
+          <div className="space-y-6">
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 leading-[1.2] tracking-tight">
+              حضِّر للبكالوريا بثقة...
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-600 to-indigo-500">
-                وافتح باب مستقبلك.
+                وافتـح باب مستقبلك.
               </span>
             </h2>
-            <p className="text-xl md:text-2xl text-slate-500 font-medium leading-loose max-w-xl">
-              منصة bacX هي بوصلتك نحو النجاح، توفر لك كل ما تحتاجه من دروس وتمارين ومتابعة لتختصر الطريق نحو التميز.
+            <p className="text-xl text-slate-500 font-medium leading-loose max-w-lg">
+              خطة مراجعة واضحة، وإرشاد يساعدك على التركيز.
             </p>
           </div>
 
-          {/* New Relocated Buttons */}
-          <div className="flex flex-wrap gap-6 items-center">
-            {/* Primary Button: Glowing Blue Gradient */}
-            <Link
-              href="/auth?mode=signup"
-              className="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-12 py-5 rounded-full font-bold text-lg shadow-[0_10px_40px_-5px_rgba(37,99,235,0.4)] hover:shadow-[0_20px_60px_-10px_rgba(37,99,235,0.5)] hover:-translate-y-1 transition-all duration-300"
-            >
-              إنشاء حساب
-            </Link>
-
-            {/* Secondary Button: Ghost Style with Border */}
+          {/* Buttons: Login (Primary), Register (Secondary) */}
+          <div className="flex flex-wrap gap-5 items-center">
+            {/* Primary: Login */}
             <Link
               href="/auth?mode=login"
-              className="inline-flex items-center justify-center bg-transparent border-2 border-slate-200 text-slate-600 px-12 py-5 rounded-full font-bold text-lg hover:border-blue-400 hover:text-blue-600 transition-colors duration-300"
+              className="inline-flex items-center justify-center bg-blue-600 text-white px-10 py-4 rounded-full font-bold text-lg shadow-[0_4px_20px_-2px_rgba(37,99,235,0.3)] hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
             >
               تسجيل الدخول
             </Link>
+
+            {/* Secondary: Register */}
+            <Link
+              href="/auth?mode=signup"
+              className="inline-flex items-center justify-center bg-white border border-slate-200 text-slate-700 px-10 py-4 rounded-full font-bold text-lg hover:border-blue-300 hover:text-blue-600 transition-colors duration-300"
+            >
+              تسجيل حساب
+            </Link>
+          </div>
+
+          {/* Desk Setup Image */}
+          <div className="pt-2 w-full max-w-xl">
+             <img 
+               src="/images/hero-desk.png" 
+               alt="Study Desk Setup" 
+               className="w-full h-auto object-contain drop-shadow-2xl"
+             />
           </div>
         </div>
 
-        {/* Left Column: Floating Poem with Ornamentation */}
+        {/* Left Column: Floating Poem Card */}
         <div className="order-2 relative flex items-center justify-center lg:justify-end py-10">
+          
+          {/* Card Container with Sky Texture Background */}
+          <div className="relative z-10 bg-white/60 backdrop-blur-md rounded-3xl p-8 md:p-12 border border-white/50 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] text-center max-w-lg w-full overflow-hidden">
+             
+             {/* Subtle internal texture/gradient mimicking sky */}
+             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/20 to-indigo-50/30 -z-10" />
 
-          {/* Subtle Arabic Ornamentation Watermark (SVG) */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] opacity-[0.03] pointer-events-none select-none">
-            <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" className="w-full h-full text-slate-900" strokeWidth="0.5">
-              <circle cx="100" cy="100" r="80" />
-              <rect x="43.5" y="43.5" width="113" height="113" transform="rotate(45 100 100)" />
-              <rect x="43.5" y="43.5" width="113" height="113" />
-              <path d="M100 20 L100 180 M20 100 L180 100" />
-            </svg>
+             {/* Poem Text */}
+             <div className="space-y-6 text-slate-800 font-medium leading-[2.2] font-serif">
+                <div className="text-xl md:text-2xl space-y-2">
+                   <p>وما الحياةُ سوى حُلمٍ أَلَمَّ بنا</p>
+                   <p>قد مَرَّ كالحُلمِ ساعاتِ وأيامِ</p>
+                   <div className="h-4" /> {/* Spacer */}
+                   <p>هل عشتُ حقاً؟! يكادُ الشكُّ يَغلبُني</p>
+                   <p>أم كان ما عشتُه أضغاثَ أحلامِ</p>
+                   <div className="h-4" /> {/* Spacer */}
+                   <p>في مِثلِ غَمضةِ عينٍ وانتباهتِها</p>
+                   <p>قد أصبح الطفلُ شيخاً أبيضَ الهامِ</p>
+                </div>
+             </div>
+
+             {/* Footer Line */}
+             <div className="mt-10 pt-8 border-t border-slate-200/60">
+                <p className="text-slate-600 text-base leading-relaxed italic">
+                  "كنتُ تلميذًا مثلَكم… واليوم أكتب لكم الطريق: ثباتٌ صغير اليوم، يصنعُ فرقًا كبيرًا غدًا."
+                </p>
+             </div>
           </div>
 
-          {/* Poem Text - Floating & Elegant */}
-          <div className="relative z-10 text-center space-y-12">
-            <div className="space-y-8 text-slate-800 text-2xl md:text-3xl font-medium leading-[2.6] font-serif md:font-sans">
-              <div>
-                <p className="opacity-90">ومَا الحيَاةُ سِوى حُلمٍ ألمَّ بنَا</p>
-                <p className="text-xl md:text-2xl text-slate-500 mt-2">قد مَرَّ كالحُلمِ سَاعَاتِي وأيَّامِي</p>
-              </div>
-
-              {/* Decorative Divider */}
-              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mx-auto opacity-60"></div>
-
-              <div>
-                <p className="opacity-90">فِي مِثلِ غَمضَةِ عَينٍ وانتبَاهتِها</p>
-                <p className="text-xl md:text-2xl text-slate-500 mt-2">قدْ أصبحَ الطِّفلُ شيخًا أبيضَ الهَامِ</p>
-              </div>
-            </div>
-
-            <div className="max-w-md mx-auto relative pt-12">
-              <div className="w-16 h-px bg-slate-300 mx-auto mb-8"></div>
-              <p className="text-slate-500 text-lg leading-loose italic">
-                "لا زِلتُ أتذكّر... كأنَّ البارحةَ كانَت... واليومَ جئتُ لأقول لكم: لا تُضيّعوا وقتكم، فخطوةٌ واحدةٌ صادقةٌ قد تصنعُ لكم عمرًا كاملًا."
-              </p>
-            </div>
-          </div>
         </div>
 
       </main>
