@@ -1,11 +1,11 @@
 import React from "react";
 import Link from "next/link";
-import { Vazirmatn } from "next/font/google";
+import { IBM_Plex_Sans_Arabic } from "next/font/google";
 
-const vazirmatn = Vazirmatn({
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-vazirmatn",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ibm-plex",
 });
 
 export default function Page() {
@@ -13,95 +13,93 @@ export default function Page() {
     <div
       dir="rtl"
       lang="ar"
-      className={`min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-white font-sans text-slate-900 ${vazirmatn.variable}`}
+      className={`min-h-screen relative overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-white via-slate-50 to-[#EBF3FF] font-sans text-slate-900 ${ibmPlexArabic.variable}`}
     >
-      {/* Subtle Background Orbs (Depth) */}
-      <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-blue-200/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-indigo-200/20 rounded-full blur-[120px] pointer-events-none" />
+      {/* Tiny Soft Background Orbs (Depth) */}
+      <div className="absolute top-[10%] right-[5%] w-64 h-64 bg-blue-400/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[20%] left-[10%] w-96 h-96 bg-indigo-300/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[40%] left-[40%] w-32 h-32 bg-sky-200/10 rounded-full blur-2xl pointer-events-none" />
 
       {/* Header - Logo Only */}
-      <header className="relative z-10 pt-8 px-6 md:px-20 flex justify-between items-center">
+      <header className="relative z-10 pt-10 px-8 md:px-24 flex justify-between items-center">
         <h1 className="text-4xl font-black tracking-tighter">
           bac<span className="text-blue-600">X</span>
         </h1>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-7xl w-full min-h-[calc(100vh-100px)] grid lg:grid-cols-2 gap-12 lg:gap-20 items-center px-6 py-12 md:px-20 md:py-20">
+      {/* Main Content - Spacious & Artistic */}
+      <main className="relative z-10 mx-auto max-w-[1600px] w-full min-h-[calc(100vh-120px)] grid lg:grid-cols-2 gap-20 xl:gap-40 items-center px-8 md:px-24 py-16">
 
-        {/* Right Column (Hero Content) */}
-        <div className="order-1 flex flex-col justify-center space-y-10">
-          <div className="space-y-6">
-            <h2 className="text-5xl md:text-6xl lg:text-7xl/tight font-extrabold text-slate-900 tracking-tight">
+        {/* Right Column: Hero Section */}
+        <div className="order-1 flex flex-col justify-center space-y-12 lg:space-y-16 py-10">
+          <div className="space-y-8">
+            <h2 className="text-6xl md:text-7xl lg:text-8xl font-bold text-slate-900 leading-[1.1] tracking-tight">
               حضّر للبكالوريا...
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-600 to-indigo-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-600 to-indigo-500">
                 وافتح باب مستقبلك.
               </span>
             </h2>
-            <p className="text-xl md:text-2xl text-slate-600 font-medium leading-relaxed max-w-lg">
-              منصة bacX تمنحك دروسًا منظمة، متابعة دقيقة، وتمارين شاملة لتصل إلى النتيجة التي تستحقها.
+            <p className="text-xl md:text-2xl text-slate-500 font-medium leading-loose max-w-xl">
+              منصة bacX هي بوصلتك نحو النجاح، توفر لك كل ما تحتاجه من دروس وتمارين ومتابعة لتختصر الطريق نحو التميز.
             </p>
           </div>
 
-          {/* Buttons (Relocated & Styled) */}
-          <div className="flex flex-wrap gap-5">
+          {/* New Relocated Buttons */}
+          <div className="flex flex-wrap gap-6 items-center">
+            {/* Primary Button: Glowing Blue Gradient */}
             <Link
               href="/auth?mode=signup"
-              className="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-10 py-4 rounded-full font-bold text-lg shadow-[0_10px_25px_rgba(37,99,235,0.25)] hover:shadow-[0_15px_35px_rgba(37,99,235,0.35)] hover:-translate-y-1 transition-all duration-300"
+              className="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-12 py-5 rounded-full font-bold text-lg shadow-[0_10px_40px_-5px_rgba(37,99,235,0.4)] hover:shadow-[0_20px_60px_-10px_rgba(37,99,235,0.5)] hover:-translate-y-1 transition-all duration-300"
             >
               إنشاء حساب
             </Link>
+
+            {/* Secondary Button: Ghost Style with Border */}
             <Link
               href="/auth?mode=login"
-              className="inline-flex items-center justify-center bg-white text-blue-600 border border-blue-100 px-10 py-4 rounded-full font-bold text-lg shadow-lg shadow-slate-200/50 hover:bg-slate-50 hover:-translate-y-1 transition-all duration-300"
+              className="inline-flex items-center justify-center bg-transparent border-2 border-slate-200 text-slate-600 px-12 py-5 rounded-full font-bold text-lg hover:border-blue-400 hover:text-blue-600 transition-colors duration-300"
             >
               تسجيل الدخول
             </Link>
           </div>
         </div>
 
-        {/* Left Column (Poem Card) */}
-        <div className="order-2 relative perspective-1000">
-          {/* Glass Card */}
-          <div
-            className="
-              relative overflow-hidden
-              rounded-[2.5rem] 
-              border border-white/60 
-              bg-white/30 
-              backdrop-blur-2xl
-              shadow-[0_20px_50px_rgba(0,0,0,0.08)]
-              p-8 md:p-12
-              group
-              transition-all duration-500
-              hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)]
-              hover:bg-white/40
-            "
-          >
-            {/* Inner Glow */}
-            <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-400/10 blur-[50px] rounded-full pointer-events-none" />
+        {/* Left Column: Floating Poem with Ornamentation */}
+        <div className="order-2 relative flex items-center justify-center lg:justify-end py-10">
 
-            <div className="space-y-8 text-center relative z-10">
-              {/* Poem */}
-              <div className="space-y-4 text-slate-800 font-bold text-lg md:text-xl leading-[2.4] tracking-wide select-none cursor-default font-serif md:font-sans">
-                <p className="opacity-90 transition-opacity hover:opacity-100">ومَا الحيَاةُ سِوى حُلمٍ ألمَّ بنَا</p>
-                <p className="opacity-90 transition-opacity hover:opacity-100 pb-2">قد مَرَّ كالحُلمِ سَاعَاتِي وأيَّامِي</p>
+          {/* Subtle Arabic Ornamentation Watermark (SVG) */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] opacity-[0.03] pointer-events-none select-none">
+            <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" className="w-full h-full text-slate-900" strokeWidth="0.5">
+              <circle cx="100" cy="100" r="80" />
+              <rect x="43.5" y="43.5" width="113" height="113" transform="rotate(45 100 100)" />
+              <rect x="43.5" y="43.5" width="113" height="113" />
+              <path d="M100 20 L100 180 M20 100 L180 100" />
+            </svg>
+          </div>
 
-                <div className="w-16 h-px bg-blue-200 mx-auto rounded-full my-2"></div>
-
-                <p className="opacity-90 transition-opacity hover:opacity-100">فِي مِثلِ غَمضَةِ عَينٍ وانتبَاهتِها</p>
-                <p className="opacity-90 transition-opacity hover:opacity-100">قدْ أصبحَ الطِّفلُ شيخًا أبيضَ الهَامِ</p>
+          {/* Poem Text - Floating & Elegant */}
+          <div className="relative z-10 text-center space-y-12">
+            <div className="space-y-8 text-slate-800 text-2xl md:text-3xl font-medium leading-[2.6] font-serif md:font-sans">
+              <div>
+                <p className="opacity-90">ومَا الحيَاةُ سِوى حُلمٍ ألمَّ بنَا</p>
+                <p className="text-xl md:text-2xl text-slate-500 mt-2">قد مَرَّ كالحُلمِ سَاعَاتِي وأيَّامِي</p>
               </div>
 
-              {/* Message */}
-              <div className="relative pt-6">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                <p className="text-slate-600 text-[15px] md:text-base font-medium leading-loose pt-6 italic">
-                  "لا زِلتُ أتذكّر... كأنَّ البارحةَ كانَت؛ كنتُ تلميذًا في مكانِكم،
-                  بنفسِ الخوفِ والأمل... واليومَ جئتُ لأقول لكم: لا تُضيّعوا وقتكم،
-                  فخطوةٌ واحدةٌ صادقةٌ قد تصنعُ لكم عمرًا كاملًا."
-                </p>
+              {/* Decorative Divider */}
+              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mx-auto opacity-60"></div>
+
+              <div>
+                <p className="opacity-90">فِي مِثلِ غَمضَةِ عَينٍ وانتبَاهتِها</p>
+                <p className="text-xl md:text-2xl text-slate-500 mt-2">قدْ أصبحَ الطِّفلُ شيخًا أبيضَ الهَامِ</p>
               </div>
+            </div>
+
+            <div className="max-w-md mx-auto relative pt-12">
+              <div className="w-16 h-px bg-slate-300 mx-auto mb-8"></div>
+              <p className="text-slate-500 text-lg leading-loose italic">
+                "لا زِلتُ أتذكّر... كأنَّ البارحةَ كانَت... واليومَ جئتُ لأقول لكم: لا تُضيّعوا وقتكم، فخطوةٌ واحدةٌ صادقةٌ قد تصنعُ لكم عمرًا كاملًا."
+              </p>
             </div>
           </div>
         </div>
