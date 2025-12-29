@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
