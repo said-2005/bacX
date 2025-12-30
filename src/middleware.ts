@@ -109,7 +109,7 @@ export async function middleware(request: NextRequest) {
 
     // --- ROUTE PROTECTION ---
     const adminRoutes = ['/admin'];
-    const protectedRoutes = ['/live', '/lessons', ...adminRoutes];
+    const protectedRoutes = ['/live', '/video', '/subscription', '/subject', ...adminRoutes];
 
     const path = request.nextUrl.pathname;
     const isProtected = protectedRoutes.some(p => path.startsWith(p));

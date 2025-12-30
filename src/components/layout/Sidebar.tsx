@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Radio, Users, LogOut, Library } from "lucide-react";
+import { LayoutDashboard, BookOpen, Radio, Users, LogOut, Library, CreditCard, LifeBuoy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
     { href: "/dashboard", label: "الرئيسية", icon: LayoutDashboard },
-    { href: "/lessons", label: "الدروس", icon: BookOpen },
-    { href: "/subjects", label: "المواد", icon: Library },
-    { href: "/live", label: "البث المباشر", icon: Radio },
+    { href: "/subjects", label: "موادي", icon: Library },
+    { href: "/subscription", label: "اشتراكي", icon: CreditCard },
+    { href: "/support", label: "الدعم الفني", icon: LifeBuoy },
     // Admin only
     { href: "/admin/dashboard", label: "الإدارة", icon: Users, adminOnly: true },
 ];

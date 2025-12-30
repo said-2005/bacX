@@ -86,7 +86,7 @@ export default function LessonsIndexPage() {
                 {filteredLessons.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredLessons.map((lesson) => (
-                            <Link href={`/lessons/${lesson.id}`} key={lesson.id} className="group">
+                            <Link href={`/video/${lesson.id}`} key={lesson.id} className="group">
                                 <GlassCard className="h-full overflow-hidden hover:border-primary/30 transition-colors">
                                     {/* Thumbnail Placeholder */}
                                     <div className="aspect-video bg-zinc-900 relative flex items-center justify-center group-hover:scale-105 transition-transform duration-500">

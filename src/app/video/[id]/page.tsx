@@ -59,7 +59,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
                 setDenied(false);
             } else {
                 toast.error("الدرس غير موجود");
-                router.push("/lessons");
+                router.push("/dashboard");
             }
         } catch (err: unknown) {
             console.error(err);

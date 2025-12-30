@@ -21,7 +21,7 @@ export default function SubjectsPage() {
                     {subjects.map((subject) => (
                         <Link
                             key={subject.id}
-                            href={`/lessons?filter=${subject.name}`}
+                            href={`/subject/${subject.name}`}
                             className="group p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/30 hover:bg-white/10 transition-all"
                         >
                             <div className={`w-12 h-12 rounded-xl ${subject.bg} ${subject.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>

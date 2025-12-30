@@ -1,153 +1,174 @@
 "use client";
 
-import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-
-import { submitPayment } from "@/lib/payment-service";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { Button } from "@/components/ui/Button";
-import { CheckCircle2, Upload, CreditCard, Loader2, Copy } from "lucide-react";
-import { toast } from "sonner";
-import { compressImage } from "@/lib/compression";
-import { validateFile } from "@/lib/file-validation";
-import { uploadFile as uploadFileToStorage } from "@/lib/storage";
+import { Monitor, Smartphone, CheckCircle, Clock, XCircle, LogOut as LogOutIcon, CreditCard, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { arMA } from "date-fns/locale";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function SubscriptionPage() {
-    const { user } = useAuth();
-    const [loading, setLoading] = useState(false);
-    const [file, setFile] = useState<File | null>(null);
+    const { user, role, logout } = useAuth();
+    const router = useRouter();
+    const [devices, setDevices] = useState<any[]>([]);
 
-    const CCP_NUMBER = "00246589 55";
-    const CLE = "45";
-    const HOLDER = "Said Adli";
+    // Mock data for payments until real collection exists
+    const [payments, setPayments] = useState([
+        { id: 1, date: new Date(), amount: "4500 DZD", status: "approved", method: "CCP" },
+        // { id: 2, date: new Date(Date.now() - 86400000 * 30), amount: "2000 DZD", status: "expired", method: "BaridiMob" },
+    ]);
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast.success("تم النسخ بنجاح");
-    };
-
-    const handleUpload = async () => {
-        if (!user || !file) return;
-        setLoading(true);
-
-        try {
-            // 1. Validate File (Size + Magic Bytes)
-            const validation = await validateFile(file);
-            if (!validation.valid) {
-                toast.error(validation.error || "Invalid file.");
-                setLoading(false);
-                return;
-            }
-
-            // 2. Compress Image (if image)
-            toast.message("جاري ضغط الصورة لتقليل الحجم...");
-            let uploadFile = file;
-            if (file.type.startsWith('image/')) {
-                uploadFile = await compressImage(file);
-            }
-
-            // 3. Upload Image
-            const url = await uploadFileToStorage(uploadFile, `receipts/${user.uid}_${Date.now()}`, () => { });
-
-            // 3. Submit Request
-            await submitPayment({
-                userId: user.uid,
-                userName: user.displayName || user.email || "Unknown",
-                receiptUrl: url,
-                amount: "4500 DA",
-                plan: "yearly",
-                status: 'pending'
-            });
-
-            toast.success("تم إرسال الوصل بنجاح! سيتم تفعيل حسابك قريباً.");
-        } catch (error) {
-            console.error(error);
-            toast.error("فشل في رفع الوصل. حاول مرة أخرى.");
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (user) {
+            setDevices([
+                { id: "device_current", name: window.navigator.userAgent.slice(0, 20) + "...", lastActive: new Date(), current: true },
+                { id: "device_old", name: "iPhone 13 - Safari", lastActive: new Date(Date.now() - 86400000 * 2), current: false }
+            ]);
         }
+    }, [user]);
+
+    const handleLogoutDevice = (deviceId: string) => {
+        setDevices(devices.filter(d => d.id !== deviceId));
     };
+
+    const isSubscribed = role === 'admin' || (user as any)?.isSubscribed; // Assuming isSubscribed on user object or role
 
     return (
-        <div className="min-h-screen bg-[#050505] p-6 flex flex-col items-center justify-center font-tajawal text-white">
-            <h1 className="text-3xl font-bold mb-2">اختر باقتك الدراسية</h1>
-            <p className="text-zinc-400 mb-8">استثمر في مستقبلك مع أفضل الدروس والمراجعات</p>
+        <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-8 max-w-5xl mx-auto font-sans">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                <Link href="/dashboard" className="hover:text-primary transition-colors">الرئيسية</Link>
+                <ChevronRight className="w-4 h-4" />
+                <span className="text-foreground font-medium">اشتراكي</span>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
-                {/* Plan Card */}
-                <GlassCard className="p-8 border-primary/20 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 bg-primary text-black text-xs font-bold px-3 py-1 rounded-bl-lg">
-                        BEST VALUE
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">الباقة الذهبية (Yearly)</h3>
-                    <div className="text-4xl font-bold text-primary mb-4">4500 DA <span className="text-lg text-zinc-500 font-normal">/ سنة</span></div>
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold">إدارة الاشتراك</h1>
+                <Link href="/subscription/purchase" className="text-sm text-primary hover:underline underline-offset-4">
+                    هل تريد تجديد الاشتراك؟
+                </Link>
+            </div>
 
-                    <ul className="space-y-3 mb-8 text-zinc-300 text-sm">
-                        <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-green-500" /> جميع الدروس (فيديو 4K)
-                        </li>
-                        <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-green-500" /> البث المباشر (Live)
-                        </li>
-                        <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-green-500" /> تمارين ومقترحات حصرية
-                        </li>
-                    </ul>
-                </GlassCard>
-
-                {/* Upload Section */}
-                <GlassCard className="p-8">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-primary" />
-                        طريقة الدفع (CCP / BaridiMob)
-                    </h3>
-
-                    <div className="bg-white/5 rounded-lg p-4 space-y-3 mb-6">
-                        <div className="flex justify-between items-center">
-                            <span className="text-zinc-400 text-sm">Account Holder</span>
-                            <span className="font-mono">{HOLDER}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-zinc-400 text-sm">CCP</span>
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono text-lg text-primary">{CCP_NUMBER}</span>
-                                <Copy className="w-4 h-4 text-zinc-500 cursor-pointer hover:text-white" onClick={() => handleCopy(CCP_NUMBER)} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Status Card */}
+                <div className="md:col-span-2 space-y-6">
+                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm overflow-hidden relative">
+                        <div className={`absolute top-0 left-0 w-full h-1 ${isSubscribed ? "bg-gradient-to-r from-green-500 to-primary" : "bg-gradient-to-r from-red-500 to-orange-500"}`} />
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold mb-2">حالة الاشتراك</h2>
+                                <p className="text-muted-foreground text-sm">تفاصيل باقتك الحالية وصلاحيتها</p>
+                            </div>
+                            <div className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ${isSubscribed ?
+                                "bg-green-500/10 text-green-500 border border-green-500/20" :
+                                "bg-destructive/10 text-destructive border border-destructive/20"}`}>
+                                {isSubscribed ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                {role === 'admin' ? "مسؤول (غير محدود)" : isSubscribed ? "نشط" : "منتهي/غير مشترك"}
                             </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-zinc-400 text-sm">Clé</span>
-                            <span className="font-mono">{CLE}</span>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-muted/50 rounded-xl p-4">
+                                <div className="text-sm text-muted-foreground mb-1">الباقة</div>
+                                <div className="font-bold text-lg">{isSubscribed ? "السنة كاملة (Yearly)" : "مجاني"}</div>
+                            </div>
+                            <div className="bg-muted/50 rounded-xl p-4">
+                                <div className="text-sm text-muted-foreground mb-1">الأيام المتبقية</div>
+                                <div className={`font-bold text-lg ${isSubscribed ? "text-primary" : "text-muted-foreground"}`}>
+                                    {isSubscribed ? "365 يوم" : "0 يوم"}
+                                </div>
+                            </div>
                         </div>
+
+                        {isSubscribed && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-500/5 p-3 rounded-lg border border-blue-500/10">
+                                <Clock className="w-4 h-4 text-blue-500" />
+                                ينتهي الاشتراك في {new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString('ar-MA')}
+                            </div>
+                        )}
                     </div>
+
+                    {/* Payment History */}
+                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                            <CreditCard className="w-5 h-5 text-primary" />
+                            سجل الدفعات
+                        </h2>
+                        {payments.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-right">
+                                    <thead className="text-muted-foreground border-b border-border/50">
+                                        <tr>
+                                            <th className="pb-3 font-medium">التاريخ</th>
+                                            <th className="pb-3 font-medium">المبلغ</th>
+                                            <th className="pb-3 font-medium">الطريقة</th>
+                                            <th className="pb-3 font-medium">الحالة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/50">
+                                        {payments.map(payment => (
+                                            <tr key={payment.id} className="group hover:bg-muted/30 transition-colors">
+                                                <td className="py-4 text-foreground">{formatDistanceToNow(payment.date, { addSuffix: true, locale: arMA })}</td>
+                                                <td className="py-4 font-bold">{payment.amount}</td>
+                                                <td className="py-4 text-muted-foreground">{payment.method}</td>
+                                                <td className="py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payment.status === 'approved' ? 'bg-green-500/10 text-green-500' :
+                                                            payment.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' :
+                                                                'bg-muted text-muted-foreground'
+                                                        }`}>
+                                                        {payment.status === 'approved' ? 'مقبول' : payment.status === 'pending' ? 'قيد المراجعة' : 'منتهي'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground">لا يوجد سجل دفعات</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Device Manager */}
+                <div className="bg-card border border-border rounded-2xl p-6 shadow-sm h-fit">
+                    <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                        <Monitor className="w-5 h-5 text-primary" />
+                        الأجهزة المتصلة
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-6">إدارة الأجهزة التي يمكنها الدخول لحسابك (الحد الأقصى: 2)</p>
 
                     <div className="space-y-4">
-                        <label className="block text-sm text-zinc-400">تحميل وصل الدفع (صورة واضحة)</label>
-                        <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-xl hover:border-primary/50 transition-colors p-8 flex flex-col items-center justify-center text-center">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                            />
-                            {file ? (
-                                <div className="text-primary font-medium">{file.name}</div>
-                            ) : (
-                                <>
-                                    <Upload className="w-8 h-8 text-zinc-500 mb-2 group-hover:text-primary transition-colors" />
-                                    <span className="text-xs text-zinc-400">انقر للرفع أو اسحب الصورة هنا</span>
-                                </>
-                            )}
-                        </div>
-
-                        <Button
-                            onClick={handleUpload}
-                            disabled={!file || loading}
-                            className="w-full bg-primary text-black hover:bg-primary/90 font-bold"
-                        >
-                            {loading ? <Loader2 className="animate-spin" /> : "إرسال الوصل للتفعيل"}
-                        </Button>
+                        {devices.map(device => (
+                            <div key={device.id} className="flex items-start justify-between p-3 rounded-xl bg-muted/30 border border-border/50 group hover:border-primary/20 transition-colors">
+                                <div className="flex gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center border border-border">
+                                        {device.name.toLowerCase().includes('phone') ?
+                                            <Smartphone className="w-5 h-5 text-muted-foreground" /> :
+                                            <Monitor className="w-5 h-5 text-muted-foreground" />
+                                        }
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-sm line-clamp-1" title={device.name}>{device.name}</div>
+                                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                            {device.current ? <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> : null}
+                                            {device.current ? "الجهاز الحالي" : formatDistanceToNow(device.lastActive, { addSuffix: true, locale: arMA })}
+                                        </div>
+                                    </div>
+                                </div>
+                                {!device.current && (
+                                    <button
+                                        onClick={() => handleLogoutDevice(device.id)}
+                                        className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors"
+                                        title="تسجيل خروج الجهاز"
+                                    >
+                                        <LogOutIcon className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                </GlassCard>
+                </div>
             </div>
         </div>
     );
