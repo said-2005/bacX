@@ -20,7 +20,7 @@ interface UserData {
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserData[]>([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Simple fetch for now - in production would need pagination and algolia/search index
@@ -76,7 +76,7 @@ export default function UsersPage() {
             });
             setUsers(users.map(u => u.id === user.id ? { ...u, banned: !u.banned } : u));
             toast.success("User status updated");
-        } catch (error) {
+        } catch {
             toast.error("Failed to update status");
         }
     };
@@ -93,7 +93,7 @@ export default function UsersPage() {
             });
             setUsers(users.map(u => u.id === user.id ? { ...u, isSubscribed: true } : u));
             toast.success("Subscription activated");
-        } catch (error) {
+        } catch {
             toast.error("Failed to activate");
         }
     };

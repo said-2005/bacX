@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Tag, Check, X } from "lucide-react";
+import { Loader2, Trash2, Tag, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Plan {

@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { Monitor, Smartphone, CheckCircle, Clock, XCircle, LogOut as LogOutIcon, CreditCard, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { arMA } from "date-fns/locale";
 import Link from "next/link";
@@ -25,14 +25,19 @@ export default function SubscriptionPage() {
         // { id: 2, date: new Date(Date.now() - 86400000 * 30), amount: "2000 DZD", status: "expired", method: "BaridiMob" },
     ]);
 
+    const hasInitialized = useRef(false);
+
     useEffect(() => {
         // Safe client-side check
         const agent = typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown';
-        if (user) {
-            setDevices([
-                { id: "device_current", name: agent.slice(0, 20), lastActive: new Date(), current: true },
-                { id: "device_old", name: "Other Device", lastActive: new Date(), current: false }
-            ]);
+        if (user && !hasInitialized.current) {
+            setTimeout(() => {
+                setDevices([
+                    { id: "device_current", name: agent.slice(0, 20), lastActive: new Date(), current: true },
+                    { id: "device_old", name: "Other Device", lastActive: new Date(), current: false }
+                ]);
+                hasInitialized.current = true;
+            }, 0);
         }
     }, [user]);
 

@@ -56,7 +56,7 @@ export default function AcademicManager() {
             setLessons(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Lesson)));
         });
         return () => unsubscribe();
-    }, [selectedUnit]);
+    }, [selectedUnit, selectedSubject]);
 
     // --- HANDLERS ---
     const handleAdd = async () => {
