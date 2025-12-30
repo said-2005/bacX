@@ -70,7 +70,6 @@ export default function SignupPage() {
             router.push("/dashboard");
         } catch (error) {
             console.error(error);
-            // @ts-expect-error: error is unknown typed but we know it has code property in firebase auth
             if ((error as { code?: string }).code === 'auth/email-already-in-use') {
                 toast.error("البريد الإلكتروني مستخدم بالفعل");
             } else {
