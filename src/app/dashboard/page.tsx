@@ -1,11 +1,8 @@
 "use client";
 
-import { Suspense } from "react";
-import { TopNav } from "@/components/layout/TopNav";
 import { BacCountdown, ProgressWidget, AnnouncementsFeed, UpcomingLives } from "@/components/dashboard/Widgets";
 import { Atom, Divide, Globe, Calculator, BookOpen, ChevronRight } from "lucide-react"; // Updated Icons
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 // Mock Subjects Data (Replaced Emojis with Lucide Icons)
 const subjects = [
@@ -46,7 +43,7 @@ export default function DashboardPage() {
                         </div>
                         {/* Quick Stats or Quote (Placeholder for visual balance) */}
                         <div className="md:col-span-1 h-44 bg-white/70 backdrop-blur-md border border-white/40 shadow-sm rounded-2xl p-6 flex items-center justify-center text-center">
-                            <p className="text-slate-600 font-medium italic">"النجاح هو مجموع مجهودات صغيرة تتكرر يوماً بعد يوم."</p>
+                            <p className="text-slate-600 font-medium italic">&quot;النجاح هو مجموع مجهودات صغيرة تتكرر يوماً بعد يوم.&quot;</p>
                         </div>
                     </div>
 

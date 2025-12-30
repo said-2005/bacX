@@ -18,7 +18,7 @@ export default function AdminDashboard() {
             try {
                 // Real fetching logic
                 const usersColl = collection(db, "users");
-                const paymentsColl = collection(db, "payments");
+                // const paymentsColl = collection(db, "payments");
 
                 // Total Users
                 const usersSnapshot = await getCountFromServer(usersColl);

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, User, Crown, HelpCircle } from "lucide-react";
+import { Home, BookOpen, User, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/context/AuthContext";
+
+// import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
     { href: "/dashboard", label: "الرئيسية", icon: Home },
@@ -16,7 +17,7 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { logout } = useAuth(); // If you need logout here, though usually it's in TopNav or Profile
+    // const { logout } = useAuth(); // Unused here
 
     return (
         <aside className="fixed right-0 top-0 h-screen w-64 bg-white/80 backdrop-blur-xl border-l border-blue-100/50 flex flex-col z-50 transition-all duration-300 shadow-xl shadow-blue-900/5">

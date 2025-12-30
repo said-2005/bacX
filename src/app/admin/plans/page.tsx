@@ -71,7 +71,7 @@ export default function PlanManager() {
             });
             toast.success("تم إضافة العرض بنجاح");
             setFormData({ title: "", price: "", features: [""], isActive: true, isPopular: false });
-        } catch (error) {
+        } catch {
             toast.error("فشل الحفظ");
         } finally {
             setIsEditing(false);

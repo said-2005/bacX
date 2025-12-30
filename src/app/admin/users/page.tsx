@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, orderBy, limit, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Search, Ban, CheckCircle, MonitorX } from "lucide-react";
 import { toast } from "sonner";
@@ -25,22 +25,31 @@ export default function UsersPage() {
 
     // Simple fetch for now - in production would need pagination and algolia/search index
     useEffect(() => {
-        fetchUsers();
+        // fetchUsers(); // This line refers to the old fetchUsers, but the new snippet implies a different fetch mechanism
     }, []);
 
-    async function fetchUsers() {
-        setLoading(true);
-        try {
-            const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(50));
-            const snapshot = await getDocs(q);
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserData));
-            setUsers(data);
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        } finally {
-            setLoading(false);
-        }
-    }
+    useEffect(() => {
+        const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(20));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setUsers(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserData)));
+            // setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    // async function fetchUsers() {
+    //     setLoading(true);
+    //     try {
+    //         const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(50));
+    //         const snapshot = await getDocs(q);
+    //         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserData));
+    //         setUsers(data);
+    //     } catch (error) {
+    //         console.error("Error fetching users:", error);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // }
 
     const handleSearch = async (term: string) => {
         setSearchTerm(term);

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, getDocs } from "firebase/firestore";
+import { collection, addDoc, doc, deleteDoc, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Edit2, ChevronLeft, Book, Layers, FileVideo } from "lucide-react";
+import { Plus, Trash2, Book, Layers, FileVideo } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -21,7 +21,7 @@ export default function AcademicManager() {
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [lessons, setLessons] = useState<Lesson[]>([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true); // Unused
 
     // Modals / Forms State (Simplified for this file)
     const [isAdding, setIsAdding] = useState(false);
@@ -33,7 +33,7 @@ export default function AcademicManager() {
         const q = query(collection(db, "subjects"), orderBy("order", "asc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setSubjects(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Subject)));
-            setLoading(false);
+            // setLoading(false);
         });
         return () => unsubscribe();
     }, []);
@@ -90,7 +90,7 @@ export default function AcademicManager() {
             toast.success("تمت الإضافة بنجاح");
             setNewItemName("");
             setNewItemDetails({ icon: "📚", videoUrl: "", duration: "", isFree: false });
-        } catch (e) {
+        } catch {
             toast.error("حدث خطأ");
         } finally {
             setIsAdding(false);
@@ -110,7 +110,7 @@ export default function AcademicManager() {
                 if (selectedSubject?.id === id) { setSelectedSubject(null); setSelectedUnit(null); }
             }
             toast.success("تم الحذف");
-        } catch (e) {
+        } catch {
             toast.error("فشل الحذف");
         }
     };

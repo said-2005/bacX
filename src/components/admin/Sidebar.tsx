@@ -54,23 +54,20 @@ export function AdminSidebar() {
                 })}
             </nav>
 
-                })}
-        </nav>
-
-            {/* Footer / Logout */ }
-    <div className="p-4 border-t border-blue-50/50 bg-blue-50/10">
-        <Link href="/dashboard" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-white transition-all font-medium text-sm mb-2">
-            <LayoutDashboard className="w-5 h-5" />
-            العودة للمنصة
-        </Link>
-        <button
-            onClick={() => logout()}
-            className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-medium text-sm"
-        >
-            <LogOut className="w-5 h-5" />
-            تسجيل الخروج
-        </button>
-    </div>
+            {/* Footer / Logout */}
+            <div className="p-4 border-t border-blue-50/50 bg-blue-50/10">
+                <Link href="/dashboard" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-white transition-all font-medium text-sm mb-2">
+                    <LayoutDashboard className="w-5 h-5" />
+                    العودة للمنصة
+                </Link>
+                <button
+                    onClick={() => logout()}
+                    className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-medium text-sm"
+                >
+                    <LogOut className="w-5 h-5" />
+                    تسجيل الخروج
+                </button>
+            </div>
         </aside >
     );
 }

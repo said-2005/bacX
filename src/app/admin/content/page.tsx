@@ -49,7 +49,7 @@ export default function ContentPage() {
                 updatedAt: Timestamp.now()
             });
             toast.success("تم تحديث إعدادات البث المباشر");
-        } catch (error) {
+        } catch {
             toast.error("فشل التحديث");
         } finally {
             setLoading(false);

@@ -26,11 +26,12 @@ export default function SubscriptionPage() {
     ]);
 
     useEffect(() => {
-        if (user && typeof window !== "undefined") {
-            // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Safe client-side check
+        const agent = typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown';
+        if (user) {
             setDevices([
-                { id: "device_current", name: window.navigator.userAgent.slice(0, 20) + "...", lastActive: new Date(), current: true },
-                { id: "device_old", name: "iPhone 13 - Safari", lastActive: new Date(Date.now() - 86400000 * 2), current: false }
+                { id: "device_current", name: agent.slice(0, 20), lastActive: new Date(), current: true },
+                { id: "device_old", name: "Other Device", lastActive: new Date(), current: false }
             ]);
         }
     }, [user]);
