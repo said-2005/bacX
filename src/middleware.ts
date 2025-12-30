@@ -133,10 +133,10 @@ export async function middleware(request: NextRequest) {
 
         // --- ADMIN CHECK ---
         if (isAdminRoute) {
-            // Check for custom claim "admin" or role "admin"
-            // NOTE: Standard Firebase custom claims are at root level of decoded object usually.
-            if (claims.admin !== true && claims.role !== 'admin') {
-                // unauthorized
+            const isAdmin = claims.role === 'admin' || claims.admin === true;
+            if (!isAdmin) {
+                // Return 401/403 or redirect to home to prevent information leakage
+                // We'll redirect to home.
                 return NextResponse.redirect(new URL('/', request.url));
             }
         }

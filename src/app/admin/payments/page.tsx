@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { XCircle, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ interface PaymentRequest {
     userName: string;
     amount: string;
     method?: string;
+    planId?: string; // Optional for backward compatibility
     receiptUrl: string;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: Timestamp;
@@ -44,15 +45,28 @@ export default function PaymentsPage() {
             // 2. If Approved, Update User Subscription
             if (status === 'approved') {
                 const userRef = doc(db, "users", payment.userId);
-                // Create expiry date (1 year from now)
+
+                // Fetch Plan to get Duration
+                let durationDays = 365; // Default fallback
+                if (payment.planId) {
+                    try {
+                        const planSnapshot = await getDoc(doc(db, "plans", payment.planId));
+                        if (planSnapshot.exists()) {
+                            durationDays = planSnapshot.data().durationDays || 365;
+                        }
+                    } catch (e) {
+                        console.error("Could not fetch plan duration, using default", e);
+                    }
+                }
+
                 const expiryDate = new Date();
-                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                expiryDate.setDate(expiryDate.getDate() + durationDays);
 
                 await updateDoc(userRef, {
                     isSubscribed: true,
-                    subscriptionPlan: 'yearly',
+                    subscriptionPlan: payment.planId || 'yearly',
                     subscriptionExpiry: expiryDate,
-                    role: 'student' // Ensure role is student not guest
+                    role: 'student'
                 });
             }
 

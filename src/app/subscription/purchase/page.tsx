@@ -1,20 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Upload, CheckCircle, Smartphone, Landmark } from "lucide-react";
+import { Upload, CheckCircle, Smartphone, Landmark, Loader2, Crown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+interface Plan {
+    id: string;
+    title: string;
+    price: string;
+    durationDays: number;
+    features: string[];
+    isPopular: boolean;
+}
 
 export default function PurchasePage() {
     const { user } = useAuth();
     const router = useRouter();
     const [selectedMethod, setSelectedMethod] = useState<"CCP" | "BaridiMob">("CCP");
+
+    // Plans State
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+    const [loadingPlans, setLoadingPlans] = useState(true);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
-    // In a real app, this would handle file upload to Storage
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
     const methods = {
@@ -30,23 +44,49 @@ export default function PurchasePage() {
         }
     };
 
+    // Fetch Active Plans
+    useEffect(() => {
+        async function fetchPlans() {
+            try {
+                const q = query(collection(db, "plans"), where("isActive", "==", true), orderBy("price", "asc"));
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Plan));
+                setPlans(data);
+                // Default to first 'popular' plan or first plan
+                if (data.length > 0) {
+                    const defaultPlan = data.find(p => p.isPopular) || data[0];
+                    setSelectedPlanId(defaultPlan.id);
+                }
+            } catch (err) {
+                console.error("Error fetching plans", err);
+                toast.error("فشل تحميل الباقات");
+            } finally {
+                setLoadingPlans(false);
+            }
+        }
+        fetchPlans();
+    }, []);
+
     const handleSubmit = async () => {
         if (!user) return;
-        if (!receiptFile) {
-            toast.error("يرجى إرفاق صورة الوصل");
-            return;
-        }
+        if (!receiptFile) return toast.error("يرجى إرفاق صورة الوصل");
+        if (!selectedPlanId) return toast.error("يرجى اختيار باقة");
 
         setIsSubmitting(true);
         try {
-            // Mock Upload - in real world upload to storage and get URL
+            const selectedPlan = plans.find(p => p.id === selectedPlanId);
+            const amount = selectedPlan ? `${selectedPlan.price} DZD` : "Unknown Amount";
+
+            // Mock Upload
             const mockReceiptUrl = "https://fake-url.com/receipt.jpg";
 
             await addDoc(collection(db, "payments"), {
                 userId: user.uid,
                 userEmail: user.email,
                 userName: user.displayName,
-                amount: "4500 DZD",
+                amount: amount,
+                planId: selectedPlanId, // Vital for expiry logic
+                planTitle: selectedPlan?.title || "Unknown Plan",
                 method: selectedMethod,
                 receiptUrl: mockReceiptUrl,
                 status: "pending",
@@ -63,25 +103,54 @@ export default function PurchasePage() {
         }
     };
 
+    // const selectedPlan = plans.find(p => p.id === selectedPlanId);
+
     return (
         <div className="min-h-screen bg-slate-50 p-6 flex justify-center items-center font-tajawal direction-rtl text-slate-900">
-            <div className="max-w-2xl w-full bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-                <h1 className="text-2xl font-bold mb-6 text-center">تجديد الاشتراك السنوي</h1>
+            <div className="max-w-3xl w-full bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+                <h1 className="text-2xl font-bold mb-6 text-center">تجديد الاشتراك</h1>
 
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                        <CheckCircle className="w-6 h-6" />
+                {/* 1. PLANS SELECTION */}
+                {loadingPlans ? (
+                    <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        {plans.map(plan => (
+                            <div
+                                key={plan.id}
+                                onClick={() => setSelectedPlanId(plan.id)}
+                                className={`relative border-2 rounded-2xl p-6 cursor-pointer transition-all ${selectedPlanId === plan.id
+                                    ? "border-blue-500 bg-blue-50/50"
+                                    : "border-transparent bg-slate-50 hover:bg-slate-100"
+                                    }`}
+                            >
+                                {plan.isPopular && (
+                                    <div className="absolute -top-3 right-4 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                                        <Crown className="w-3 h-3" /> الأكثر طلباً
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-lg">{plan.title}</h3>
+                                    {selectedPlanId === plan.id && <CheckCircle className="w-6 h-6 text-blue-500" />}
+                                </div>
+                                <div className="text-2xl font-bold text-blue-600 mb-2">{plan.price} <span className="text-sm text-slate-500">DZD</span></div>
+                                <div className="text-xs text-slate-500 mb-4">{plan.durationDays || 365} يوم</div>
+                                <ul className="space-y-1">
+                                    {plan.features.slice(0, 3).map((f, i) => (
+                                        <li key={i} className="text-xs text-slate-600 flex items-center gap-1">
+                                            <div className="w-1 h-1 bg-slate-400 rounded-full" /> {f}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
                     </div>
-                    <div>
-                        <h3 className="font-bold text-blue-900">الباقة الشاملة (Full Access)</h3>
-                        <p className="text-sm text-blue-600/80">وصول كامل لجميع الدروس والتمارين لمدة سنة كاملة.</p>
-                    </div>
-                    <div className="mr-auto font-bold text-xl text-blue-600">4500 د.ج</div>
-                </div>
+                )}
 
-                <div className="space-y-6">
+                {/* 2. PAYMENT & UPLOAD */}
+                <div className="space-y-6 pt-6 border-t border-slate-100">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">اختر طريقة الدفع</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">طريقة الدفع</label>
                         <div className="grid grid-cols-2 gap-4">
                             {(Object.keys(methods) as Array<"CCP" | "BaridiMob">).map((method) => (
                                 <button
