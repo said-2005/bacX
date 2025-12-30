@@ -68,7 +68,7 @@ export function TopNav() {
 
     const handleLogout = async () => {
         await logout();
-        router.push("/auth");
+        router.push("/auth/login");
     };
 
     return (
