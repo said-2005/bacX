@@ -1,40 +1,111 @@
-import { BookOpen, Calculator, FlaskConical, Languages, Microscope, Scale } from "lucide-react";
+import { BookOpen, Calculator, FlaskConical, Languages, Microscope, Scale, ChevronLeft, Clock } from "lucide-react";
 import Link from "next/link";
 
+// Subject data with progress tracking
 const subjects = [
-    { id: 'math', name: 'الرياضيات', icon: Calculator },
-    { id: 'physics', name: 'الفيزياء', icon: FlaskConical },
-    { id: 'science', name: 'العلوم الطبيعية', icon: Microscope },
-    { id: 'arabic', name: 'الأدب العربي', icon: BookOpen },
-    { id: 'languages', name: 'اللغات الأجنبية', icon: Languages },
-    { id: 'philosophy', name: 'الفلسفة', icon: Scale },
+    { id: 'math', name: 'الرياضيات', icon: Calculator, lessons: 45, completed: 12 },
+    { id: 'physics', name: 'الفيزياء', icon: FlaskConical, lessons: 38, completed: 8 },
+    { id: 'science', name: 'العلوم الطبيعية', icon: Microscope, lessons: 32, completed: 22 },
+    { id: 'arabic', name: 'الأدب العربي', icon: BookOpen, lessons: 28, completed: 5 },
+    { id: 'languages', name: 'اللغات الأجنبية', icon: Languages, lessons: 25, completed: 10 },
+    { id: 'philosophy', name: 'الفلسفة', icon: Scale, lessons: 22, completed: 0 },
 ];
 
 export default function SubjectsPage() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-blue-50 text-slate-900 p-6 pb-24 font-tajawal direction-rtl">
-            <div className="max-w-6xl mx-auto">
-                <div className="bg-white/80 backdrop-blur-md border border-blue-100/50 shadow-sm rounded-3xl p-8 mb-8">
-                    <h1 className="text-3xl font-bold mb-2 text-slate-900">المواد الدراسية</h1>
-                    <p className="text-slate-600">اختر المادة لتصفح الدروس والتمارين</p>
+        <div className="max-w-4xl mx-auto">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-6">
+                <Link href="/dashboard" className="hover:text-slate-600">الرئيسية</Link>
+                <ChevronLeft className="w-3 h-3" />
+                <span className="text-slate-700">المواد الدراسية</span>
+            </div>
+
+            {/* Header */}
+            <header className="mb-8">
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">كتالوج المواد</h1>
+                <p className="text-sm text-slate-500">اختر المادة للوصول إلى الدروس والتمارين</p>
+            </header>
+
+            {/* Subjects List — Professional Catalog */}
+            <div className="panel">
+                <div className="panel-header">
+                    <span className="panel-title">المواد المتاحة</span>
+                    <span className="text-xs text-slate-400">{subjects.length} مادة</span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subjects.map((subject) => (
-                        <Link
-                            key={subject.id}
-                            href={`/subject/${subject.name}`}
-                            className="group p-6 rounded-2xl bg-white/50 border border-blue-100/30 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50 backdrop-blur-sm transition-all duration-300"
-                        >
-                            <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                                <subject.icon className="w-7 h-7 text-blue-600" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-2 text-slate-800 group-hover:text-blue-700 transition-colors">{subject.name}</h3>
-                            <p className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors">
-                                تصفح جميع دروس {subject.name}
-                            </p>
-                        </Link>
-                    ))}
+                <div className="divide-y divide-slate-100">
+                    {subjects.map((subject) => {
+                        const Icon = subject.icon;
+                        const progress = Math.round((subject.completed / subject.lessons) * 100);
+                        const status = subject.completed === 0 ? 'new' :
+                            subject.completed === subject.lessons ? 'complete' : 'progress';
+
+                        return (
+                            <Link
+                                key={subject.id}
+                                href={`/subject/${subject.id}`}
+                                className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
+                            >
+                                {/* Icon */}
+                                <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                                    <Icon className="w-5 h-5 text-slate-500" />
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-semibold text-slate-800">{subject.name}</h3>
+                                        <span className={`badge ${status === 'complete' ? 'badge-success' :
+                                                status === 'progress' ? 'badge-info' :
+                                                    'badge-neutral'
+                                            }`}>
+                                            {status === 'complete' ? 'مكتمل' :
+                                                status === 'progress' ? 'جاري' : 'جديد'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                                        <span>{subject.lessons} درس</span>
+                                        <span>{subject.completed} مكتمل</span>
+                                    </div>
+                                </div>
+
+                                {/* Progress */}
+                                <div className="w-32 hidden sm:block">
+                                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                        <span>التقدم</span>
+                                        <span>{progress}%</span>
+                                    </div>
+                                    <div className="progress">
+                                        <div
+                                            className={`progress-fill ${status === 'complete' ? 'bg-emerald-500' : 'bg-slate-600'
+                                                }`}
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Arrow */}
+                                <ChevronLeft className="w-4 h-4 text-slate-300" />
+                            </Link>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-4 mt-6">
+                <div className="metric text-center">
+                    <div className="metric-value text-xl">190</div>
+                    <div className="metric-label">إجمالي الدروس</div>
+                </div>
+                <div className="metric text-center">
+                    <div className="metric-value text-xl">57</div>
+                    <div className="metric-label">دروس مكتملة</div>
+                </div>
+                <div className="metric text-center">
+                    <div className="metric-value text-xl">30%</div>
+                    <div className="metric-label">نسبة الإنجاز</div>
                 </div>
             </div>
         </div>

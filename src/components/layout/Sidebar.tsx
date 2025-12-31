@@ -22,78 +22,71 @@ export function Sidebar() {
 
             {/* Logo */}
             <div className="h-14 flex items-center px-5 border-b border-slate-100">
-                <Link href="/" className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 bg-slate-900 rounded flex items-center justify-center">
+                <Link href="/" className="flex items-center gap-2">
+                    <div className="w-7 h-7 bg-slate-900 rounded-sm flex items-center justify-center">
                         <GraduationCap className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-base font-semibold text-slate-800 tracking-tight">
-                        bac<span className="text-blue-600">X</span>
+                    <span className="text-base font-bold text-slate-900 tracking-tight">
+                        BACX
                     </span>
                 </Link>
             </div>
 
-            {/* Navigation Section */}
+            {/* Navigation */}
             <div className="flex-1 py-4 px-3">
-                <div className="mb-6">
-                    <p className="px-3 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                        القائمة الرئيسية
-                    </p>
-                    <nav className="space-y-0.5">
-                        {navItems.map((item) => {
-                            const isActive = pathname === item.href ||
-                                (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                            const Icon = item.icon;
+                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    القائمة
+                </p>
+                <nav className="space-y-0.5">
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href ||
+                            (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                        const Icon = item.icon;
 
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    prefetch={true}
-                                    className={cn(
-                                        "nav-item",
-                                        isActive && "active"
-                                    )}
-                                >
-                                    <Icon className="w-4 h-4" />
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-                </div>
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                prefetch={true}
+                                className={cn(
+                                    "nav-link",
+                                    isActive && "active"
+                                )}
+                            >
+                                <Icon className="w-4 h-4" />
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </nav>
 
                 {/* Admin Section */}
                 {role === 'admin' && (
-                    <div>
-                        <p className="px-3 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <div className="mt-6">
+                        <p className="px-3 mb-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                             الإدارة
                         </p>
-                        <nav className="space-y-0.5">
-                            <Link
-                                href="/admin"
-                                prefetch={true}
-                                className={cn(
-                                    "nav-item",
-                                    pathname.startsWith('/admin') && "active"
-                                )}
-                            >
-                                <Settings className="w-4 h-4" />
-                                لوحة التحكم
-                            </Link>
-                        </nav>
+                        <Link
+                            href="/admin"
+                            prefetch={true}
+                            className={cn(
+                                "nav-link",
+                                pathname.startsWith('/admin') && "active"
+                            )}
+                        >
+                            <Settings className="w-4 h-4" />
+                            لوحة التحكم
+                        </Link>
                     </div>
                 )}
             </div>
 
             {/* Footer */}
             <div className="p-4 border-t border-slate-100">
-                <div className="p-4 bg-slate-50 rounded">
-                    <p className="text-xs font-medium text-slate-600 mb-1">الاشتراك المميز</p>
-                    <p className="text-[10px] text-slate-400 mb-3">وصول كامل لجميع المحتوى</p>
-                    <Link
-                        href="/subscription"
-                        className="btn-primary w-full text-xs"
-                    >
+                <div className="p-4 bg-slate-50 rounded-sm">
+                    <p className="text-xs font-semibold text-slate-700 mb-1">الاشتراك المميز</p>
+                    <p className="text-[10px] text-slate-400 mb-3">وصول كامل للمحتوى</p>
+                    <Link href="/subscription" className="btn btn-primary w-full text-xs">
                         ترقية الحساب
                     </Link>
                 </div>
