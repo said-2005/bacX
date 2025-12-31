@@ -4,17 +4,6 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
-import { memo } from "react";
-
-// Memoize background mesh to prevent re-renders
-const AmbientBackground = memo(function AmbientBackground() {
-    return (
-        <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
-            <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full mix-blend-multiply" />
-            <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full mix-blend-multiply" />
-        </div>
-    );
-});
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -32,11 +21,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // During auth loading, show minimal layout to prevent flash
-    // The AuthContext already shows a loading spinner, so just render children
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex font-sans text-foreground">
-                <div className="flex-1 p-8 mr-64">
+            <div className="min-h-screen bg-white flex">
+                <div className="flex-1 p-6 mr-56">
                     {children}
                 </div>
             </div>
@@ -44,19 +32,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // If no user after loading completes, don't render the shell
-    // (middleware will redirect, but this prevents flash)
     if (!user) {
         return <>{children}</>;
     }
 
-    // Authenticated user - render full shell
+    // Authenticated user - render full shell (clean, no ambient effects)
     return (
-        <div className="min-h-screen bg-background flex font-sans text-foreground relative overflow-hidden">
-            <AmbientBackground />
+        <div className="min-h-screen bg-white flex">
             <Sidebar />
-            <div className="flex-1 flex flex-col mr-60 relative z-10 transition-all duration-200">
+            <div className="flex-1 flex flex-col mr-56">
                 <TopNav />
-                <main className="flex-1 p-8 overflow-y-auto">
+                <main className="flex-1 p-6 overflow-y-auto bg-slate-50/50">
                     {children}
                 </main>
             </div>
