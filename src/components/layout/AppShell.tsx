@@ -4,12 +4,13 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { user, loading } = useAuth();
 
-    // Routes that should NOT have the dashboard layout (public pages)
+    // Routes that should NOT have the dashboard layout
     const publicRoutes = ['/', '/auth', '/maintenance'];
     const isPublicRoute = publicRoutes.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
@@ -20,32 +21,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return <>{children}</>;
     }
 
-    // During auth loading, show minimal layout to prevent flash
+    // During auth loading
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex">
-                <div className="flex-1 p-6 mr-56">
-                    {children}
-                </div>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
-    // If no user after loading completes, don't render the shell
+    // If no user after loading
     if (!user) {
         return <>{children}</>;
     }
 
-    // Authenticated user - render full shell (clean, no ambient effects)
+    // Authenticated user — Fluid layout with floating sidebar
     return (
-        <div className="min-h-screen bg-white flex">
+        <div className="min-h-screen font-sans relative">
+            {/* Mesh Gradient Background */}
+            <div className="mesh-gradient" />
+
+            {/* Floating Sidebar */}
             <Sidebar />
-            <div className="flex-1 flex flex-col mr-56">
-                <TopNav />
-                <main className="flex-1 p-6 overflow-y-auto bg-slate-50/50">
+
+            {/* Top Navigation */}
+            <TopNav />
+
+            {/* Main Content — Fluid Layout */}
+            <AnimatePresence mode="wait">
+                <motion.main
+                    key={pathname}
+                    className="min-h-screen pt-20 pb-8 px-6 pr-24"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                >
                     {children}
-                </main>
-            </div>
+                </motion.main>
+            </AnimatePresence>
         </div>
     );
 }

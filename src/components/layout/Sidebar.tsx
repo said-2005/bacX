@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, User, Crown, Settings, GraduationCap } from "lucide-react";
+import { Home, BookOpen, User, Crown, Settings } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,79 +19,71 @@ export function Sidebar() {
     const { role } = useAuth();
 
     return (
-        <aside className="fixed right-0 top-0 h-screen w-56 bg-white border-l border-slate-200 flex flex-col z-50">
-
+        <motion.aside
+            className="sidebar-floating"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.2 }}
+        >
             {/* Logo */}
-            <div className="h-14 flex items-center px-5 border-b border-slate-100">
-                <Link href="/" className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-slate-900 rounded-sm flex items-center justify-center">
-                        <GraduationCap className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-base font-bold text-slate-900 tracking-tight">
-                        BACX
-                    </span>
-                </Link>
-            </div>
+            <Link href="/" className="nav-item mb-4 bg-blue-500 text-white !w-12 !h-12">
+                <span className="text-lg font-bold">B</span>
+            </Link>
+
+            {/* Divider */}
+            <div className="w-6 h-px bg-slate-200 mx-auto my-2" />
 
             {/* Navigation */}
-            <div className="flex-1 py-4 px-3">
-                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                    القائمة
-                </p>
-                <nav className="space-y-0.5">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href ||
-                            (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                        const Icon = item.icon;
+            <nav className="flex flex-col">
+                {navItems.map((item) => {
+                    const isActive = pathname === item.href ||
+                        (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                    const Icon = item.icon;
 
-                        return (
+                    return (
+                        <motion.div
+                            key={item.href}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
                             <Link
-                                key={item.href}
                                 href={item.href}
                                 prefetch={true}
                                 className={cn(
-                                    "nav-link",
+                                    "nav-item",
                                     isActive && "active"
                                 )}
+                                title={item.label}
                             >
-                                <Icon className="w-4 h-4" />
-                                {item.label}
+                                <Icon className="w-5 h-5" />
                             </Link>
-                        );
-                    })}
-                </nav>
+                        </motion.div>
+                    );
+                })}
 
-                {/* Admin Section */}
+                {/* Admin Link */}
                 {role === 'admin' && (
-                    <div className="mt-6">
-                        <p className="px-3 mb-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                            الإدارة
-                        </p>
-                        <Link
-                            href="/admin"
-                            prefetch={true}
-                            className={cn(
-                                "nav-link",
-                                pathname.startsWith('/admin') && "active"
-                            )}
+                    <>
+                        <div className="w-6 h-px bg-slate-200 mx-auto my-2" />
+                        <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
                         >
-                            <Settings className="w-4 h-4" />
-                            لوحة التحكم
-                        </Link>
-                    </div>
+                            <Link
+                                href="/admin"
+                                prefetch={true}
+                                className={cn(
+                                    "nav-item",
+                                    pathname.startsWith('/admin') && "active"
+                                )}
+                                title="لوحة التحكم"
+                            >
+                                <Settings className="w-5 h-5" />
+                            </Link>
+                        </motion.div>
+                    </>
                 )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-100">
-                <div className="p-4 bg-slate-50 rounded-sm">
-                    <p className="text-xs font-semibold text-slate-700 mb-1">الاشتراك المميز</p>
-                    <p className="text-[10px] text-slate-400 mb-3">وصول كامل للمحتوى</p>
-                    <Link href="/subscription" className="btn btn-primary w-full text-xs">
-                        ترقية الحساب
-                    </Link>
-                </div>
-            </div>
-        </aside>
+            </nav>
+        </motion.aside>
     );
 }
