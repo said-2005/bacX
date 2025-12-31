@@ -1,15 +1,30 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { Bell, Search, LogOut, Radio } from "lucide-react";
+import { Bell, Search, LogOut, Radio, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { collection, query, where, orderBy, onSnapshot, doc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Breadcrumb mapping
+const routeLabels: Record<string, string> = {
+    "dashboard": "لوحة التحكم",
+    "subjects": "المواد الدراسية",
+    "subject": "المادة",
+    "subscription": "الاشتراك",
+    "profile": "الحساب",
+    "video": "الدرس",
+    "live": "البث المباشر",
+    "admin": "الإدارة",
+    "search": "البحث",
+};
+
 export function TopNav() {
     const { user, logout } = useAuth();
+    const pathname = usePathname();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isLiveActive, setIsLiveActive] = useState(false);
 
@@ -23,6 +38,29 @@ export function TopNav() {
     const [unreadCount, setUnreadCount] = useState(0);
 
     const profileRef = useRef<HTMLDivElement>(null);
+
+    // Generate breadcrumbs from pathname
+    const generateBreadcrumbs = () => {
+        const segments = pathname.split('/').filter(Boolean);
+        const crumbs: { label: string; href: string }[] = [
+            { label: "الرئيسية", href: "/" }
+        ];
+
+        let currentPath = "";
+        segments.forEach((segment, index) => {
+            currentPath += `/${segment}`;
+            const label = routeLabels[segment] || segment;
+            if (index < segments.length - 1) {
+                crumbs.push({ label, href: currentPath });
+            } else {
+                crumbs.push({ label, href: "" }); // Current page, no link
+            }
+        });
+
+        return crumbs;
+    };
+
+    const breadcrumbs = generateBreadcrumbs();
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -61,108 +99,107 @@ export function TopNav() {
     }, [user]);
 
     return (
-        <motion.header
-            className="fixed top-4 left-4 right-24 z-40"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        >
-            <div className="glass-card py-3 px-6 flex items-center justify-between">
-                {/* Search */}
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="ابحث عن درس..."
-                        className="w-full bg-white/50 backdrop-blur-sm rounded-full py-2.5 pr-10 pl-4 text-sm text-slate-600 placeholder:text-slate-400 outline-none border border-white/50 focus:border-blue-300 focus:bg-white transition-all"
-                    />
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-3">
-                    {/* Live Indicator */}
-                    {isLiveActive && (
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 400 }}
-                        >
-                            <Link
-                                href="/live"
-                                className="glass-pill px-4 py-2 flex items-center gap-2 text-red-500"
-                            >
-                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse-soft" />
-                                <span className="text-xs font-medium">مباشر</span>
+        <header className="topnav-notion">
+            {/* Breadcrumbs */}
+            <nav className="breadcrumb">
+                {breadcrumbs.map((crumb, index) => (
+                    <span key={index} className="flex items-center">
+                        {index > 0 && <span className="breadcrumb-separator">/</span>}
+                        {crumb.href ? (
+                            <Link href={crumb.href} className="breadcrumb-link">
+                                {crumb.label}
                             </Link>
-                        </motion.div>
-                    )}
-
-                    {/* Notifications */}
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="relative p-2.5 rounded-full bg-white/50 hover:bg-white text-slate-500 transition-colors"
-                    >
-                        <Bell className="w-5 h-5" />
-                        {unreadCount > 0 && (
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                        ) : (
+                            <span className="breadcrumb-current">{crumb.label}</span>
                         )}
-                    </motion.button>
+                    </span>
+                ))}
+            </nav>
 
-                    {/* Profile */}
-                    <div className="relative" ref={profileRef}>
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setIsProfileOpen(!isProfileOpen)}
-                            className="flex items-center gap-3 py-2 px-3 rounded-full bg-white/50 hover:bg-white transition-colors"
-                        >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium text-sm">
-                                {user?.displayName?.[0]?.toUpperCase() || "U"}
-                            </div>
-                            <span className="text-sm font-medium text-slate-700 hidden sm:block">
-                                {user?.displayName?.split(' ')[0] || "المستخدم"}
-                            </span>
-                        </motion.button>
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+                {/* Search */}
+                <Link
+                    href="/search"
+                    className="btn-notion btn-ghost"
+                >
+                    <Search className="w-4 h-4" />
+                </Link>
 
-                        {/* Dropdown */}
-                        <AnimatePresence>
-                            {isProfileOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                    className="absolute left-0 mt-2 w-48 glass-card p-2 overflow-hidden"
-                                >
+                {/* Live Indicator */}
+                {isLiveActive && (
+                    <Link href="/live" className="flex items-center gap-1.5 px-2 py-1 text-red-500 text-xs font-medium">
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        مباشر
+                    </Link>
+                )}
+
+                {/* Notifications */}
+                <button className="btn-notion btn-ghost relative">
+                    <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                </button>
+
+                {/* Profile */}
+                <div className="relative" ref={profileRef}>
+                    <button
+                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                        className="btn-notion btn-ghost flex items-center gap-2"
+                    >
+                        <div className="w-6 h-6 rounded bg-[var(--foreground)] text-white flex items-center justify-center text-xs font-medium">
+                            {user?.displayName?.[0]?.toUpperCase() || "U"}
+                        </div>
+                        <ChevronDown className="w-3 h-3" />
+                    </button>
+
+                    {/* Dropdown */}
+                    <AnimatePresence>
+                        {isProfileOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute left-0 mt-2 w-48 bg-white border border-[var(--border)] rounded-lg shadow-[var(--shadow-dropdown)] overflow-hidden z-50"
+                            >
+                                <div className="p-3 border-b border-[var(--border)]">
+                                    <p className="text-sm font-medium text-[var(--foreground)]">
+                                        {user?.displayName || "المستخدم"}
+                                    </p>
+                                    <p className="text-xs text-[var(--foreground-tertiary)] truncate">
+                                        {user?.email}
+                                    </p>
+                                </div>
+                                <div className="p-1">
                                     <Link
                                         href="/profile"
                                         onClick={() => setIsProfileOpen(false)}
-                                        className="flex items-center gap-2 p-3 text-sm text-slate-600 hover:bg-white/80 rounded-xl transition-colors"
+                                        className="block px-3 py-2 text-sm text-[var(--foreground-secondary)] hover:bg-[var(--background-hover)] rounded transition-colors"
                                     >
                                         الملف الشخصي
                                     </Link>
                                     <Link
                                         href="/subscription"
                                         onClick={() => setIsProfileOpen(false)}
-                                        className="flex items-center gap-2 p-3 text-sm text-slate-600 hover:bg-white/80 rounded-xl transition-colors"
+                                        className="block px-3 py-2 text-sm text-[var(--foreground-secondary)] hover:bg-[var(--background-hover)] rounded transition-colors"
                                     >
                                         الاشتراك
                                     </Link>
-                                    <div className="h-px bg-slate-100 my-1" />
                                     <button
                                         onClick={logout}
-                                        className="flex items-center gap-2 w-full p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded transition-colors"
                                     >
                                         <LogOut className="w-4 h-4" />
                                         تسجيل الخروج
                                     </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
-        </motion.header>
+        </header>
     );
 }

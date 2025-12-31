@@ -24,8 +24,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // During auth loading
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-[var(--foreground)] border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
@@ -35,27 +35,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return <>{children}</>;
     }
 
-    // Authenticated user — Fluid layout with floating sidebar
+    // Authenticated user — Notion-style layout
     return (
-        <div className="min-h-screen font-sans relative">
-            {/* Mesh Gradient Background */}
-            <div className="mesh-gradient" />
-
-            {/* Floating Sidebar */}
+        <div className="min-h-screen bg-white font-sans">
+            {/* Sidebar — Right side (RTL) */}
             <Sidebar />
 
-            {/* Top Navigation */}
+            {/* Top Navigation with Breadcrumbs */}
             <TopNav />
 
-            {/* Main Content — Fluid Layout */}
+            {/* Main Content */}
             <AnimatePresence mode="wait">
                 <motion.main
                     key={pathname}
-                    className="min-h-screen pt-20 pb-8 px-6 pr-24"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    className="min-h-screen pt-12 pr-[240px]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                 >
                     {children}
                 </motion.main>

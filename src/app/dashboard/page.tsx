@@ -3,183 +3,194 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { Clock, Calendar, Bell, Radio, ExternalLink, Sparkles } from "lucide-react";
+import { Clock, Calendar, Bell, Radio, ChevronRight, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
+import { differenceInDays, differenceInHours, format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { collection, query, orderBy, limit, onSnapshot, doc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Animation variants
-const fadeSlide = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+const fadeIn = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
 const stagger = {
-    visible: {
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
+    visible: { transition: { staggerChildren: 0.1 } }
 };
 
 // =============================================================================
-// FLUID DASHBOARD
+// NOTION-STYLE DASHBOARD
 // =============================================================================
 export default function DashboardPage() {
+    const { user } = useAuth();
+    const displayName = user?.displayName?.split(' ')[0] || 'طالب';
+
     return (
-        <>
-            {/* Animated Mesh Gradient Background */}
-            <div className="mesh-gradient" />
-
-            <motion.div
-                className="max-w-4xl mx-auto space-y-8"
-                initial="hidden"
-                animate="visible"
-                variants={stagger}
-            >
-                {/* PILLAR 1: Poetic Hero */}
-                <motion.div variants={fadeSlide}>
-                    <PoetryHero />
-                </motion.div>
-
-                {/* PILLAR 2: Floating Countdown Pill */}
-                <motion.div variants={fadeSlide} className="flex justify-center">
-                    <CountdownPill />
-                </motion.div>
-
-                {/* PILLAR 3: Fluid Timeline Program */}
-                <motion.div variants={fadeSlide}>
-                    <FluidProgram />
-                </motion.div>
-
-                {/* PILLAR 4: Card-less Feed */}
-                <motion.div variants={fadeSlide}>
-                    <FluidNewsroom />
-                </motion.div>
+        <motion.div
+            className="page-container py-8"
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+        >
+            {/* Breadcrumb */}
+            <motion.div variants={fadeIn} className="breadcrumb">
+                <Link href="/" className="breadcrumb-link">الرئيسية</Link>
+                <span className="breadcrumb-separator">/</span>
+                <span className="breadcrumb-current">لوحة التحكم</span>
             </motion.div>
-        </>
+
+            {/* Page Title */}
+            <motion.div variants={fadeIn} className="mb-8">
+                <h1 className="text-2xl font-bold text-[var(--foreground)]">
+                    مرحباً، {displayName} 👋
+                </h1>
+                <p className="text-[var(--foreground-secondary)] mt-1">
+                    استمر في رحلة التفوق
+                </p>
+            </motion.div>
+
+            {/* PILLAR 1: Poetry Block */}
+            <motion.div variants={fadeIn}>
+                <PoetryBlock />
+            </motion.div>
+
+            {/* PILLAR 2: BAC Timeline Block */}
+            <motion.div variants={fadeIn}>
+                <TimelineBlock />
+            </motion.div>
+
+            {/* PILLAR 3: Study Agenda (Database List) */}
+            <motion.div variants={fadeIn}>
+                <AgendaBlock />
+            </motion.div>
+
+            {/* PILLAR 4: Official Feed */}
+            <motion.div variants={fadeIn}>
+                <FeedBlock />
+            </motion.div>
+        </motion.div>
     );
 }
 
 // =============================================================================
-// PILLAR 1: POETRY HERO with Mesh Background
+// PILLAR 1: POETRY BLOCK
 // =============================================================================
-function PoetryHero() {
+function PoetryBlock() {
     return (
-        <motion.div
-            className="poetry-hero"
-            whileHover={{ scale: 1.01 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        >
-            <Sparkles className="w-6 h-6 text-blue-400 mx-auto mb-4 opacity-50" />
+        <div className="poetry-block">
+            <Sparkles className="w-5 h-5 mx-auto mb-4 text-[var(--foreground-tertiary)]" />
             <p className="poetry-text">
                 العِلمُ يَرفَعُ بَيْتاً لا عِمادَ لَهُ<br />
                 والجَهلُ يَهدِمُ بَيْتَ العِزِّ والشَّرَفِ
             </p>
             <p className="poetry-author">— الإمام علي بن أبي طالب</p>
-        </motion.div>
+        </div>
     );
 }
 
 // =============================================================================
-// PILLAR 2: FLOATING COUNTDOWN PILL
+// PILLAR 2: TIMELINE BLOCK
 // =============================================================================
-function CountdownPill() {
-    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+function TimelineBlock() {
+    const [daysLeft, setDaysLeft] = useState(0);
     const bacDate = new Date("2025-06-01T08:00:00");
+    const startDate = new Date("2024-09-01");
+
+    const totalDays = differenceInDays(bacDate, startDate);
 
     useEffect(() => {
-        const tick = () => {
-            const now = new Date();
-            setTimeLeft({
-                days: Math.max(0, differenceInDays(bacDate, now)),
-                hours: Math.max(0, differenceInHours(bacDate, now) % 24),
-                minutes: Math.max(0, differenceInMinutes(bacDate, now) % 60)
-            });
-        };
-        tick();
-        const interval = setInterval(tick, 60000);
-        return () => clearInterval(interval);
+        const now = new Date();
+        setDaysLeft(Math.max(0, differenceInDays(bacDate, now)));
     }, []);
 
+    const daysElapsed = totalDays - daysLeft;
+    const progressPercent = Math.min(Math.max((daysElapsed / totalDays) * 100, 0), 100);
+
     return (
-        <motion.div
-            className="countdown-pill"
-            whileHover={{ scale: 1.02, y: -2 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-            <div className="countdown-segment">
-                <div className="countdown-value">{timeLeft.days}</div>
-                <div className="countdown-label">يوم</div>
+        <div className="block">
+            <div className="block-header">
+                <Clock className="block-header-icon" />
+                <span>العد التنازلي</span>
             </div>
-            <span className="countdown-separator">:</span>
-            <div className="countdown-segment">
-                <div className="countdown-value">{String(timeLeft.hours).padStart(2, '0')}</div>
-                <div className="countdown-label">ساعة</div>
+
+            <div className="flex items-center justify-between mb-3">
+                <div>
+                    <span className="text-3xl font-bold text-[var(--foreground)]">{daysLeft}</span>
+                    <span className="text-[var(--foreground-secondary)] mr-2">يوم متبقي للبكالوريا</span>
+                </div>
+                <span className="text-sm text-[var(--foreground-tertiary)]">
+                    {format(bacDate, "d MMMM yyyy", { locale: ar })}
+                </span>
             </div>
-            <span className="countdown-separator">:</span>
-            <div className="countdown-segment">
-                <div className="countdown-value">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                <div className="countdown-label">دقيقة</div>
+
+            <div className="progress-pill">
+                <div
+                    className="progress-pill-fill"
+                    style={{ width: `${progressPercent}%` }}
+                />
             </div>
-        </motion.div>
+
+            <div className="flex justify-between mt-2 text-xs text-[var(--foreground-tertiary)]">
+                <span>سبتمبر 2024</span>
+                <span>{Math.round(progressPercent)}% من السنة</span>
+                <span>جوان 2025</span>
+            </div>
+        </div>
     );
 }
 
 // =============================================================================
-// PILLAR 3: FLUID TIMELINE PROGRAM
+// PILLAR 3: AGENDA BLOCK (Database List View)
 // =============================================================================
 const weeklySchedule = [
-    { day: "الأحد", time: "17:00", subject: "الرياضيات", topic: "الدوال العددية" },
-    { day: "الإثنين", time: "17:00", subject: "الفيزياء", topic: "التحولات النووية" },
-    { day: "الثلاثاء", time: "18:00", subject: "العلوم", topic: "التركيب الضوئي" },
-    { day: "الأربعاء", time: "17:00", subject: "الرياضيات", topic: "الأعداد المركبة" },
-    { day: "الخميس", time: "17:00", subject: "الفيزياء", topic: "الظواهر الكهربائية" },
+    { day: "الأحد", time: "17:00", subject: "الرياضيات", topic: "الدوال العددية", status: "upcoming" },
+    { day: "الإثنين", time: "17:00", subject: "الفيزياء", topic: "التحولات النووية", status: "upcoming" },
+    { day: "الثلاثاء", time: "18:00", subject: "العلوم", topic: "التركيب الضوئي", status: "completed" },
+    { day: "الأربعاء", time: "17:00", subject: "الرياضيات", topic: "الأعداد المركبة", status: "upcoming" },
+    { day: "الخميس", time: "17:00", subject: "الفيزياء", topic: "الظواهر الكهربائية", status: "upcoming" },
 ];
 
-function FluidProgram() {
+function AgendaBlock() {
     return (
-        <div className="glass-card p-8">
-            <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-800">البرنامج الأسبوعي</h2>
-                    <p className="text-sm text-slate-400">جدول الحصص والمراجعات</p>
-                </div>
+        <div className="block">
+            <div className="block-header">
+                <Calendar className="block-header-icon" />
+                <span>البرنامج الأسبوعي</span>
             </div>
 
-            <div className="timeline-container">
-                <div className="timeline-line" />
+            <div className="database-list">
+                <div className="database-header">
+                    <span>الوقت</span>
+                    <span>المادة</span>
+                    <span>الموضوع</span>
+                    <span>الحالة</span>
+                </div>
 
                 {weeklySchedule.map((item, index) => (
                     <motion.div
                         key={index}
-                        className="timeline-item"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1, type: "spring", stiffness: 300 }}
+                        className="database-row"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.05 }}
                     >
-                        <div className="timeline-dot" />
-                        <motion.div
-                            className="glass-pill py-3 px-5 mr-4 hover-swell"
-                            whileHover={{ scale: 1.02 }}
-                        >
-                            <div className="flex items-center justify-between gap-6">
-                                <div className="flex items-center gap-4">
-                                    <span className="text-xs font-mono text-slate-400 w-12">{item.time}</span>
-                                    <span className="text-xs text-slate-400">{item.day}</span>
-                                </div>
-                                <div className="flex-1">
-                                    <span className="font-medium text-slate-700">{item.subject}</span>
-                                    <span className="text-slate-400 mx-2">—</span>
-                                    <span className="text-sm text-slate-500">{item.topic}</span>
-                                </div>
-                            </div>
-                        </motion.div>
+                        <div className="database-cell-secondary font-mono text-xs">
+                            {item.time}
+                        </div>
+                        <div className="database-cell font-medium">
+                            {item.subject}
+                        </div>
+                        <div className="database-cell-secondary">
+                            {item.topic}
+                        </div>
+                        <div>
+                            <span className={`database-tag ${item.status === 'completed' ? 'database-tag-green' : 'database-tag-blue'
+                                }`}>
+                                {item.status === 'completed' ? 'مكتمل' : 'قادم'}
+                            </span>
+                        </div>
                     </motion.div>
                 ))}
             </div>
@@ -188,13 +199,12 @@ function FluidProgram() {
 }
 
 // =============================================================================
-// PILLAR 4: CARD-LESS NEWSROOM FEED
+// PILLAR 4: FEED BLOCK
 // =============================================================================
 interface Announcement {
     id: string;
     content: string;
     createdAt: { toDate: () => Date };
-    priority?: 'high' | 'medium' | 'info';
 }
 
 interface LiveSession {
@@ -203,7 +213,7 @@ interface LiveSession {
     date: { toDate: () => Date };
 }
 
-function FluidNewsroom() {
+function FeedBlock() {
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [lives, setLives] = useState<LiveSession[]>([]);
     const [isLiveNow, setIsLiveNow] = useState(false);
@@ -212,7 +222,7 @@ function FluidNewsroom() {
         const announcementsQuery = query(
             collection(db, "announcements"),
             orderBy("createdAt", "desc"),
-            limit(4)
+            limit(3)
         );
         const unsubAnnouncements = onSnapshot(announcementsQuery, (snapshot) => {
             setAnnouncements(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Announcement)));
@@ -222,7 +232,7 @@ function FluidNewsroom() {
             collection(db, "lives"),
             where("date", ">=", new Date()),
             orderBy("date", "asc"),
-            limit(3)
+            limit(2)
         );
         const unsubLives = onSnapshot(livesQuery, (snapshot) => {
             setLives(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as LiveSession)));
@@ -241,84 +251,68 @@ function FluidNewsroom() {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Announcements — Card-less */}
-            <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
-                        <Bell className="w-4 h-4 text-amber-500" />
-                    </div>
-                    <h3 className="font-semibold text-slate-700">الإعلانات</h3>
+            {/* Announcements */}
+            <div className="block">
+                <div className="block-header">
+                    <Bell className="block-header-icon" />
+                    <span>الإعلانات</span>
                 </div>
 
-                <div className="space-y-0">
+                <div>
                     {announcements.length === 0 ? (
-                        <p className="text-sm text-slate-400 text-center py-8">لا توجد إعلانات</p>
+                        <p className="text-sm text-[var(--foreground-tertiary)] py-4">لا توجد إعلانات</p>
                     ) : (
-                        announcements.map((ann, i) => (
-                            <motion.div
-                                key={ann.id}
-                                className="feed-item"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: i * 0.1 }}
-                            >
-                                <p className="text-sm text-slate-600 leading-relaxed">{ann.content}</p>
-                                <span className="text-xs text-slate-400 font-mono mt-2 block">
-                                    {ann.createdAt?.toDate
-                                        ? format(ann.createdAt.toDate(), "d MMM، HH:mm", { locale: ar })
-                                        : "الآن"
-                                    }
-                                </span>
-                            </motion.div>
+                        announcements.map((ann) => (
+                            <div key={ann.id} className="feed-item">
+                                <Bell className="feed-icon" />
+                                <div className="feed-content">
+                                    <p className="feed-title">{ann.content}</p>
+                                    <span className="feed-meta">
+                                        {ann.createdAt?.toDate
+                                            ? format(ann.createdAt.toDate(), "d MMM، HH:mm", { locale: ar })
+                                            : "الآن"
+                                        }
+                                    </span>
+                                </div>
+                            </div>
                         ))
                     )}
                 </div>
             </div>
 
-            {/* Lives — Floating Pills */}
-            <div className="glass-card p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
-                            <Radio className="w-4 h-4 text-red-500" />
-                        </div>
-                        <h3 className="font-semibold text-slate-700">الحصص المباشرة</h3>
+            {/* Live Sessions */}
+            <div className="block">
+                <div className="block-header flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Radio className="block-header-icon" />
+                        <span>الحصص المباشرة</span>
                     </div>
                     {isLiveNow && (
-                        <Link href="/live" className="glass-pill px-4 py-1.5 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse-soft" />
-                            <span className="text-xs font-medium text-red-500">مباشر الآن</span>
+                        <Link href="/live" className="flex items-center gap-1 text-xs text-red-500">
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            مباشر الآن
                         </Link>
                     )}
                 </div>
 
-                <div className="space-y-3">
+                <div>
                     {lives.length === 0 ? (
-                        <p className="text-sm text-slate-400 text-center py-8">لا توجد حصص مجدولة</p>
+                        <p className="text-sm text-[var(--foreground-tertiary)] py-4">لا توجد حصص مجدولة</p>
                     ) : (
-                        lives.map((live, i) => (
-                            <motion.div
-                                key={live.id}
-                                className="glass-pill p-4 flex items-center justify-between hover-swell"
-                                whileHover={{ scale: 1.02 }}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1, type: "spring" }}
-                            >
-                                <div>
-                                    <p className="text-sm font-medium text-slate-700">{live.title}</p>
-                                    <p className="text-xs text-slate-400 font-mono mt-1">
+                        lives.map((live) => (
+                            <Link key={live.id} href="/live" className="feed-item">
+                                <Radio className="feed-icon" />
+                                <div className="feed-content">
+                                    <p className="feed-title">{live.title}</p>
+                                    <span className="feed-meta">
                                         {live.date?.toDate
                                             ? format(live.date.toDate(), "EEEE، HH:mm", { locale: ar })
                                             : "قريباً"
                                         }
-                                    </p>
+                                    </span>
                                 </div>
-                                <Link href="/live" className="btn-fluid btn-glass text-xs py-2 px-4">
-                                    <ExternalLink className="w-3 h-3" />
-                                    انضمام
-                                </Link>
-                            </motion.div>
+                                <ChevronRight className="w-4 h-4 text-[var(--foreground-tertiary)]" />
+                            </Link>
                         ))
                     )}
                 </div>

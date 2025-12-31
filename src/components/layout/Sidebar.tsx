@@ -2,92 +2,144 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, User, Crown, Settings, Brain } from "lucide-react";
-import { motion } from "framer-motion";
+import { Home, BookOpen, User, Crown, Settings, ChevronDown, ChevronRight, Brain, Calculator, FlaskConical, Microscope } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
 
-const navItems = [
+const mainNavItems = [
     { href: "/dashboard", label: "الرئيسية", icon: Home },
-    { href: "/subjects", label: "المواد", icon: BookOpen },
     { href: "/subscription", label: "الاشتراك", icon: Crown },
     { href: "/profile", label: "الحساب", icon: User },
+];
+
+const subjects = [
+    { id: "math", label: "الرياضيات", icon: Calculator },
+    { id: "physics", label: "الفيزياء", icon: FlaskConical },
+    { id: "science", label: "العلوم الطبيعية", icon: Microscope },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
     const { role } = useAuth();
+    const [subjectsExpanded, setSubjectsExpanded] = useState(true);
 
     return (
         <motion.aside
-            className="sidebar-floating"
+            className="sidebar-notion"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.2 }}
+            transition={{ duration: 0.3 }}
         >
-            {/* Brainy Logo */}
-            <Link
-                href="/"
-                className="nav-item mb-4 !w-12 !h-12 bg-gradient-to-br from-blue-500 to-purple-500 text-white"
-                title="Brainy"
-            >
-                <Brain className="w-6 h-6" />
-            </Link>
+            {/* Logo */}
+            <div className="sidebar-header border-b border-[var(--border)]">
+                <Link href="/" className="sidebar-logo">
+                    <div className="w-5 h-5 bg-[var(--foreground)] rounded flex items-center justify-center">
+                        <Brain className="w-3 h-3 text-white" />
+                    </div>
+                    <span>Brainy</span>
+                </Link>
+            </div>
 
-            {/* Divider */}
-            <div className="w-6 h-px bg-slate-200 mx-auto my-2" />
+            {/* Main Navigation */}
+            <div className="flex-1 overflow-y-auto py-2">
+                <div className="sidebar-section">
+                    {mainNavItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        const Icon = item.icon;
 
-            {/* Navigation */}
-            <nav className="flex flex-col">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href ||
-                        (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                    const Icon = item.icon;
-
-                    return (
-                        <motion.div
-                            key={item.href}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
+                        return (
                             <Link
+                                key={item.href}
                                 href={item.href}
                                 prefetch={true}
-                                className={cn(
-                                    "nav-item",
-                                    isActive && "active"
-                                )}
-                                title={item.label}
+                                className={cn("sidebar-item", isActive && "active")}
                             >
-                                <Icon className="w-5 h-5" />
+                                <Icon className="sidebar-item-icon" />
+                                {item.label}
                             </Link>
-                        </motion.div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
 
-                {/* Admin Link */}
-                {role === 'admin' && (
-                    <>
-                        <div className="w-6 h-px bg-slate-200 mx-auto my-2" />
-                        <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <Link
-                                href="/admin"
-                                prefetch={true}
-                                className={cn(
-                                    "nav-item",
-                                    pathname.startsWith('/admin') && "active"
-                                )}
-                                title="لوحة التحكم"
+                {/* Subjects Tree View */}
+                <div className="sidebar-section">
+                    <button
+                        onClick={() => setSubjectsExpanded(!subjectsExpanded)}
+                        className="sidebar-section-title w-full flex items-center justify-between hover:bg-[var(--background-hover)] rounded mx-2 px-2 py-1"
+                    >
+                        <span>المواد الدراسية</span>
+                        {subjectsExpanded ?
+                            <ChevronDown className="w-3 h-3" /> :
+                            <ChevronRight className="w-3 h-3" />
+                        }
+                    </button>
+
+                    <AnimatePresence>
+                        {subjectsExpanded && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
                             >
-                                <Settings className="w-5 h-5" />
-                            </Link>
-                        </motion.div>
-                    </>
+                                {subjects.map((subject) => {
+                                    const Icon = subject.icon;
+                                    const isActive = pathname.includes(subject.id);
+
+                                    return (
+                                        <Link
+                                            key={subject.id}
+                                            href={`/subject/${subject.id}`}
+                                            className={cn("tree-item", isActive && "bg-[var(--background-active)]")}
+                                        >
+                                            <Icon className="w-4 h-4 opacity-60" />
+                                            <span>{subject.label}</span>
+                                        </Link>
+                                    );
+                                })}
+
+                                <Link
+                                    href="/subjects"
+                                    className="tree-item text-[var(--foreground-tertiary)]"
+                                >
+                                    <span className="text-xs">عرض الكل...</span>
+                                </Link>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Admin Section */}
+                {role === 'admin' && (
+                    <div className="sidebar-section">
+                        <div className="sidebar-section-title">الإدارة</div>
+                        <Link
+                            href="/admin"
+                            prefetch={true}
+                            className={cn(
+                                "sidebar-item",
+                                pathname.startsWith('/admin') && "active"
+                            )}
+                        >
+                            <Settings className="sidebar-item-icon" />
+                            لوحة التحكم
+                        </Link>
+                    </div>
                 )}
-            </nav>
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-[var(--border)]">
+                <Link
+                    href="/subscription"
+                    className="block p-3 bg-[var(--background-hover)] rounded-lg hover:bg-[var(--background-active)] transition-colors"
+                >
+                    <p className="text-xs font-medium text-[var(--foreground)] mb-0.5">ترقية الحساب</p>
+                    <p className="text-[10px] text-[var(--foreground-tertiary)]">وصول كامل للمحتوى</p>
+                </Link>
+            </div>
         </motion.aside>
     );
 }
