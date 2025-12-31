@@ -40,8 +40,10 @@
 
 :root {
   /* Core Colors */
-  --background: #F9FAFB; /* Very light gray */
-  --foreground: #111827; /* Dark text */
+  --background: #F9FAFB;
+  /* Very light gray */
+  --foreground: #111827;
+  /* Dark text */
 
   /* Surface / Cards */
   --card: #FFFFFF;
@@ -56,7 +58,7 @@
   --primary-foreground: #FFFFFF;
 
   /* Secondary: Professional Green (used as secondary or success) or Neutral */
-  --secondary: #059669; 
+  --secondary: #059669;
   --secondary-foreground: #FFFFFF;
 
   /* Muted */
@@ -74,38 +76,21 @@
   /* Borders & Inputs */
   --border: #E5E7EB;
   --input: #E5E7EB;
-  --ring: #1E40AF; /* Matches Primary */
+  --ring: #1E40AF;
+  /* Matches Primary */
 
   /* Radius */
-  --radius: 0.75rem; /* rounded-xl */
+  --radius: 0.75rem;
+  /* rounded-xl */
 }
 
-.dark {
-  --background: #050505;
-  --foreground: #F9FAFB;
-  --card: #0A0A0A;
-  --card-foreground: #F9FAFB;
-  --popover: #0A0A0A;
-  --popover-foreground: #F9FAFB;
-  --primary: #1E40AF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #059669;
-  --secondary-foreground: #FFFFFF;
-  --muted: #1F2937;
-  --muted-foreground: #9CA3AF;
-  --accent: #1F2937;
-  --accent-foreground: #F9FAFB;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #1F2937;
-  --input: #1F2937;
-  --ring: #1E40AF;
-}
+/* Dark mode removed by user request (Light Identity) */
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
@@ -118,5 +103,5 @@
 }
 
 .glass-premium {
-   @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-md;
+  @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-md;
 }

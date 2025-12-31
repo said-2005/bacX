@@ -9,14 +9,15 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                background: "#050505",
-                surface: "#0A0A0A",
-                "surface-highlight": "#121212",
-                border: "#1F1F1F",
-                primary: "#2997FF",
+                background: "var(--background)",
+                foreground: "var(--foreground)",
+                surface: "var(--card)",
+                "surface-highlight": "var(--accent)",
+                border: "var(--border)",
+                primary: "var(--primary)",
                 "primary-glow": "rgba(41, 151, 255, 0.15)",
-                "text-main": "#EDEDED",
-                "text-muted": "#A1A1AA",
+                "text-main": "var(--foreground)",
+                "text-muted": "var(--muted-foreground)",
             },
             fontFamily: {
                 sans: ["var(--font-inter)", "var(--font-tajawal)", "sans-serif"],
