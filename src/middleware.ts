@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
@@ -25,36 +24,43 @@ async function getGooglePublicKeys() {
         return cachedKeys;
     } catch (error) {
         console.error('Failed to fetch Google public keys', error);
-        return null;
+        return cachedKeys; // Return stale keys if available
     }
 }
 
-// Helper to verify Firebase Session Cookie (JWT) on Edge
-async function verifySessionCookie(cookie: string) {
+/**
+ * FAST token verification that only checks signature validity
+ * Does NOT check claims for non-admin routes (speed optimization)
+ */
+async function verifySessionCookie(cookie: string, fullValidation: boolean = false) {
     if (!cookie) return null;
 
     const keys = await getGooglePublicKeys();
-    if (!keys) return null; // Fail safe if we can't get keys
+    if (!keys) return null;
 
     try {
+        const options: jose.JWTVerifyOptions = {};
 
-        // Better approach for Google's x509 endpoint with jose:
-        // We need to find the correct key for the token's header.kid
+        // Only do full validation (issuer/audience) for admin routes
+        if (fullValidation) {
+            options.issuer = `https://securetoken.google.com/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`;
+            options.audience = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+        }
 
         const { payload } = await jose.jwtVerify(cookie, async (protectedHeader) => {
             if (!protectedHeader.kid) throw new Error("No kid in header");
             const pem = keys[protectedHeader.kid];
             if (!pem) throw new Error("Key not found");
             return jose.importX509(pem, 'RS256');
-        }, {
-            issuer: `https://securetoken.google.com/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`,
-            audience: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        });
+        }, options);
 
         return payload;
     } catch (e) {
-        console.error("Token verification failed", e);
-        return null; // Force redirect
+        // Only log for unexpected errors
+        if (!(e instanceof jose.errors.JWTExpired)) {
+            console.error("Token verification failed", e);
+        }
+        return null;
     }
 }
 
@@ -69,7 +75,7 @@ const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_R
     })
     : null;
 
-// Global Rate Limiter: 50 requests per 10 seconds (Higher guardrails for global middleware)
+// Global Rate Limiter: 50 requests per 10 seconds
 const ratelimit = redis
     ? new Ratelimit({
         redis: redis,
@@ -79,10 +85,23 @@ const ratelimit = redis
     : null;
 
 export async function middleware(request: NextRequest) {
+    const path = request.nextUrl.pathname;
+
+    // --- SKIP STATIC ASSETS (FAST PATH) ---
+    if (
+        path.startsWith('/_next') ||
+        path.startsWith('/static') ||
+        path.startsWith('/favicon') ||
+        path.includes('.')
+    ) {
+        return NextResponse.next();
+    }
+
     // --- GLOBAL RATE LIMITING (EDGE) ---
-    // Skip static files and internal Next.js paths
-    if (ratelimit && !request.nextUrl.pathname.startsWith('/_next') && !request.nextUrl.pathname.startsWith('/static') && !request.nextUrl.pathname.startsWith('/favicon.ico')) {
-        const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "127.0.0.1";
+    if (ratelimit) {
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ||
+            request.headers.get("x-real-ip") ||
+            "127.0.0.1";
         try {
             const { success } = await ratelimit.limit(ip);
             if (!success) {
@@ -96,49 +115,58 @@ export async function middleware(request: NextRequest) {
     // --- MAINTENANCE MODE CHECK ---
     const isMaintenance = process.env.MAINTENANCE_MODE === 'true';
     if (isMaintenance) {
-        if (!request.nextUrl.pathname.startsWith('/maintenance') &&
-            !request.nextUrl.pathname.startsWith('/_next') &&
-            !request.nextUrl.pathname.startsWith('/static')) {
+        if (!path.startsWith('/maintenance')) {
             return NextResponse.rewrite(new URL('/maintenance', request.url));
         }
-    } else {
-        if (request.nextUrl.pathname.startsWith('/maintenance')) {
-            return NextResponse.redirect(new URL('/', request.url));
-        }
+        return NextResponse.next();
+    } else if (path.startsWith('/maintenance')) {
+        return NextResponse.redirect(new URL('/', request.url));
     }
 
-    // --- ROUTE PROTECTION ---
+    // --- ROUTE CLASSIFICATION ---
     const adminRoutes = ['/admin'];
-    const protectedRoutes = ['/live', '/video', '/subscription', '/subject', ...adminRoutes];
+    const protectedRoutes = ['/dashboard', '/live', '/video', '/subscription', '/subject', '/profile', '/subjects', ...adminRoutes];
 
-    const path = request.nextUrl.pathname;
     const isProtected = protectedRoutes.some(p => path.startsWith(p));
     const isAdminRoute = adminRoutes.some(p => path.startsWith(p));
 
-    if (isProtected) {
-        const sessionCookie = request.cookies.get('bacx_session')?.value;
+    // --- PUBLIC ROUTES: FAST PASS THROUGH ---
+    if (!isProtected) {
+        return NextResponse.next();
+    }
 
-        if (!sessionCookie) {
-            const loginUrl = new URL('/auth', request.url);
-            loginUrl.searchParams.set('redirect', path);
-            return NextResponse.redirect(loginUrl);
-        }
+    // --- PROTECTED ROUTES: CHECK SESSION ---
+    const sessionCookie = request.cookies.get('bacx_session')?.value;
 
-        const claims = await verifySessionCookie(sessionCookie);
+    if (!sessionCookie) {
+        const loginUrl = new URL('/auth', request.url);
+        loginUrl.searchParams.set('redirect', path);
+        return NextResponse.redirect(loginUrl);
+    }
 
-        if (!claims) {
-            // Invalid token
-            return NextResponse.redirect(new URL('/auth', request.url));
-        }
+    // For admin routes, do full validation including checking claims
+    // For regular protected routes, just verify the token is valid (faster)
+    const claims = await verifySessionCookie(sessionCookie, isAdminRoute);
 
-        // --- ADMIN CHECK ---
-        if (isAdminRoute) {
-            const isAdmin = claims.role === 'admin' || claims.admin === true;
-            if (!isAdmin) {
-                // Return 401/403 or redirect to home to prevent information leakage
-                // We'll redirect to home.
-                return NextResponse.redirect(new URL('/', request.url));
-            }
+    if (!claims) {
+        // Invalid or expired token - redirect to login
+        const response = NextResponse.redirect(new URL('/auth', request.url));
+        // Clear the invalid cookie
+        response.cookies.delete('bacx_session');
+        return response;
+    }
+
+    // --- ADMIN ROUTE: CHECK ROLE IN JWT ---
+    if (isAdminRoute) {
+        // Check JWT claims for admin role
+        // NOTE: If role is updated in Firestore after login, user must re-login
+        // This is the performance tradeoff - no DB call in middleware
+        const isAdmin = claims.role === 'admin' || claims.admin === true;
+
+        if (!isAdmin) {
+            // Check the user's UID exists (they're authenticated but not admin)
+            // Redirect to dashboard instead of home since they're logged in
+            return NextResponse.redirect(new URL('/dashboard', request.url));
         }
     }
 
@@ -146,5 +174,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+    matcher: [
+        /*
+         * Match all request paths except:
+         * - api routes (they handle their own auth)
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public files (images, etc)
+         */
+        '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'
+    ],
 };

@@ -1,91 +1,161 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, TrendingUp, Bell, Video, Calendar, ArrowUpRight, CheckCircle2 } from "lucide-react";
-import { differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
+import { Clock, TrendingUp, Bell, Video, Calendar, ArrowUpRight, Target } from "lucide-react";
+import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
+import { ar } from "date-fns/locale";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-// --- WIDGET: BAC COUNTDOWN ---
+// =============================================================================
+// BAC COUNTDOWN — Sleek Minimalist Timer
+// =============================================================================
 export function BacCountdown() {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+    const bacDate = new Date("2025-06-01T08:00:00");
+
+    // Calculate total days for progress
+    const startDate = new Date("2024-09-01"); // Start of school year
+    const totalDays = differenceInDays(bacDate, startDate);
+    const daysElapsed = differenceInDays(new Date(), startDate);
+    const progressPercent = Math.min(Math.max((daysElapsed / totalDays) * 100, 0), 100);
 
     useEffect(() => {
-        const targetDate = new Date("2025-06-01T08:00:00"); // BAC 2025 Start
-
         const tick = () => {
             const now = new Date();
-            if (now > targetDate) return;
+            if (now > bacDate) return;
 
             setTimeLeft({
-                days: differenceInDays(targetDate, now),
-                hours: differenceInHours(targetDate, now) % 24,
-                minutes: differenceInMinutes(targetDate, now) % 60
+                days: differenceInDays(bacDate, now),
+                hours: differenceInHours(bacDate, now) % 24,
+                minutes: differenceInMinutes(bacDate, now) % 60
             });
         };
 
         tick();
-        const interval = setInterval(tick, 60000); // Update every minute
+        const interval = setInterval(tick, 60000);
         return () => clearInterval(interval);
     }, []);
 
     return (
-        <div className="bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-2xl p-6 relative overflow-hidden group shadow-sm h-full flex flex-col justify-between">
-            {/* Subtle Decorative Gradient */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 blur-[40px] rounded-full" />
+        <div className="academic-card p-5 h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <div className="icon-container">
+                        <Target className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        البكالوريا 2025
+                    </span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">
+                    {format(bacDate, "d MMM", { locale: ar })}
+                </span>
+            </div>
 
-            <div className="flex justify-between items-start relative z-10">
+            {/* Timer Display */}
+            <div className="flex-1 flex items-center gap-4">
+                <div className="text-center">
+                    <div className="text-3xl font-semibold text-slate-800 tabular-nums">
+                        {timeLeft.days}
+                    </div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide">يوم</div>
+                </div>
+                <div className="text-slate-200 text-2xl font-light">:</div>
+                <div className="text-center">
+                    <div className="text-2xl font-medium text-slate-600 tabular-nums">
+                        {timeLeft.hours.toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide">ساعة</div>
+                </div>
+                <div className="text-slate-200 text-2xl font-light">:</div>
+                <div className="text-center">
+                    <div className="text-2xl font-medium text-slate-600 tabular-nums">
+                        {timeLeft.minutes.toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide">دقيقة</div>
+                </div>
+            </div>
+
+            {/* Thin Progress Bar */}
+            <div className="mt-4">
+                <div className="progress-bar">
+                    <div
+                        className="progress-bar-fill bg-blue-500"
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
+                <div className="flex justify-between mt-2">
+                    <span className="text-[10px] text-slate-400">التقدم في العام الدراسي</span>
+                    <span className="text-[10px] font-medium text-slate-500">{Math.round(progressPercent)}%</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// =============================================================================
+// PROGRESS WIDGET — Clean Stats
+// =============================================================================
+export function ProgressWidget({ progress = 35 }: { progress?: number }) {
+    return (
+        <div className="academic-card p-5 h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <div className="icon-container-primary">
+                        <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        التقدم العام
+                    </span>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="flex-1 flex items-end gap-6">
                 <div>
-                    <h3 className="text-slate-500 text-sm font-medium mb-1 flex items-center gap-1"><Clock className="w-4 h-4" /> البكالوريا</h3>
-                    <div className="text-3xl font-bold font-mono tracking-tight flex items-baseline gap-1 text-slate-800">
-                        <span>{timeLeft.days}</span>
-                        <span className="text-xs text-slate-400 mr-2 font-sans font-normal">يوم</span>
-                        <span className="text-slate-600 text-xl">{timeLeft.hours}</span>
-                        <span className="text-xs text-slate-400 mr-2 font-sans font-normal">ساعة</span>
+                    <div className="text-4xl font-semibold text-slate-800 tabular-nums">
+                        {progress}
+                        <span className="text-xl text-slate-400">%</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">من المنهج مكتمل</p>
+                </div>
+
+                {/* Mini Stats */}
+                <div className="flex-1 space-y-2">
+                    <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">الدروس المشاهدة</span>
+                        <span className="font-medium text-slate-600">24</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">التمارين المحلولة</span>
+                        <span className="font-medium text-slate-600">67</span>
                     </div>
                 </div>
             </div>
 
-            <div className="w-full bg-blue-50 h-1.5 rounded-full overflow-hidden mt-4">
-                <div className="bg-blue-500 h-full rounded-full w-[45%]" />
+            {/* Progress Bar */}
+            <div className="mt-4">
+                <div className="progress-bar h-1.5">
+                    <div
+                        className="progress-bar-fill bg-emerald-500"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
             </div>
-            <p className="text-xs text-slate-400 mt-2 text-left font-mono">01.06.2025</p>
         </div>
     );
 }
 
-// --- WIDGET: PROGRESS ---
-export function ProgressWidget({ progress = 35 }: { progress?: number }) {
-    return (
-        <div className="bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-2xl p-6 relative overflow-hidden group shadow-sm h-full flex flex-col justify-between">
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-100/30 blur-[40px] rounded-full" />
-
-            <div className="flex justify-between items-start relative z-10">
-                <div>
-                    <h3 className="text-slate-500 text-sm font-medium mb-1 flex items-center gap-1"><TrendingUp className="w-4 h-4" /> التقدم العام</h3>
-                    <div className="text-3xl font-bold font-mono tracking-tight text-slate-800">{progress}%</div>
-                </div>
-                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                    <CheckCircle2 className="w-5 h-5" />
-                </div>
-            </div>
-
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-1">
-                <div
-                    className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
-                />
-            </div>
-            <p className="text-xs text-emerald-600/80 font-medium">ممتاز! واصل على هذا المنوال.</p>
-        </div>
-    );
-}
-
-// --- WIDGET: ANNOUNCEMENTS ---
+// =============================================================================
+// ANNOUNCEMENTS FEED — Clean List
+// =============================================================================
 interface Announcement {
     id: string;
     content: string;
-    createdAt: { toDate: () => Date }; // Firestore Timestamp
+    createdAt: { toDate: () => Date };
     isImportant?: boolean;
 }
 
@@ -94,7 +164,6 @@ export function AnnouncementsFeed() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Real-time listener
         const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(3));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setAnnouncements(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Announcement)));
@@ -104,31 +173,51 @@ export function AnnouncementsFeed() {
     }, []);
 
     return (
-        <div className="bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-2xl p-6 h-full flex flex-col shadow-sm">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800">
-                <Bell className="w-5 h-5 text-blue-500" />
-                آخر الإعلانات
-            </h3>
+        <div className="academic-card p-5 h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-4">
+                <div className="icon-container">
+                    <Bell className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-700">آخر الإعلانات</h3>
+            </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-2">
+            {/* Content */}
+            <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
                 {loading ? (
-                    <div className="text-slate-400 text-sm animate-pulse">جاري تحميل الإعلانات...</div>
+                    <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="h-16 bg-slate-50 rounded-lg animate-pulse" />
+                        ))}
+                    </div>
                 ) : announcements.length === 0 ? (
-                    <div className="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        لا توجد إعلانات جديدة حالياً
+                    <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-slate-400">لا توجد إعلانات جديدة</p>
                     </div>
                 ) : (
                     announcements.map((ann) => (
-                        <div key={ann.id} className="group p-4 rounded-xl bg-white border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all cursor-default">
-                            <div className="flex justify-between items-start mb-2">
-                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-mono">
-                                    {ann.createdAt?.toDate ? new Date(ann.createdAt.toDate()).toLocaleDateString('ar-MA') : "الآن"}
-                                </span>
-                                {ann.isImportant && <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">هام</span>}
+                        <div
+                            key={ann.id}
+                            className="p-4 rounded-lg bg-slate-50/50 border border-slate-100 hover:border-slate-200 transition-colors"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="flex-1">
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        {ann.content}
+                                    </p>
+                                    <span className="text-[10px] text-slate-400 mt-2 block font-mono">
+                                        {ann.createdAt?.toDate
+                                            ? format(ann.createdAt.toDate(), "d MMM, HH:mm", { locale: ar })
+                                            : "الآن"
+                                        }
+                                    </span>
+                                </div>
+                                {ann.isImportant && (
+                                    <span className="shrink-0 text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                                        هام
+                                    </span>
+                                )}
                             </div>
-                            <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                                {ann.content}
-                            </p>
                         </div>
                     ))
                 )}
@@ -137,19 +226,25 @@ export function AnnouncementsFeed() {
     );
 }
 
-// --- WIDGET: LIVE SESSIONS ---
+// =============================================================================
+// UPCOMING LIVES — Horizontal Scroll
+// =============================================================================
 interface LiveSession {
     id: string;
     title: string;
-    date: { toDate: () => Date }; // Firestore Timestamp
+    date: { toDate: () => Date };
 }
 
 export function UpcomingLives() {
     const [lives, setLives] = useState<LiveSession[]>([]);
 
     useEffect(() => {
-        // Query for future lives
-        const q = query(collection(db, "lives"), where("date", ">=", new Date()), orderBy("date", "asc"), limit(5));
+        const q = query(
+            collection(db, "lives"),
+            where("date", ">=", new Date()),
+            orderBy("date", "asc"),
+            limit(5)
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setLives(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as LiveSession)));
         });
@@ -157,32 +252,49 @@ export function UpcomingLives() {
     }, []);
 
     return (
-        <div className="bg-white/70 backdrop-blur-md border border-blue-100/50 rounded-2xl p-6 h-full flex flex-col shadow-sm">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800">
-                <Video className="w-5 h-5 text-red-500" />
-                اللايفات القادمة
-            </h3>
+        <div className="academic-card p-5 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-4">
+                <div className="p-2.5 rounded-lg bg-red-50 text-red-500">
+                    <Video className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-700">الحصص المباشرة القادمة</h3>
+            </div>
 
+            {/* Content */}
             {lives.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-400 py-6 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                    <Calendar className="w-8 h-8 mb-2 opacity-30 text-slate-400" />
-                    <p className="text-sm">لا توجد مواعيد حالياً</p>
+                <div className="py-8 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mb-3">
+                        <Calendar className="w-5 h-5 text-slate-300" />
+                    </div>
+                    <p className="text-sm text-slate-400">لا توجد حصص مجدولة حالياً</p>
+                    <p className="text-xs text-slate-300 mt-1">تابع الإعلانات للمواعيد الجديدة</p>
                 </div>
             ) : (
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                     {lives.map(live => (
-                        <div key={live.id} className="min-w-[220px] bg-gradient-to-br from-red-50 to-white border border-red-100/50 rounded-xl p-4 flex flex-col shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                <div className="text-[10px] text-red-500 font-bold uppercase tracking-wider">Moomkin Live</div>
-                            </div>
-                            <h4 className="font-bold text-slate-800 mb-2 line-clamp-1">{live.title}</h4>
-                            <div className="mt-auto flex items-center justify-between border-t border-red-100 pt-3">
-                                <span className="text-xs text-slate-500 font-mono">
-                                    {live.date?.toDate ? new Date(live.date.toDate()).toLocaleTimeString('ar-MA', { hour: '2-digit', minute: '2-digit' }) : "Coming Soon"}
+                        <div
+                            key={live.id}
+                            className="min-w-[200px] p-4 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-100 hover:border-slate-200 transition-all hover:shadow-sm"
+                        >
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-subtle" />
+                                <span className="text-[10px] font-medium text-red-500 uppercase tracking-wider">
+                                    Live
                                 </span>
-                                <button className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
-                                    <ArrowUpRight className="w-4 h-4" />
+                            </div>
+                            <h4 className="text-sm font-semibold text-slate-700 mb-3 line-clamp-2">
+                                {live.title}
+                            </h4>
+                            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                <span className="text-xs text-slate-400 font-mono">
+                                    {live.date?.toDate
+                                        ? format(live.date.toDate(), "HH:mm", { locale: ar })
+                                        : "قريباً"
+                                    }
+                                </span>
+                                <button className="p-1.5 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
                                 </button>
                             </div>
                         </div>

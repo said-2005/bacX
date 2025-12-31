@@ -1,73 +1,321 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-
+/* ==========================================================================
+   BACX DESIGN SYSTEM — Professional Academic Aesthetic
+   ========================================================================== */
 
 :root {
-  /* Core Colors */
-  --background: #F9FAFB;
-  /* Very light gray */
-  --foreground: #111827;
-  /* Dark text */
+  /* ─────────────────────────────────────────────────────────────────────────
+     TYPOGRAPHY SCALE
+     ───────────────────────────────────────────────────────────────────────── */
+  --font-sans: 'IBM Plex Sans Arabic', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     COLOR PALETTE — Serious Academic
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Base */
+  --background: #FAFBFC;
+  --foreground: #1E293B;
+  /* Dark Navy - Primary Text */
 
   /* Surface / Cards */
   --card: #FFFFFF;
-  --card-foreground: #111827;
+  --card-foreground: #1E293B;
 
   /* Popovers */
   --popover: #FFFFFF;
-  --popover-foreground: #111827;
+  --popover-foreground: #1E293B;
 
-  /* Primary: Electric Blue (bacX Brand) */
-  --primary: #2563EB;
+  /* Primary: Deep Academic Blue */
+  --primary: #1E40AF;
+  --primary-hover: #1E3A8A;
   --primary-foreground: #FFFFFF;
 
-  /* Secondary: Professional Green (used as secondary or success) or Neutral */
-  --secondary: #059669;
+  /* Secondary: Muted Slate */
+  --secondary: #64748B;
   --secondary-foreground: #FFFFFF;
 
-  /* Muted */
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280;
+  /* Success: Professional Green */
+  --success: #059669;
+  --success-foreground: #FFFFFF;
+
+  /* Muted Tones */
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  /* Soft Slate - Body Text */
 
   /* Accent */
-  --accent: #F3F4F6;
-  --accent-foreground: #111827;
+  --accent: #F1F5F9;
+  --accent-foreground: #1E293B;
 
   /* Destructive */
-  --destructive: #EF4444;
+  --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
 
   /* Borders & Inputs */
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #2563EB;
-  /* Matches Primary */
+  --border: #E2E8F0;
+  --border-subtle: #F1F5F9;
+  --input: #E2E8F0;
+  --ring: #1E40AF;
 
-  /* Radius */
+  /* Radius — Subtle, Professional */
   --radius: 0.75rem;
-  /* rounded-xl */
+  /* 12px — rounded-xl */
+  --radius-sm: 0.5rem;
+  /* 8px */
+  --radius-lg: 1rem;
+  /* 16px */
 }
 
-/* Dark mode removed by user request (Light Identity) */
+/* ==========================================================================
+   BASE LAYER
+   ========================================================================== */
 
 @layer base {
   * {
     border-color: var(--border);
   }
 
+  html {
+    font-feature-settings: "ss01", "ss02", "cv01";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* Typography Hierarchy */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #1E293B;
+    /* Dark Navy */
+    font-weight: 600;
+    /* Semi-bold */
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  /* 32px */
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  /* 24px */
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  /* 20px */
+  h4 {
+    font-size: 1.125rem;
+  }
+
+  /* 18px */
+  h5 {
+    font-size: 1rem;
+  }
+
+  /* 16px */
+  h6 {
+    font-size: 0.875rem;
+  }
+
+  /* 14px */
+
+  p,
+  span,
+  li {
+    color: #64748B;
+    /* Soft Slate */
+    font-weight: 400;
+  }
+
+  /* Links */
+  a {
+    color: var(--primary);
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--primary-hover);
   }
 }
 
-/* Utilities */
+/* ==========================================================================
+   COMPONENT UTILITIES
+   ========================================================================== */
+
+/* Professional Glass Panel */
 .glass-panel {
-  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+  @apply bg-white/80 backdrop-blur-sm border border-slate-100 shadow-sm;
 }
 
+/* Premium Glass (Elevated) */
 .glass-premium {
-  @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-md;
+  @apply bg-white backdrop-blur-md border border-slate-100/80 shadow-md;
+}
+
+/* Academic Card — Clean & Minimal */
+.academic-card {
+  @apply bg-white border border-slate-100 rounded-xl shadow-sm;
+  @apply transition-all duration-200 ease-out;
+}
+
+.academic-card:hover {
+  @apply shadow-md border-slate-200;
+  transform: translateY(-1px);
+}
+
+/* Stat Card */
+.stat-card {
+  @apply bg-white border border-slate-100 rounded-xl p-5;
+  @apply transition-all duration-200;
+}
+
+.stat-card:hover {
+  @apply border-slate-200 shadow-sm;
+}
+
+/* Widget Title */
+.widget-title {
+  @apply text-sm font-medium text-slate-500 tracking-wide uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Widget Value */
+.widget-value {
+  @apply text-2xl font-semibold text-slate-800 tracking-tight;
+}
+
+/* Progress Bar — Thin & Professional */
+.progress-bar {
+  @apply h-1 bg-slate-100 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full rounded-full transition-all duration-700 ease-out;
+}
+
+/* Subtle Button Hover */
+.btn-subtle {
+  @apply transition-all duration-200;
+}
+
+.btn-subtle:hover {
+  @apply shadow-sm;
+  transform: translateY(-1px);
+}
+
+/* Professional Icon Container */
+.icon-container {
+  @apply p-2.5 rounded-lg bg-slate-50 text-slate-600;
+  @apply transition-all duration-200;
+}
+
+.icon-container:hover {
+  @apply bg-slate-100;
+}
+
+.icon-container-primary {
+  @apply p-2.5 rounded-lg bg-blue-50 text-blue-600;
+}
+
+/* Scrollbar Styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}
+
+/* Hide Scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==========================================================================
+   ANIMATIONS — Subtle & Professional
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   MONOCHROMATIC ICON STYLES
+   ========================================================================== */
+
+.icon-mono {
+  @apply text-slate-500;
+}
+
+.icon-mono-primary {
+  @apply text-slate-700;
+}
+
+.icon-accent {
+  @apply text-blue-600;
 }

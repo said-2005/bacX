@@ -6,11 +6,9 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { collection, query, where, orderBy, onSnapshot, doc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useRouter } from "next/navigation"; // Correct import for App Router
 
 export function TopNav() {
     const { user, logout } = useAuth();
-    const router = useRouter();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
 
@@ -21,7 +19,7 @@ export function TopNav() {
     const [unreadCount, setUnreadCount] = useState(0);
 
     const profileRef = useRef<HTMLDivElement>(null);
-    const notifRef = useRef<HTMLButtonElement>(null);
+    const notifRef = useRef<HTMLDivElement>(null);
 
     // Close dropdowns on outside click
     useEffect(() => {
@@ -30,10 +28,6 @@ export function TopNav() {
                 setIsProfileOpen(false);
             }
             if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-                // Keep open if clicking inside the dropdown menu itself (handled by standard DOM bubbling usually, but explicit check good)
-                // For simplified structure, we'll just toggle state on button click and rely on that.
-                // Actually, for dropdown logic, usually separate ref for menu. 
-                // Simplified: close if click is not on the button.
                 setIsNotifOpen(false);
             }
         }
@@ -68,63 +62,76 @@ export function TopNav() {
 
     const handleLogout = async () => {
         await logout();
-        router.push("/auth/login");
     };
 
     return (
-        <header className="h-20 px-8 flex items-center justify-between sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-blue-100/50 shadow-sm direction-rtl font-tajawal">
+        <header className="h-16 px-6 flex items-center justify-between sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100">
 
             {/* SEARCH */}
-            <div className="flex-1 max-w-md hidden md:block relative">
+            <div className="flex-1 max-w-sm hidden md:block relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                     type="text"
-                    placeholder="ابحث عن درس..."
-                    className="w-full bg-slate-100/50 border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-sm outline-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    placeholder="ابحث عن درس أو موضوع..."
+                    className="w-full bg-slate-50 border border-slate-100 rounded-lg py-2 pr-10 pl-4 text-sm text-slate-600 placeholder:text-slate-400 outline-none focus:bg-white focus:border-slate-200 focus:ring-2 focus:ring-slate-100 transition-all"
                 />
             </div>
 
             {/* ACTION AREA */}
-            <div className="flex items-center gap-4 mr-auto">
+            <div className="flex items-center gap-3 mr-auto">
 
-                {/* LIVE INDICATOR */}
+                {/* LIVE INDICATOR — Subtle Professional Style */}
                 {isLiveActive && (
-                    <Link href="/live" className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-600 rounded-full border border-red-500/20 hover:bg-red-500/20 transition-all animate-pulse">
-                        <Radio className="w-4 h-4 animate-ping" />
-                        <span className="text-xs font-bold">بث مباشر الآن</span>
+                    <Link
+                        href="/live"
+                        className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
+                    >
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                        <span className="text-xs font-medium">بث مباشر</span>
                     </Link>
                 )}
 
                 {/* NOTIFICATIONS */}
-                <div className="relative">
+                <div className="relative" ref={notifRef}>
                     <button
-                        ref={notifRef}
                         onClick={(e) => { e.stopPropagation(); setIsNotifOpen(!isNotifOpen); }}
-                        className="relative p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                        className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                     >
                         <Bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute top-2 left-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-bounce"></span>
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
                         )}
                     </button>
 
                     {/* Notification Dropdown */}
                     {isNotifOpen && (
-                        <div onClick={(e) => e.stopPropagation()} className="absolute left-0 mt-4 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                            <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                                <span className="font-bold text-slate-800 text-sm">الإشعارات</span>
-                                {unreadCount > 0 && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">{unreadCount} جديد</span>}
+                        <div className="absolute left-0 mt-2 w-80 bg-white border border-slate-100 rounded-xl shadow-lg overflow-hidden z-50 animate-fade-in">
+                            <div className="p-4 border-b border-slate-50 flex justify-between items-center">
+                                <span className="text-sm font-semibold text-slate-700">الإشعارات</span>
+                                {unreadCount > 0 && (
+                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                                        {unreadCount} جديد
+                                    </span>
+                                )}
                             </div>
-                            <div className="max-h-64 overflow-y-auto">
+                            <div className="max-h-72 overflow-y-auto custom-scrollbar">
                                 {notifications.length > 0 ? (
                                     notifications.map((notif) => (
-                                        <div key={notif.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!notif.read ? 'bg-blue-50/30' : ''}`}>
-                                            <p className="text-sm font-medium text-slate-800 mb-1">{notif.title}</p>
+                                        <div
+                                            key={notif.id}
+                                            className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/30' : ''}`}
+                                        >
+                                            <p className="text-sm font-medium text-slate-700 mb-0.5">{notif.title}</p>
                                             <p className="text-xs text-slate-500 line-clamp-2">{notif.body}</p>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="p-8 text-center text-slate-400 text-sm">لا توجد إشعارات حالياً</div>
+                                    <div className="p-8 text-center text-slate-400 text-sm">
+                                        لا توجد إشعارات
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -135,49 +142,58 @@ export function TopNav() {
                 <div className="relative" ref={profileRef}>
                     <button
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className="flex items-center gap-3 pl-2 pr-2 py-1.5 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100"
+                        className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
                     >
-                        <div className="text-left hidden sm:block">
-                            <p className="text-sm font-bold text-slate-800 leading-none mb-1">{user?.displayName || "Student"}</p>
-                            <p className="text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.5 rounded-full inline-block">BAC 2025</p>
+                        {/* Avatar */}
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-semibold text-sm">
+                            {user?.displayName?.[0]?.toUpperCase() || "U"}
                         </div>
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-bold shadow-sm">
-                            {user?.displayName?.[0]?.toUpperCase() || "S"}
+                        <div className="text-right hidden sm:block">
+                            <p className="text-sm font-medium text-slate-700 leading-none">
+                                {user?.displayName?.split(' ')[0] || "المستخدم"}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">BAC 2025</p>
                         </div>
                         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Profile Menu */}
                     {isProfileOpen && (
-                        <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                            <div className="p-2 space-y-1">
+                        <div className="absolute left-0 mt-2 w-52 bg-white border border-slate-100 rounded-xl shadow-lg overflow-hidden z-50 animate-fade-in">
+                            <div className="p-1.5">
                                 <Link
                                     href="/profile/settings"
                                     onClick={() => setIsProfileOpen(false)}
-                                    className="flex items-center gap-3 w-full p-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors"
                                 >
-                                    <Settings className="w-4 h-4" /> الإعدادات الشخصية
+                                    <Settings className="w-4 h-4 text-slate-400" />
+                                    الإعدادات
                                 </Link>
                                 <Link
                                     href="/subscription"
                                     onClick={() => setIsProfileOpen(false)}
-                                    className="flex items-center gap-3 w-full p-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors"
                                 >
-                                    <Monitor className="w-4 h-4" /> إدارة الأجهزة
+                                    <Monitor className="w-4 h-4 text-slate-400" />
+                                    إدارة الأجهزة
                                 </Link>
                                 <Link
                                     href="/profile/payments"
                                     onClick={() => setIsProfileOpen(false)}
-                                    className="flex items-center gap-3 w-full p-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 w-full p-2.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors"
                                 >
-                                    <CreditCard className="w-4 h-4" /> سجل المدفوعات
+                                    <CreditCard className="w-4 h-4 text-slate-400" />
+                                    سجل المدفوعات
                                 </Link>
-                                <div className="h-px bg-slate-100 my-1"></div>
+
+                                <div className="h-px bg-slate-100 my-1" />
+
                                 <button
                                     onClick={handleLogout}
-                                    className="flex items-center gap-3 w-full p-2.5 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                    className="flex items-center gap-3 w-full p-2.5 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 >
-                                    <LogOut className="w-4 h-4" /> تسجيل الخروج
+                                    <LogOut className="w-4 h-4" />
+                                    تسجيل الخروج
                                 </button>
                             </div>
                         </div>
