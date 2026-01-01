@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
