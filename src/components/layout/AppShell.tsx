@@ -55,7 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
                 {/* Page Content - Scrollable */}
                 <div className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar relative">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="wait" initial={false}>
                         <motion.main
                             key={pathname}
                             className="w-full min-h-full p-6 lg:p-12 max-w-[1600px] mx-auto"
