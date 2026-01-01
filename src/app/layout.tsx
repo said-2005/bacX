@@ -65,7 +65,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" className="scroll-smooth">
+    <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
         <NextTopLoader
           color="#2563EB"

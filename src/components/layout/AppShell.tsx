@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <motion.main
                             key={pathname}
                             className="w-full min-h-full p-6 lg:p-12 max-w-[1600px] mx-auto"
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={false}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
