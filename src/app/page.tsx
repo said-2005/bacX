@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { ArrowLeft, Check, Play, Star, BookOpen, Crown } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { NeuralBackground } from "@/components/ui/NeuralBackground";
+import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
@@ -17,19 +20,31 @@ export default function LandingPage() {
   const yHero = useTransform(scrollYProgress, [0, 0.2], [0, -100]);
   const opacityHero = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
+  // Scroll listener for header
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <div ref={containerRef} className="bg-background min-h-screen selection:bg-primary/30 overflow-hidden">
 
-      {/* HEADER / NAVIGATION */}
+      {/* HEADER / NAVIGATION (Anti-Band Fixed & Transparent) */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between backdrop-blur-xl bg-background/5 border-b border-white/5"
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-500",
+          isScrolled ? "bg-[#0A0A0F]/70 backdrop-blur-lg border-b border-white/5 py-3" : "bg-transparent py-5"
+        )}
       >
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <Logo />
-          <Link href="/auth?mode=login" className="px-5 py-2 rounded-full border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all text-sm font-medium backdrop-blur-md">
+          <Link href="/auth?mode=login" className="px-6 py-2.5 rounded-full border border-white/10 bg-white/5 text-white/90 hover:bg-white/10 hover:text-white transition-all text-sm font-bold backdrop-blur-md shadow-lg hover:shadow-primary/20">
             تسجيل الدخول
           </Link>
         </div>
@@ -42,7 +57,7 @@ export default function LandingPage() {
       >
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
 
-        {/* Neural Background Effects */}
+        {/* Neural Background Effects - Extending to very top */}
         <NeuralBackground />
 
         {/* Animated Floating Elements — Electric Blue */}
@@ -61,17 +76,19 @@ export default function LandingPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
-          className="relative z-10 max-w-4xl mx-auto"
+          className="relative z-10 max-w-4xl mx-auto mt-16"
         >
+          {/* Added margin-top (mt-16) to shift content slightly down but keeping it centered overall for "Above the fold" balance */}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
             className="flex items-center justify-center gap-2 mb-6"
           >
-            {/* Replaced Sparkles with Logo Icon for consistency if desired, or keep as is. Keeping subtle "2026" badge */}
-            <span className="px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs tracking-[0.2em] font-medium uppercase backdrop-blur-sm">
-              Baccalaureate 2026
+            {/* Subtle Badge */}
+            <span className="px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs tracking-[0.2em] font-medium uppercase backdrop-blur-sm shadow-[0_0_15px_-5px_#2563EB]">
+              Start Your Journey
             </span>
           </motion.div>
 

@@ -10,18 +10,19 @@ interface LogoProps {
 
 export function Logo({ variant = "full", className }: LogoProps) {
     return (
-        <div className={cn("flex items-center gap-3 select-none", className)}>
+        <div className={cn("flex items-center gap-4 select-none", className)}>
             {/* The Cinematic "B" Icon */}
             <div className="relative w-12 h-12 flex items-center justify-center">
-                {/* Outer Glow - Electric Blue */}
-                <div className="absolute inset-0 bg-blue-600/30 blur-xl rounded-xl animate-pulse-slow" />
+                {/* Outer Glow - Electric Blue & Gold Mix */}
+                <div className="absolute inset-0 bg-blue-600/20 blur-xl rounded-xl animate-pulse-slow" />
+                <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-xl animate-pulse-slow delay-700" />
 
                 {/* SVG Container */}
                 <svg
                     viewBox="0 0 48 48"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-full relative z-10 drop-shadow-[0_0_15px_rgba(37,99,235,0.6)]"
+                    className="w-full h-full relative z-10 drop-shadow-[0_0_15px_rgba(37,99,235,0.4)]"
                 >
                     <defs>
                         {/* Glass Gradient for Body */}
@@ -31,10 +32,11 @@ export function Logo({ variant = "full", className }: LogoProps) {
                             <stop offset="100%" stopColor="rgba(255, 255, 255, 0.1)" />
                         </linearGradient>
 
-                        {/* Electric Blue Stroke Gradient */}
-                        <linearGradient id="blue-glow" x1="0" y1="0" x2="48" y2="48">
+                        {/* Luxury Blue-Gold Stroke Gradient */}
+                        <linearGradient id="luxury-glow" x1="0" y1="0" x2="48" y2="48">
                             <stop offset="0%" stopColor="#60A5FA" />
-                            <stop offset="100%" stopColor="#2563EB" />
+                            <stop offset="50%" stopColor="#2563EB" />
+                            <stop offset="100%" stopColor="#F59E0B" />
                         </linearGradient>
 
                         {/* Circuit Pattern Mask */}
@@ -50,21 +52,21 @@ export function Logo({ variant = "full", className }: LogoProps) {
                     <path
                         d="M14 6H26C35 6 42 13 42 24C42 35 35 42 26 42H14C10.6863 42 8 39.3137 8 36V12C8 8.68629 10.6863 6 14 6Z"
                         fill="url(#glass-body)"
-                        stroke="url(#blue-glow)"
+                        stroke="url(#luxury-glow)"
                         strokeWidth="1.5"
                     />
 
                     {/* Internal Neural/Circuit Pattern */}
-                    <g mask="url(#b-mask)" opacity="0.6">
+                    <g mask="url(#b-mask)" opacity="0.8">
                         {/* Horizontal circuit lines */}
                         <path d="M14 16H30" stroke="#60A5FA" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-                        <path d="M14 24H34" stroke="#60A5FA" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
-                        <path d="M14 32H28" stroke="#60A5FA" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
+                        <path d="M14 24H34" stroke="url(#luxury-glow)" strokeWidth="1" strokeLinecap="round" opacity="0.8" />
+                        <path d="M14 32H28" stroke="#F59E0B" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
 
                         {/* Connection Nodes */}
-                        <circle cx="30" cy="16" r="2" fill="#2563EB" className="animate-pulse" />
-                        <circle cx="34" cy="24" r="2" fill="#60A5FA" className="animate-pulse" />
-                        <circle cx="28" cy="32" r="2" fill="#2563EB" className="animate-pulse" />
+                        <circle cx="30" cy="16" r="1.5" fill="#2563EB" className="animate-pulse" />
+                        <circle cx="34" cy="24" r="2" fill="#F59E0B" className="animate-pulse" />
+                        <circle cx="28" cy="32" r="1.5" fill="#2563EB" className="animate-pulse" />
 
                         {/* Connecting diagonals */}
                         <path d="M30 16L34 24L28 32" stroke="#2563EB" strokeWidth="0.5" strokeDasharray="2 2" />
@@ -76,7 +78,7 @@ export function Logo({ variant = "full", className }: LogoProps) {
                         stroke="white"
                         strokeWidth="1"
                         strokeLinecap="round"
-                        opacity="0.3"
+                        opacity="0.4"
                         fill="none"
                     />
                 </svg>
@@ -85,9 +87,12 @@ export function Logo({ variant = "full", className }: LogoProps) {
             {/* Typography Variant */}
             {variant === "full" && (
                 <div className="flex flex-col justify-center">
-                    <h1 className="text-2xl font-bold tracking-tight leading-none text-white font-sans">
+                    <h1 className="text-2xl font-bold tracking-tight leading-none text-white font-sans drop-shadow-lg">
                         Brainy
                     </h1>
+                    <span className="text-[10px] tracking-[0.2em] text-white/60 font-medium mt-1 uppercase">
+                        Baccalaureate 2026
+                    </span>
                 </div>
             )}
         </div>
