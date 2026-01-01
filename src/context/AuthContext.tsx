@@ -5,8 +5,8 @@ import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/a
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { registerDevice, unregisterDevice } from "@/actions/device";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 // Stable Fingerprinting
 const getStableDeviceId = () => {
@@ -49,6 +49,7 @@ const clearAllStorage = () => {
 
 interface AuthContextType {
     user: User | null;
+    userProfile: any | null;
     loading: boolean;
     logout: () => Promise<void>;
     role: 'admin' | 'student' | null;
@@ -58,6 +59,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
+    userProfile: null,
     loading: true,
     logout: async () => { },
     role: null,
@@ -67,11 +69,18 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [userProfile, setUserProfile] = useState<any | null>(null);
     const [role, setRole] = useState<'admin' | 'student' | null>(null);
     const [loading, setLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'online' | 'reconnecting' | 'offline'>('online');
+    const [hasMounted, setHasMounted] = useState(false);
     const router = useRouter();
+
+    // Prevent hydration mismatch by only rendering after mount
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -99,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         if (userSnap.exists()) {
                             const data = userSnap.data();
                             setRole(data.role || 'student');
+                            setUserProfile(data); // Store full profile to prevent flicker
 
                             try {
                                 await registerDevice(currentUser.uid, {
@@ -114,21 +124,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                     clearAllStorage();
                                     setUser(null);
                                     setRole(null);
+                                    setUserProfile(null);
                                     setLoading(false);
                                     return;
                                 }
                             }
                         } else {
                             // First Login - create user document
-                            await setDoc(userRef, {
+                            const newData = {
                                 uid: currentUser.uid,
                                 email: currentUser.email,
                                 role: 'student',
                                 createdAt: new Date(),
                                 displayName: currentUser.displayName || "",
-                                photoURL: currentUser.photoURL || ""
-                            });
+                                photoURL: currentUser.photoURL || "",
+                                subscriptionStatus: 'free' // Default fallback
+                            };
+                            await setDoc(userRef, newData);
                             setRole('student');
+                            setUserProfile(newData);
+
                             await registerDevice(currentUser.uid, {
                                 deviceId,
                                 deviceName: navigator.userAgent.slice(0, 50)
@@ -155,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Logged out
                 setUser(null);
                 setRole(null);
+                setUserProfile(null);
                 clearAllStorage();
             }
             setLoading(false);
@@ -173,6 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Immediately clear user state (prevents "ghost session" UI)
         setUser(null);
         setRole(null);
+        setUserProfile(null);
 
         // Unregister device (non-blocking)
         if (user) {
@@ -203,19 +220,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => setIsLoggingOut(false), 500);
     }, [user, router]);
 
+    // If not mounted yet, show nothing to prevent hydration mismatch
+    // Optionally show the loader here too if you want a splash screen feel immediately
+    if (!hasMounted) {
+        return <LoadingSpinner fullScreen />;
+    }
+
     return (
-        <AuthContext.Provider value={{ user, loading, logout, role, connectionStatus, isLoggingOut }}>
+        <AuthContext.Provider value={{ user, userProfile, loading, logout, role, connectionStatus, isLoggingOut }}>
             {!loading && children}
-            {loading && (
-                <div className="fixed inset-0 bg-background z-[100] flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-600/20 animate-pulse">
-                            B
-                        </div>
-                        <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                    </div>
-                </div>
-            )}
+            {loading && <LoadingSpinner fullScreen />}
         </AuthContext.Provider>
     );
 }

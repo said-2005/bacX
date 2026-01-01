@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { BottomNav } from "./BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -24,11 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     // During auth loading
     if (loading) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
+        return <LoadingSpinner fullScreen />;
     }
 
     // If no user after loading
