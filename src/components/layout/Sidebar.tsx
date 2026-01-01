@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
-import { Logo } from "@/components/ui/Logo";
+import { BrainyLogo } from "@/components/ui/BrainyLogo";
 
 const mainNavItems = [
     { href: "/dashboard", label: "الرئيسية", icon: Home },
@@ -19,20 +19,21 @@ const mainNavItems = [
 const subjects = [
     { id: "math", label: "الرياضيات", icon: Calculator },
     { id: "physics", label: "الفيزياء", icon: FlaskConical },
-    { id: "science", label: "العلوم الطبيعية", icon: Microscope },
+    { id: "science", label: "العلوم", icon: Microscope },
+    { id: "philosophy", label: "الفلسفة", icon: Brain },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { role } = useAuth();
-    const [subjectsExpanded, setSubjectsExpanded] = useState(true);
+    const { userProfile } = useAuth();
+    const [isSubjectsOpen, setIsSubjectsOpen] = useState(true);
 
     return (
         <div className="w-full h-full flex flex-col bg-transparent relative">
             {/* Logo - Perfectly Centered */}
-            <div className="h-20 flex items-center justify-center border-b border-white/5 mx-6">
+            <div className="h-24 flex items-center justify-center border-b border-white/5 mx-6">
                 <Link href="/" className="group">
-                    <Logo variant="horizontal" />
+                    <BrainyLogo variant="full" />
                 </Link>
             </div>
 
