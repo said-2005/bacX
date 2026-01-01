@@ -116,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 while (retries > 0 && !success) {
                     try {
+                        // Attempt to fetch profile details from Firestore
                         const userSnap = await getDoc(userRef);
                         success = true;
                         setConnectionStatus('online');
@@ -164,20 +165,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 deviceName: navigator.userAgent.slice(0, 50)
                             });
                         }
+
+                        // Success path
                         setUser(currentUser);
 
                     } catch (error: unknown) {
-                        console.error("Auth Error:", error);
+                        console.error("Auth Error (Firestore access failed):", error);
                         const errorMessage = error instanceof Error ? error.message : String(error);
+
+                        // If it's a permission error (e.g. App Check / Rules) or critical failure, 
+                        // DO NOT RETRY - DO NOT BLOCK. Fallback to basic auth.
+                        if (errorMessage.includes('permission-denied') || errorMessage.includes('Missing or insufficient permissions')) {
+                            console.warn("⚠️ Firestore permission denied. Falling back to basic Auth.");
+                            success = true; // Treat as "done" so we don't retry
+
+                            // Fallback logic
+                            setUser(currentUser);
+                            setRole('student');
+                            setUserProfile({
+                                uid: currentUser.uid,
+                                email: currentUser.email,
+                                displayName: currentUser.displayName,
+                                photoURL: currentUser.photoURL
+                            });
+                            break;
+                        }
 
                         if (errorMessage.includes('offline') || errorMessage.includes('unavailable')) {
                             setConnectionStatus('reconnecting');
                             retries--;
-                            await new Promise(r => setTimeout(r, 2000));
+                            if (retries > 0) {
+                                await new Promise(r => setTimeout(r, 2000));
+                            } else {
+                                // Out of retries - Fallback instead of failing
+                                console.warn("⚠️ Firestore unreachable after retries. Falling back to basic Auth.");
+                                setUser(currentUser);
+                                setRole('student');
+                                setUserProfile({
+                                    uid: currentUser.uid,
+                                    email: currentUser.email
+                                });
+                                break;
+                            }
                         } else {
-                            // Critical error
-                            setLoading(false);
-                            return;
+                            // Unknown error - Fallback
+                            console.warn("⚠️ Unknown Auth Error. Falling back to basic Auth.");
+                            setUser(currentUser);
+                            setRole('student');
+                            break;
                         }
                     }
                 }
