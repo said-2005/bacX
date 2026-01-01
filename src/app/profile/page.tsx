@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { User, Mail, Calendar, GraduationCap, MapPin, Shield, CreditCard, Settings, Loader2, ChevronLeft } from "lucide-react";
+import { Mail, GraduationCap, Shield, CreditCard, Settings, Loader2, ChevronLeft } from "lucide-react";
+
 import Link from "next/link";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";

@@ -30,7 +30,8 @@ function RedirectToAuth() {
 export default function LivePage() {
     const { isLive, youtubeId, title, loading: statusLoading } = useLiveStatus();
     const { user, loading: authLoading } = useAuth();
-    const router = useRouter();
+
+
 
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkingSub, setCheckingSub] = useState(true);

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
-    Play, BookOpen, Calendar, Clock, Star,
+    Play, Calendar, Clock,
     ChevronLeft, Sparkles, Trophy, Flame
 } from "lucide-react";
 import Link from 'next/link';
@@ -62,7 +62,7 @@ export default function DashboardPage() {
                         </motion.div>
 
                         <h1 className="text-4xl md:text-6xl font-serif text-white leading-tight max-w-2xl drop-shadow-2xl">
-                            "العلم نورٌ يقذفه الله <br /> <span className="text-primary italic">في قلب من يشاء"</span>
+                            &quot;العلم نورٌ يقذفه الله <br /> <span className="text-primary italic">في قلب من يشاء&quot;</span>
                         </h1>
                     </div>
 

@@ -47,9 +47,21 @@ const clearAllStorage = () => {
     }
 };
 
+interface UserProfile {
+    role?: 'admin' | 'student';
+    subscriptionStatus?: 'free' | 'premium';
+    email?: string;
+    displayName?: string;
+    photoURL?: string;
+    uid?: string;
+    createdAt?: any;
+    isSubscribed?: boolean;
+    [key: string]: unknown;
+}
+
 interface AuthContextType {
     user: User | null;
-    userProfile: any | null;
+    userProfile: UserProfile | null;
     loading: boolean;
     logout: () => Promise<void>;
     role: 'admin' | 'student' | null;
@@ -69,7 +81,8 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [userProfile, setUserProfile] = useState<any | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
     const [role, setRole] = useState<'admin' | 'student' | null>(null);
     const [loading, setLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);

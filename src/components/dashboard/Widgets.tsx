@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, TrendingUp, Bell, Video, Calendar, ArrowUpRight, Target } from "lucide-react";
+import { TrendingUp, Bell, Video, Calendar, ArrowUpRight, Target } from "lucide-react";
 import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
@@ -10,25 +10,27 @@ import { db } from "@/lib/firebase";
 // =============================================================================
 // BAC COUNTDOWN — Sleek Minimalist Timer
 // =============================================================================
+// Move constant outside
+const BAC_DATE = new Date("2025-06-01T08:00:00");
+
 export function BacCountdown() {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
-    const bacDate = new Date("2025-06-01T08:00:00");
 
     // Calculate total days for progress
     const startDate = new Date("2024-09-01"); // Start of school year
-    const totalDays = differenceInDays(bacDate, startDate);
+    const totalDays = differenceInDays(BAC_DATE, startDate);
     const daysElapsed = differenceInDays(new Date(), startDate);
     const progressPercent = Math.min(Math.max((daysElapsed / totalDays) * 100, 0), 100);
 
     useEffect(() => {
         const tick = () => {
             const now = new Date();
-            if (now > bacDate) return;
+            if (now > BAC_DATE) return;
 
             setTimeLeft({
-                days: differenceInDays(bacDate, now),
-                hours: differenceInHours(bacDate, now) % 24,
-                minutes: differenceInMinutes(bacDate, now) % 60
+                days: differenceInDays(BAC_DATE, now),
+                hours: differenceInHours(BAC_DATE, now) % 24,
+                minutes: differenceInMinutes(BAC_DATE, now) % 60
             });
         };
 
@@ -50,7 +52,7 @@ export function BacCountdown() {
                     </span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">
-                    {format(bacDate, "d MMM", { locale: ar })}
+                    {format(BAC_DATE, "d MMM", { locale: ar })}
                 </span>
             </div>
 
