@@ -27,15 +27,20 @@ export default function SubscriptionPage() {
     useEffect(() => {
         const agent = typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown';
         if (user && !hasInitialized.current) {
-            setDevices([
-                { id: "device_current", name: agent.slice(0, 20), lastActive: new Date(), current: true },
-                { id: "device_old", name: "Other Device", lastActive: new Date(), current: false }
-            ]);
-            hasInitialized.current = true;
+            setTimeout(() => {
+                setDevices([
+                    { id: "device_current", name: agent.slice(0, 20), lastActive: new Date(), current: true },
+                    { id: "device_old", name: "Other Device", lastActive: new Date(), current: false }
+                ]);
+                hasInitialized.current = true;
+            }, 0);
         }
 
         // set stable expiry date
-        setExpiryDate(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('ar-MA'));
+        const timer = setTimeout(() => {
+            setExpiryDate(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('ar-MA'));
+        }, 0);
+        return () => clearTimeout(timer);
     }, [user]);
 
     const handleLogoutDevice = (deviceId: string) => {

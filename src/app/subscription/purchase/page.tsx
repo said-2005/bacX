@@ -155,7 +155,7 @@ export default function PurchasePage() {
                         try {
                             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                             resolve(downloadURL);
-                        } catch (urlError) {
+                        } catch {
                             reject(new Error("فشل الحصول على رابط الملف"));
                         }
                     }

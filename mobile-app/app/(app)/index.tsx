@@ -14,7 +14,7 @@ import { ar } from 'date-fns/locale';
 import { useAuth, useLivePulse } from '@/hooks';
 import { Header, GlassCard, LivePulse } from '@/components';
 import { colors, spacing, typography, borderRadius } from '@/theme';
-import { useRouter } from 'expo-router';
+import { colors, spacing, typography, borderRadius } from '@/theme';
 import { db } from '@/lib/firebase';
 
 /**
@@ -40,13 +40,12 @@ interface Announcement {
 export default function DashboardScreen() {
     const { userData } = useAuth();
     const { isLive, title: liveTitle } = useLivePulse();
-    // Router unused
     const [refreshing, setRefreshing] = useState(false);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
     const bacDate = new Date('2025-06-01T08:00:00');
     // Calculate initial days left directly in state initializer
-    const [daysLeft, setDaysLeft] = useState(() => {
+    const [daysLeft] = useState(() => {
         const now = new Date();
         return Math.max(0, differenceInDays(bacDate, now));
     });

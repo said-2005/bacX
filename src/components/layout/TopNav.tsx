@@ -27,6 +27,13 @@ const routeLabels: Record<string, string> = {
     "search": "البحث",
 };
 
+interface Notification {
+    id: string;
+    title: string;
+    body: string;
+    read: boolean;
+}
+
 export function TopNav() {
     const { user, userProfile, logout } = useAuth();
     const pathname = usePathname();
@@ -36,12 +43,7 @@ export function TopNav() {
     const [isLiveActive, setIsLiveActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
-    interface Notification {
-        id: string;
-        title: string;
-        body: string;
-        read: boolean;
-        const [notifications, setNotifications] = useState<Notification[]> ([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
     const profileRef = useRef<HTMLDivElement>(null);

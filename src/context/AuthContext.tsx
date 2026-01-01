@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
+import { auth, db } from "@/lib/firebase";
 import { registerDevice, unregisterDevice } from "@/actions/device";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
@@ -54,7 +54,7 @@ interface UserProfile {
     displayName?: string;
     photoURL?: string;
     uid?: string;
-    createdAt?: any;
+    createdAt?: unknown;
     isSubscribed?: boolean;
     [key: string]: unknown;
 }
@@ -228,12 +228,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Sign out from Firebase
         await firebaseSignOut(auth);
 
-        // Use replace to prevent back button from returning to dashboard
-        router.replace('/auth');
+        // Use window.location.href or similar if needed, or if we removed router, we just rely on state change causing render or simple reload.
+        // Since we are in AuthContext, a hard redirect might be better for logout to clear internal states.
+        window.location.href = '/auth';
 
         // Reset logging out flag after a short delay
         setTimeout(() => setIsLoggingOut(false), 500);
-    }, [user, router]);
+    }, [user]);
 
     // If not mounted yet, show children to allow hydration to proceed, 
     // or return null only if strict hydration match is required, but user wants content.
