@@ -3,9 +3,15 @@
 import { motion } from "framer-motion";
 import {
     Play, Calendar, Clock,
-    ChevronLeft, Sparkles, Trophy, Flame
+    ChevronLeft, Sparkles, Trophy, Flame,
+    Calculator, Atom, Megaphone
 } from "lucide-react";
 import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
 // Animation Variants
 const container = {
@@ -25,12 +31,32 @@ const item = {
 };
 
 export default function DashboardPage() {
-    const subjects = [
-        { title: "الرياضيات", level: "المستوى: متقدم", progress: 75, color: "from-blue-600 to-blue-900" },
-        { title: "الفيزياء", level: "المستوى: متوسط", progress: 45, color: "from-purple-600 to-purple-900" },
-        { title: "العلوم", level: "المستوى: بداية", progress: 10, color: "from-emerald-600 to-emerald-900" },
-        { title: "الفلسفة", level: "المستوى: متقدم", progress: 90, color: "from-rose-600 to-rose-900" },
-    ];
+    const [latestAnnouncement, setLatestAnnouncement] = useState<string | null>(null);
+    const [isNewAnnouncement, setIsNewAnnouncement] = useState(false);
+    const [announcementTime, setAnnouncementTime] = useState<string>("");
+
+    useEffect(() => {
+        const fetchAnnouncement = async () => {
+            try {
+                const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(1));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data();
+                    setLatestAnnouncement(data.content);
+
+                    const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+                    setAnnouncementTime(formatDistanceToNow(createdAt, { addSuffix: true, locale: ar }));
+
+                    // Check if new (less than 24 hours)
+                    const diffHours = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+                    setIsNewAnnouncement(diffHours < 24);
+                }
+            } catch (error) {
+                console.error("Failed to fetch announcements", error);
+            }
+        };
+        fetchAnnouncement();
+    }, []);
 
     return (
         <motion.div
@@ -111,39 +137,97 @@ export default function DashboardPage() {
                 </div>
             </motion.section>
 
-            {/* 3. MOVIE POSTER SUBJECTS */}
+            {/* 3. CINEMATIC DISCOVERY — Math, Physics & News */}
             <motion.section variants={item}>
                 <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-3xl font-serif text-white">المواد الدراسية</h2>
-                    <Link href="/subjects" className="text-white/50 hover:text-primary transition-colors flex items-center gap-2">
-                        عرض الكل <ChevronLeft className="w-4 h-4" />
-                    </Link>
+                    <h2 className="text-3xl font-serif text-white">المواد الأساسية</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {subjects.map((sub, i) => (
-                        <motion.div
-                            key={i}
-                            whileHover={{ y: -12, scale: 1.02 }}
-                            className="group relative aspect-[2/3] rounded-[40px] overflow-hidden cursor-pointer shadow-lg shadow-black/20"
-                        >
-                            <div className={`absolute inset-0 bg-gradient-to-br ${sub.color} mix-blend-multiply opacity-80 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                            {/* Content Overlay */}
-                            <div className="absolute inset-0 p-10 flex flex-col justify-end">
-                                <div className="translate-y-6 group-hover:translate-y-0 transition-transform duration-300">
-                                    <div className="flex items-center gap-2 mb-3 opacity-0 group-hover:opacity-100 transition-opacity delay-100">
-                                        <span className="text-xs font-bold bg-white/20 text-white px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">{sub.progress}% مكتمل</span>
-                                    </div>
-                                    <h3 className="text-3xl font-bold text-white mb-2">{sub.title}</h3>
-                                    <p className="text-white/80 text-base">{sub.level}</p>
-                                </div>
+                    {/* CARD 1: MATHEMATICS (The Architect) */}
+                    <Link href="/subject/math" className="group relative aspect-[3/4] rounded-[40px] overflow-hidden cursor-pointer shadow-2xl shadow-blue-900/10 hover:shadow-blue-600/20 transition-all duration-500 hover:scale-105 hover:ring-2 hover:ring-blue-500/50">
+                        {/* Background: Geometric Deep Charcoal */}
+                        <div className="absolute inset-0 bg-[#0B0C15]">
+                            {/* Geometric Grid Pattern */}
+                            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
+                            {/* Glowing Formula Effect */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-600/20 rounded-full blur-[80px] group-hover:bg-blue-600/30 transition-colors"></div>
+                        </div>
+
+                        {/* Overlay Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0A0A0F] opacity-90"></div>
+
+                        {/* Content */}
+                        <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                            <div className="self-end p-3 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 group-hover:bg-blue-600/20 group-hover:border-blue-500/30 transition-colors">
+                                <Calculator className="w-8 h-8 text-blue-400 group-hover:text-blue-300" />
                             </div>
 
-                            {/* Glossy sheen */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                        </motion.div>
-                    ))}
+                            <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                <h3 className="text-3xl font-bold text-white mb-2 font-serif">الرياضيات</h3>
+                                <p className="text-white/60 text-sm leading-relaxed">لغة الكون. تفاضل، تكامل، وهندسة الفضاء.</p>
+                            </div>
+                        </div>
+                    </Link>
+
+                    {/* CARD 2: PHYSICS (The Quantum) */}
+                    <Link href="/subject/physics" className="group relative aspect-[3/4] rounded-[40px] overflow-hidden cursor-pointer shadow-2xl shadow-purple-900/10 hover:shadow-purple-600/20 transition-all duration-500 hover:scale-105 hover:ring-2 hover:ring-purple-500/50">
+                        {/* Background: Cinematic Space */}
+                        <div className="absolute inset-0 bg-[#080514]">
+                            {/* Light Trails / Stars */}
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(168,85,247,0.15),transparent_70%)]"></div>
+                            {/* Subtle Mesh */}
+                            <div className="absolute inset-0 opacity-30 mix-blend-screen bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
+                        </div>
+
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0A0A0F] opacity-90"></div>
+
+                        <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                            <div className="self-end p-3 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 group-hover:bg-purple-600/20 group-hover:border-purple-500/30 transition-colors">
+                                <Atom className="w-8 h-8 text-purple-400 group-hover:text-purple-300" />
+                            </div>
+
+                            <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                <h3 className="text-3xl font-bold text-white mb-2 font-serif">الفيزياء</h3>
+                                <p className="text-white/60 text-sm leading-relaxed">قوانين الطبيعة. ميكانيك، طاقة، ونووي.</p>
+                            </div>
+                        </div>
+                    </Link>
+
+                    {/* CARD 3: ANNOUNCEMENTS (The Voice) */}
+                    <div className="group relative aspect-[3/4] rounded-[40px] overflow-hidden cursor-pointer shadow-2xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-500 hover:scale-105 hover:ring-2 hover:ring-blue-400/50">
+                        {/* Background: Electric Blue Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 to-black group-hover:scale-110 transition-transform duration-1000"></div>
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+
+                        <div className="absolute inset-0 p-8 flex flex-col">
+                            <div className="flex justify-between items-start mb-auto">
+                                <div className="p-3 rounded-2xl bg-blue-500/20 backdrop-blur-md border border-blue-400/30">
+                                    <Megaphone className="w-8 h-8 text-blue-300" />
+                                </div>
+                                {isNewAnnouncement && (
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="relative z-10">
+                                <h3 className="text-xl font-bold text-white mb-3">آخر الإعلانات</h3>
+                                <p className="text-white/90 text-lg font-medium leading-relaxed font-serif">
+                                    {latestAnnouncement ? `"${latestAnnouncement}"` : "لا توجد إعلانات جديدة حالياً."}
+                                </p>
+                                {latestAnnouncement && (
+                                    <p className="text-blue-300 text-xs mt-4 font-mono">
+                                        تم النشر: {announcementTime}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </motion.section>
 
