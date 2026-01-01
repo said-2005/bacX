@@ -6,7 +6,6 @@ import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { BottomNav } from "./BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();

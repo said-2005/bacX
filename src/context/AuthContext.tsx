@@ -87,13 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'online' | 'reconnecting' | 'offline'>('online');
-    const [hasMounted, setHasMounted] = useState(false);
-    const router = useRouter();
+    // Prevent hydration mismatch by only rendering after mount - logic moved to return
+    // Removing the setState in useEffect to fix lint error and performance
+    // Instead we rely on initial null check or simply rendering children immediately if possible
+    // For this context, we initialize logic but don't blocking render via effect state if we can avoid it.
+    // However, the issue is "setHasMounted(true)" triggering re-render.
+    // To fix: We can remove hasMounted if it's unused (Lint said it is unused).
+    // Lint warning: 'hasMounted' is assigned a value but never used.
+    // So we can just remove it.
 
-    // Prevent hydration mismatch by only rendering after mount
-    useEffect(() => {
-        setHasMounted(true);
-    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {

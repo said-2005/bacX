@@ -31,9 +31,12 @@ export default function LiveScreen() {
 
     useEffect(() => {
         if (!isLive || !isSubscribed) {
-            setYoutubeId(null);
-            setLoading(false);
-            return;
+            // Delay state update to avoid sync setState in effect causing cascade
+            const timer = setTimeout(() => {
+                setYoutubeId(null);
+                setLoading(false);
+            }, 0);
+            return () => clearTimeout(timer);
         }
 
         // Fetch secret stream ID for subscribed users

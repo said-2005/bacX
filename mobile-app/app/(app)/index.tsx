@@ -40,18 +40,18 @@ interface Announcement {
 export default function DashboardScreen() {
     const { userData } = useAuth();
     const { isLive, title: liveTitle } = useLivePulse();
-    const router = useRouter();
+    // Router unused
     const [refreshing, setRefreshing] = useState(false);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [daysLeft, setDaysLeft] = useState(0);
+
+    const bacDate = new Date('2025-06-01T08:00:00');
+    // Calculate initial days left directly in state initializer
+    const [daysLeft, setDaysLeft] = useState(() => {
+        const now = new Date();
+        return Math.max(0, differenceInDays(bacDate, now));
+    });
 
     const displayName = userData?.displayName?.split(' ')[0] || 'طالب';
-    const bacDate = new Date('2025-06-01T08:00:00');
-
-    useEffect(() => {
-        const now = new Date();
-        setDaysLeft(Math.max(0, differenceInDays(bacDate, now)));
-    }, []);
 
     useEffect(() => {
         // Listen to announcements

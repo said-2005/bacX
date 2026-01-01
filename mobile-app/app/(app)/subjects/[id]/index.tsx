@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Header, GlassCard } from '@/components';
+import { Header } from '@/components';
 import { colors, spacing, typography, borderRadius, shadows } from '@/theme';
 
 /**
@@ -73,7 +74,7 @@ export default function SubjectUnitsScreen() {
     const subjectName = subjectNames[subjectId || ''] || 'المادة';
 
     const handleUnitPress = (unitId: string) => {
-        router.push(`/(app)/subjects/${subjectId}/${unitId}`);
+        router.push(`/ (app) / subjects / ${subjectId}/${unitId}`);
     };
 
     return (

@@ -3,7 +3,10 @@
 import { useAuth } from "@/context/AuthContext";
 import { Bell, Search, LogOut, ChevronDown, X, BookOpen, Crown, User as UserIcon } from "lucide-react";
 
+import { Bell, Search, LogOut, ChevronDown, X, BookOpen, Crown, User as UserIcon } from "lucide-react";
+
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { collection, query, where, orderBy, onSnapshot, doc, limit } from "firebase/firestore";
@@ -38,9 +41,7 @@ export function TopNav() {
         title: string;
         body: string;
         read: boolean;
-        createdAt: any;
-    }
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+        const [notifications, setNotifications] = useState<Notification[]> ([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
     const profileRef = useRef<HTMLDivElement>(null);
@@ -222,7 +223,14 @@ export function TopNav() {
                             isProfileOpen ? "ring-primary shadow-primary/20" : "ring-white/10 group-hover:ring-white/30"
                         )}>
                             {user?.photoURL ? (
-                                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                                <div className="relative w-full h-full">
+                                    <Image
+                                        src={user.photoURL}
+                                        alt="Profile"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
                             ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-slate-800 to-black flex items-center justify-center">
                                     <span className="text-sm font-bold text-primary">{user?.displayName?.[0]?.toUpperCase() || "B"}</span>
@@ -340,7 +348,7 @@ export function TopNav() {
                                         </div>
                                     ) : (
                                         <div className="p-8 text-center text-slate-500">
-                                            لا توجد نتائج مطابقة لـ "{searchQuery}"
+                                            لا توجد نتائج مطابقة لـ &quot;{searchQuery}&quot;
                                         </div>
                                     )}
                                 </div>

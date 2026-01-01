@@ -14,8 +14,8 @@ interface LivePulseProps {
 }
 
 export function LivePulse({ isLive, title, compact = false }: LivePulseProps) {
-    const pulseAnim = useRef(new Animated.Value(1)).current;
-    const opacityAnim = useRef(new Animated.Value(0.6)).current;
+    const pulseAnim = React.useMemo(() => new Animated.Value(1), []);
+    const opacityAnim = React.useMemo(() => new Animated.Value(0.6), []);
 
     useEffect(() => {
         if (isLive) {
