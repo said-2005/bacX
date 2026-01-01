@@ -13,6 +13,7 @@ import { collection, query, where, orderBy, onSnapshot, doc, limit } from "fireb
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/Logo";
 
 // Breadcrumb mapping
 const routeLabels: Record<string, string> = {
@@ -130,6 +131,11 @@ export function TopNav() {
         <header className="relative w-full h-full flex items-center justify-between px-4 lg:px-8 bg-transparent">
             {/* Breadcrumbs */}
             <nav className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="lg:hidden ml-2">
+                    <Link href="/">
+                        <Logo variant="icon" className="w-8 h-8" />
+                    </Link>
+                </div>
                 {breadcrumbs.map((crumb, index) => (
                     <span key={index} className="flex items-center">
                         {index > 0 && <ChevronDown className="w-3 h-3 mx-2 opacity-30 -rotate-90" />}

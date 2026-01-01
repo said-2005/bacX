@@ -1,5 +1,4 @@
-import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
@@ -12,6 +11,12 @@ const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700"],
   variable: "--font-sans",
+  display: 'swap',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
   display: 'swap',
 });
 
@@ -60,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className="scroll-smooth">
-      <body className={`${ibmPlexSansArabic.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
+      <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
         <NextTopLoader
           color="#2563EB"
           initialPosition={0.08}

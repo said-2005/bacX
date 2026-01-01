@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
+import { Logo } from "@/components/ui/Logo";
 
 const mainNavItems = [
     { href: "/dashboard", label: "الرئيسية", icon: Home },
@@ -30,11 +31,8 @@ export function Sidebar() {
         <div className="w-full h-full flex flex-col bg-transparent relative">
             {/* Logo - Perfectly Centered */}
             <div className="h-20 flex items-center justify-center border-b border-white/5 mx-6">
-                <Link href="/" className="flex items-center gap-3 group">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-105 transition-transform duration-300 ring-1 ring-white/10">
-                        <Brain className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-wide">Brainy</span>
+                <Link href="/" className="group">
+                    <Logo variant="horizontal" />
                 </Link>
             </div>
 
