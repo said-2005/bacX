@@ -5,11 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { BottomNav } from "./BottomNav";
-// ... imports
-import { Sidebar } from "./Sidebar";
-import { TopNav } from "./TopNav";
-import { BottomNav } from "./BottomNav";
-// Removed Framer Motion imports for View Transitions
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
