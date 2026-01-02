@@ -25,18 +25,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // Optimistic Rendering:
     // If loading, we assume we are authenticated (or checking) and show the shell skeleton/structure
     // to prevent layout shifts or blank screens. 
-    // If eventually !user and !loading, we fall back to children (likely redirecting).
-
-    // If not loading and no user, likely not authenticated accessing protected route
-    // (Middleware usually handles this, but client-side check fallback)
-    if (!user && !loading) {
-        return <>{children}</>;
-    }
-
-    // Authenticated user (OR Loading) — Premium Dashboard Layout
-    // We render the shell even while loading to show the UI structure immediately.
-
-    // Authenticated user — Premium Dashboard Layout
+    // Middleware handles the actual security redirect.
+    // We ALWAYS render the shell on protected routes to avoid the "Cliff" effect. We render the shell even while loading to show the UI structure immediately.
     return (
         <div className="flex h-screen w-full bg-background font-sans overflow-hidden text-foreground selection:bg-primary/30">
             {/* Sidebar — Desktop Wrapper */}
