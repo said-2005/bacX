@@ -32,7 +32,7 @@ export function Sidebar() {
         <div className="w-full h-full flex flex-col bg-transparent relative">
             {/* Logo - Perfectly Centered */}
             <div className="h-24 flex items-center justify-center border-b border-white/5 mx-6">
-                <Link href="/" className="group">
+                <Link href="/dashboard" className="group">
                     <BrainyLogo variant="full" />
                 </Link>
             </div>

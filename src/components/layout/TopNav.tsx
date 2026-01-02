@@ -132,7 +132,7 @@ export function TopNav() {
             {/* Breadcrumbs */}
             <nav className="flex items-center gap-2 text-sm text-slate-400">
                 <div className="lg:hidden ml-2">
-                    <Link href="/">
+                    <Link href="/dashboard">
                         <BrainyLogo variant="icon" className="w-10 h-10" />
                     </Link>
                 </div>
