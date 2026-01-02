@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, Play, Star, BookOpen, Crown } from "lucide-react";
+import { Check, Play, Star, BookOpen, Crown } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { Logo } from "@/components/ui/Logo";
-import { NeuralBackground } from "@/components/ui/NeuralBackground";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { cn } from "@/lib/utils";
 

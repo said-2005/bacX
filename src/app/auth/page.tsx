@@ -8,12 +8,11 @@ import { Mail, Lock, ArrowRight, ArrowLeft, AlertCircle, MapPin, BookOpen, Check
 import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth, UserProfile } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { SignUp } from "@/components/auth/SignUp";
 import { toast } from "sonner";
 import { Logo } from "@/components/ui/Logo";
 import { NeuralBackground } from "@/components/ui/NeuralBackground";
-import { cn } from "@/lib/utils";
 import { saveStudentData } from "@/lib/user";
 import { ALGERIAN_WILAYAS } from "@/lib/data/wilayas";
 

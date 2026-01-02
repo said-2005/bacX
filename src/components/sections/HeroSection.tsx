@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, AnimatePresence, MotionStyle } from "framer-motion";
+import { motion, MotionStyle } from "framer-motion";
 import { ArrowLeft, Play } from "lucide-react";
 import Link from "next/link";
 import { NeuralBackground } from "@/components/ui/NeuralBackground";

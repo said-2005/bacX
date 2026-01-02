@@ -25,7 +25,7 @@ const subjects = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { userProfile, role } = useAuth();
+    const { role } = useAuth();
     const [isSubjectsOpen, setIsSubjectsOpen] = useState(true);
 
     return (

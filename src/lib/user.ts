@@ -1,4 +1,4 @@
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, FieldValue } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface StudentData {
@@ -9,14 +9,16 @@ export interface StudentData {
     email?: string;
     role?: string;
     isSubscribed?: boolean;
-    createdAt?: any;
-    lastLogin?: any;
+    createdAt?: Date | FieldValue;
+    lastLogin?: Date | FieldValue;
+    // Allow dynamic fields for mapping but aim for strictness
+    [key: string]: string | boolean | Date | FieldValue | undefined;
 }
 
 export async function saveStudentData(data: Partial<StudentData> & { uid: string }, options?: { isNewUser?: boolean }) {
     const userRef = doc(db, "users", data.uid);
 
-    const payload: any = {
+    const payload: Partial<StudentData> = {
         ...data,
         lastLogin: serverTimestamp()
     };

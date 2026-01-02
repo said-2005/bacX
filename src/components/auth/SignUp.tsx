@@ -9,14 +9,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { User, Mail, Lock, MapPin, BookOpen, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 interface SignUpProps {
     onToggleLogin: () => void;
 }
 
 export function SignUp({ onToggleLogin }: SignUpProps) {
-    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
     // Form State

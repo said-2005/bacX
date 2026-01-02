@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import * as jose from 'jose';
-
-import { getGooglePublicKeys, verifySessionCookie } from '@/lib/auth-jwt';
+import { verifySessionCookie } from '@/lib/auth-jwt';
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';

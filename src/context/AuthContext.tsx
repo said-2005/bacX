@@ -6,7 +6,6 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 import { registerDevice, unregisterDevice } from "@/actions/device";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 // Stable Fingerprinting
 const getStableDeviceId = () => {

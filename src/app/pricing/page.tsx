@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Check, X, ChevronDown, Sparkles, Building2, User } from "lucide-react";
+import { Check, X, ChevronDown, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { NeuralBackground } from "@/components/ui/NeuralBackground";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { cn } from "@/lib/utils";
 
 // --- Data ---

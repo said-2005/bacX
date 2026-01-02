@@ -9,7 +9,6 @@ import { BottomNav } from "./BottomNav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const { user, loading } = useAuth();
 
     // Routes that should NOT have the dashboard layout
     const publicRoutes = ['/', '/auth', '/maintenance', '/pricing'];

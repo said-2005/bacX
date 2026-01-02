@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server';
+
 import * as jose from 'jose';
 
 const GOOGLE_KEYS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
