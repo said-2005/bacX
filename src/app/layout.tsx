@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, type UserProfile } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import { BackButton } from "@/components/ui/BackButton";
@@ -68,10 +68,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // --- SERVER AUTH HYDRATION ---
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('bacx_session')?.value;
   let initialUser = null;
-  let initialProfile = null;
+  let initialProfile: UserProfile | null = null;
 
   if (sessionCookie) {
     const payload = await verifySessionCookie(sessionCookie);
