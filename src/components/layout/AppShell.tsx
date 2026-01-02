@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
 
     // Routes that should NOT have the dashboard layout
-    const publicRoutes = ['/', '/auth', '/maintenance'];
+    const publicRoutes = ['/', '/auth', '/maintenance', '/pricing'];
     const isPublicRoute = publicRoutes.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
     );
