@@ -184,9 +184,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             setRole('student');
                             setUserProfile({
                                 uid: currentUser.uid,
-                                email: currentUser.email,
-                                displayName: currentUser.displayName,
-                                photoURL: currentUser.photoURL
+                                email: currentUser.email || undefined,
+                                displayName: currentUser.displayName || undefined,
+                                photoURL: currentUser.photoURL || undefined
                             });
                             break;
                         }
@@ -203,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 setRole('student');
                                 setUserProfile({
                                     uid: currentUser.uid,
-                                    email: currentUser.email
+                                    email: currentUser.email || undefined
                                 });
                                 break;
                             }
