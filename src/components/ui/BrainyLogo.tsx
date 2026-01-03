@@ -1,4 +1,14 @@
+"use client";
+
+import React from "react";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { StonePyramidIcon } from "./StonePyramidIcon";
+
+interface BrainyLogoProps {
+    variant?: "full" | "icon" | "hero" | "navbar" | "watermark";
+    className?: string;
+}
 
 export function BrainyLogo({ variant = "full", className, imageSrc }: BrainyLogoProps & { imageSrc?: string }) {
     const isWatermark = variant === "watermark";
