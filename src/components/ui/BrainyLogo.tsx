@@ -13,19 +13,14 @@ interface BrainyLogoProps {
 export function BrainyLogo({ variant = "full", className, imageSrc }: BrainyLogoProps & { imageSrc?: string }) {
     const isWatermark = variant === "watermark";
 
-    if (variant === "icon") {
-        return (
-            <div className={cn("relative select-none", className)}>
-                <StonePyramidIcon />
-            </div>
-        );
-    }
+    // simplified: always use the high-res image for now as it contains both icon and text in the stone design
+    // The user explicitly wants the "shape + writing" from the image.
 
     return (
         <div className={cn("relative select-none", className)}>
             <div className="relative w-full h-full">
                 <Image
-                    src={imageSrc || "/logo.png"}
+                    src={imageSrc || "/brainy-logo-final.png"}
                     alt="Brainy Logo"
                     width={512}
                     height={512}

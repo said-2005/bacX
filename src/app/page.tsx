@@ -48,10 +48,7 @@ export default function LandingPage() {
           <div className="relative group select-none flex items-center gap-6 z-20">
             {/* Removed background glow for true transparency */}
             <div className="relative flex items-center gap-4">
-              <BrainyLogo variant="icon" className="h-[4.5rem] w-[4.5rem] drop-shadow-lg" />
-              <span className="text-4xl md:text-5xl font-cinzel text-[#F5E6D3] tracking-[0.05em] drop-shadow-md pt-1">
-                Brainy
-              </span>
+              <BrainyLogo variant="full" className="h-[6rem] w-auto drop-shadow-xl" />
             </div>
           </div>
 
