@@ -3,7 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export function BrainyStoneLogoSVG({ className }: { className?: string }) {
+export function BrainyStoneLogoRealistic({ className }: { className?: string }) {
     return (
         <svg
             viewBox="0 0 400 400"
