@@ -46,21 +46,18 @@ export default function LandingPage() {
 
           {/* Right Side: Luxury Brand (Imprinted + Soul) */}
           <div className="relative group select-none flex items-center gap-6 z-20">
-            {/* "The Soul" - Faint Background Glow */}
-            <div className="absolute inset-0 bg-primary/20 blur-[50px] scale-150 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-
-            <div className="relative flex items-center gap-5">
-              <BrainyLogo variant="icon" className="h-[5rem] w-[5rem] drop-shadow-[0_4px_20px_rgba(37,99,235,0.2)]" />
-              <span className="text-5xl font-cinzel text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-blue-200 tracking-[0.05em] drop-shadow-lg pt-1">
+            {/* Removed background glow for true transparency */}
+            <div className="relative flex items-center gap-4">
+              <BrainyLogo variant="icon" imageSrc="/logo-transparent.png" className="h-[4.5rem] w-[4.5rem] drop-shadow-lg" />
+              <span className="text-4xl md:text-5xl font-cinzel text-[#F5E6D3] tracking-[0.05em] drop-shadow-md pt-1">
                 Brainy
               </span>
             </div>
           </div>
 
           {/* Left Side: Minimal Login Button */}
-          <Link href="/auth?mode=login" className="relative px-8 py-2.5 rounded-full border border-white/20 text-white/90 hover:text-white hover:border-white/40 transition-all text-sm uppercase tracking-widest font-medium group overflow-hidden">
+          <Link href="/auth?mode=login" className="relative px-6 py-2 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition-all text-xs uppercase tracking-widest font-medium group overflow-hidden bg-white/5 hover:bg-white/10">
             <span className="relative z-10 font-cinzel text-xs font-bold">Log In</span>
-            <div className="absolute inset-0 bg-white/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
           </Link>
         </div>
       </motion.header>

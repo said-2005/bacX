@@ -9,14 +9,14 @@ interface BrainyLogoProps {
     className?: string;
 }
 
-export function BrainyLogo({ variant = "full", className }: BrainyLogoProps) {
+export function BrainyLogo({ variant = "full", className, imageSrc }: BrainyLogoProps & { imageSrc?: string }) {
     const isWatermark = variant === "watermark";
 
     return (
         <div className={cn("relative select-none", className)}>
             <div className="relative w-full h-full">
                 <Image
-                    src="/logo.png"
+                    src={imageSrc || "/logo.png"}
                     alt="Brainy Logo"
                     width={512}
                     height={512}
