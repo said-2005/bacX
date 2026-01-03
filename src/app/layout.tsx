@@ -24,6 +24,15 @@ const playfairDisplay = Playfair_Display({
   display: 'swap',
 });
 
+import { Amiri } from "next/font/google"; // Import Amiri
+
+const amiri = Amiri({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-amiri",
+  display: "swap",
+});
+
 // --- SEO & VIEWPORT ---
 export const viewport: Viewport = {
   themeColor: '#2563EB', // Electric Blue
@@ -99,7 +108,7 @@ export default async function RootLayout({
   return (
     <ViewTransitions>
       <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
-        <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
+        <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
           <NextTopLoader
             color="#2563EB"
             initialPosition={0.08}

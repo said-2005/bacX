@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Check, Play, Star, BookOpen, Crown } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { Logo } from "@/components/ui/Logo";
+import { BrainyLogo } from "@/components/ui/BrainyLogo";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { cn } from "@/lib/utils";
 
@@ -43,8 +43,17 @@ export default function LandingPage() {
         )}
       >
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
-          <Logo showText />
-          <Link href="/auth?mode=login" className="px-6 py-2.5 rounded-full border border-white/10 bg-white/5 text-white/90 hover:bg-white/10 hover:text-white transition-all text-sm font-bold backdrop-blur-md shadow-lg hover:shadow-primary/20">
+
+          {/* Right Side: Logo & Brand (Imprinted) */}
+          <div className="flex items-center gap-5 select-none">
+            <BrainyLogo variant="icon" className="h-[4.5rem] w-[4.5rem] drop-shadow-[0_2px_15px_rgba(37,99,235,0.3)]" />
+            <span className="text-[3.5rem] font-amiri text-white leading-none pt-4 tracking-wide drop-shadow-lg">
+              برايني
+            </span>
+          </div>
+
+          {/* Left Side: Login Button */}
+          <Link href="/auth?mode=login" className="px-8 py-3 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white transition-all text-base font-medium backdrop-blur-md shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0">
             تسجيل الدخول
           </Link>
         </div>

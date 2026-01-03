@@ -34,6 +34,7 @@ const config: Config = {
             fontFamily: {
                 sans: ["var(--font-sans)", "sans-serif"],
                 serif: ["var(--font-serif)", "serif"],
+                amiri: ["var(--font-amiri)", "serif"],
             },
             borderRadius: {
                 '4xl': '2.5rem',
