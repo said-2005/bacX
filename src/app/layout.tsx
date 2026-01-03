@@ -89,7 +89,9 @@ export default async function RootLayout({
         email: payload.email as string,
         displayName: payload.name as string,
         photoURL: payload.picture as string,
-        role: (payload.admin || payload.role === 'admin') ? 'admin' : 'student'
+        role: (payload.admin || payload.role === 'admin') ? 'admin' : 'student',
+        subscriptionStatus: 'free',
+        isSubscribed: false
       };
     }
   }
