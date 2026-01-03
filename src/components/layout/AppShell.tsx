@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { BottomNav } from "./BottomNav";
