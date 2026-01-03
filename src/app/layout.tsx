@@ -24,12 +24,19 @@ const playfairDisplay = Playfair_Display({
   display: 'swap',
 });
 
-import { Amiri } from "next/font/google"; // Import Amiri
+import { Amiri, Cinzel } from "next/font/google"; // Import Amiri and Cinzel
 
 const amiri = Amiri({
   subsets: ["arabic"],
   weight: ["400", "700"],
   variable: "--font-amiri",
+  display: "swap",
+});
+
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-cinzel",
   display: "swap",
 });
 
@@ -108,7 +115,7 @@ export default async function RootLayout({
   return (
     <ViewTransitions>
       <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
-        <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
+        <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} ${cinzel.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
           <NextTopLoader
             color="#2563EB"
             initialPosition={0.08}

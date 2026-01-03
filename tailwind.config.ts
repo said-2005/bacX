@@ -35,6 +35,7 @@ const config: Config = {
                 sans: ["var(--font-sans)", "sans-serif"],
                 serif: ["var(--font-serif)", "serif"],
                 amiri: ["var(--font-amiri)", "serif"],
+                cinzel: ["var(--font-cinzel)", "serif"],
             },
             borderRadius: {
                 '4xl': '2.5rem',
