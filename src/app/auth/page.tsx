@@ -180,10 +180,38 @@ function AuthContent() {
 
     // --- Renders ---
 
+    // Handle go back with fallback
+    const handleGoBack = () => {
+        // Check if there's history to go back to
+        if (window.history.length > 1) {
+            router.back();
+        } else {
+            // Fallback to home if opened in new tab
+            router.push('/');
+        }
+    };
+
     if (loading) return null;
 
     return (
         <div className="flex min-h-screen w-full bg-[#050505] overflow-hidden selection:bg-primary/30 text-foreground font-sans">
+
+            {/* Go Back Button - Glassmorphism Style */}
+            <button
+                onClick={handleGoBack}
+                className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2.5 
+                           bg-white/5 hover:bg-white/10 
+                           backdrop-blur-md 
+                           border border-white/10 hover:border-white/20
+                           rounded-full
+                           text-white/70 hover:text-white
+                           transition-all duration-300 ease-out
+                           group"
+                aria-label="Go back"
+            >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-200" />
+                <span className="hidden sm:inline text-sm font-medium">رجوع</span>
+            </button>
 
             {/* LEFT PANEL - BRANDING (Desktop Only) */}
             <div className="hidden lg:flex w-1/2 relative bg-[#020617] items-center justify-center p-12 overflow-hidden border-l border-white/5">
