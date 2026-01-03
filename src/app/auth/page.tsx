@@ -5,16 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Mail, Lock, ArrowRight, ArrowLeft, AlertCircle, MapPin, BookOpen, Check } from "lucide-react";
-import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { SignUp } from "@/components/auth/SignUp";
 import { toast } from "sonner";
 import { Logo } from "@/components/ui/Logo";
 import { NeuralBackground } from "@/components/ui/NeuralBackground";
-import { saveStudentData } from "@/lib/user";
 import { ALGERIAN_WILAYAS } from "@/lib/data/wilayas";
+import type { AuthStatus } from "@/context/AuthContext";
 
 // --- Google Icon SVG ---
 const GoogleIcon = () => (
@@ -30,7 +30,7 @@ const GoogleIcon = () => (
 type AuthView = 'login' | 'signup' | 'forgot-password' | 'onboarding';
 
 function AuthContent() {
-    const { user, userProfile, loading } = useAuth();
+    const { user, profile, loading, loginWithEmail, loginWithGoogle, completeOnboarding } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -72,37 +72,29 @@ function AuthContent() {
     useEffect(() => {
         if (!loading && user) {
             // Check if profile is complete
-            if (userProfile) {
+            if (profile) {
                 const isProfileComplete =
-                    Boolean(userProfile.wilaya) &&
-                    Boolean(userProfile.major) &&
-                    Boolean(userProfile.fullName || userProfile.displayName);
+                    Boolean(profile.wilaya) &&
+                    Boolean(profile.major) &&
+                    Boolean(profile.fullName || profile.displayName);
 
                 if (isProfileComplete) {
                     router.replace("/dashboard");
                 } else {
-                    // Profile incomplete - determine if we need onboarding
+                    // Profile incomplete - show onboarding
                     // Skip if we are in 'signup' view (Email Signup handles its own data/redirect atomically)
                     // Skip if we are already in 'onboarding' view
                     if (view !== 'onboarding' && view !== 'signup') {
-                        // Detect Google signup: user has OAuth displayName but no Firestore data (wilaya/major)
-                        // This means they came through Google and need to complete their profile
-                        const isGoogleSignup = Boolean(user.displayName) && !userProfile.wilaya;
-
-                        // Only show onboarding for Google signups or existing users with incomplete profiles
-                        // Email signups redirect to /dashboard directly (their data is guaranteed complete)
-                        if (isGoogleSignup || userProfile.createdAt) {
-                            setOnboardingData(prev => ({
-                                ...prev,
-                                fullName: user.displayName || (userProfile.fullName as string) || prev.fullName
-                            }));
-                            setView('onboarding');
-                        }
+                        setOnboardingData(prev => ({
+                            ...prev,
+                            fullName: user.displayName || profile.fullName || prev.fullName
+                        }));
+                        setView('onboarding');
                     }
                 }
             }
         }
-    }, [user, userProfile, loading, router, view]);
+    }, [user, profile, loading, router, view]);
 
     // --- Handlers ---
 
@@ -110,8 +102,9 @@ function AuthContent() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            await loginWithEmail(email, password);
             toast.success("تم تسجيل الدخول بنجاح");
+            // Redirect handled by useEffect above
         } catch (error) {
             console.error(error);
             toast.error("فشل تسجيل الدخول: تأكد من البيانات");
@@ -123,8 +116,19 @@ function AuthContent() {
     const handleGoogleLogin = async () => {
         setIsLoading(true);
         try {
-            const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            const status: AuthStatus = await loginWithGoogle();
+
+            if (status === "REQUIRE_ONBOARDING") {
+                // Google user needs to complete profile
+                setOnboardingData(prev => ({
+                    ...prev,
+                    fullName: user?.displayName || ""
+                }));
+                setView('onboarding');
+            } else {
+                // Fully authenticated - redirect handled by useEffect
+                toast.success("تم تسجيل الدخول بنجاح");
+            }
         } catch (error) {
             console.error(error);
             toast.error("فشل تسجيل الدخول عبر Google");
@@ -158,22 +162,19 @@ function AuthContent() {
 
         setIsLoading(true);
         try {
-            await saveStudentData({
-                uid: user.uid,
-                email: user.email || "",
+            await completeOnboarding({
                 fullName: onboardingData.fullName,
                 wilaya: onboardingData.wilaya,
                 major: onboardingData.major,
-                displayName: user.displayName || onboardingData.fullName,
-                photoURL: user.photoURL || ""
-            }, { isNewUser: true }); // true - this creates the full Firestore doc for Google signups
+            });
 
             toast.success("تم تحديث البيانات بنجاح!");
-            window.location.href = "/dashboard";
+            router.replace("/dashboard");
 
         } catch (error) {
             console.error(error);
             toast.error("فشل حفظ البيانات");
+        } finally {
             setIsLoading(false);
         }
     };

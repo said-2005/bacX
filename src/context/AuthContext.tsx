@@ -1,32 +1,109 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { createContext, useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+    User,
+    onAuthStateChanged,
+    signOut as firebaseSignOut,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithPopup,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-
 import { registerDevice, unregisterDevice } from "@/actions/device";
 
-// Stable Fingerprinting
-const getStableDeviceId = () => {
-    if (typeof window === 'undefined') return 'server';
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
+
+export interface UserProfile {
+    uid: string;
+    email: string;
+    fullName?: string;
+    displayName?: string;
+    photoURL?: string;
+    wilaya?: string;
+    major?: string;
+    role: "admin" | "student";
+    subscriptionStatus: "free" | "premium";
+    isSubscribed: boolean;
+    createdAt?: unknown;
+    lastLogin?: unknown;
+}
+
+export interface AuthState {
+    user: User | null;
+    profile: UserProfile | null;
+    loading: boolean;
+    error: string | null;
+}
+
+export type AuthStatus = "AUTHENTICATED" | "UNAUTHENTICATED" | "REQUIRE_ONBOARDING";
+
+export interface SignupData {
+    email: string;
+    password: string;
+    fullName: string;
+    wilaya: string;
+    major: string;
+}
+
+export interface OnboardingData {
+    fullName: string;
+    wilaya: string;
+    major: string;
+}
+
+interface AuthContextType extends AuthState {
+    // Core Auth Methods
+    loginWithEmail: (email: string, password: string) => Promise<void>;
+    signupWithEmail: (data: SignupData) => Promise<void>;
+    loginWithGoogle: () => Promise<AuthStatus>;
+    completeOnboarding: (data: OnboardingData) => Promise<void>;
+    logout: () => Promise<void>;
+
+    // Utility
+    role: "admin" | "student" | null;
+    connectionStatus: "online" | "reconnecting" | "offline";
+    isLoggingOut: boolean;
+    refreshProfile: () => Promise<void>;
+
+    // Backward compatibility alias
+    userProfile: UserProfile | null;
+}
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+/**
+ * Generate a stable device fingerprint for device management
+ */
+const getStableDeviceId = (): string => {
+    if (typeof window === "undefined") return "server";
     const components = [
         navigator.userAgent,
         navigator.language,
         screen.colorDepth,
-        screen.width + 'x' + screen.height,
+        `${screen.width}x${screen.height}`,
         new Date().getTimezoneOffset(),
         navigator.hardwareConcurrency,
     ];
-    const raw = components.join('||');
+    const raw = components.join("||");
     let hash = 5381;
-    for (let i = 0; i < raw.length; i++) hash = (hash * 33) ^ raw.charCodeAt(i);
-    return 'device_' + (hash >>> 0).toString(16);
+    for (let i = 0; i < raw.length; i++) {
+        hash = (hash * 33) ^ raw.charCodeAt(i);
+    }
+    return "device_" + (hash >>> 0).toString(16);
 };
 
-// Clear all client-side storage
-const clearAllStorage = () => {
-    if (typeof window === 'undefined') return;
+/**
+ * Clear all client-side storage (cookies, localStorage, sessionStorage)
+ */
+const clearAllStorage = (): void => {
+    if (typeof window === "undefined") return;
 
     // Clear all cookies
     const cookies = document.cookie.split(";");
@@ -46,220 +123,358 @@ const clearAllStorage = () => {
     }
 };
 
-export interface UserProfile {
-    role?: 'admin' | 'student';
-    subscriptionStatus?: 'free' | 'premium';
-    email?: string;
-    displayName?: string;
-    photoURL?: string;
-    uid?: string;
-    createdAt?: unknown;
-    isSubscribed?: boolean;
-    [key: string]: unknown;
-}
+/**
+ * Set session cookie for middleware authentication
+ */
+const setSessionCookie = async (user: User): Promise<void> => {
+    const token = await user.getIdToken();
+    document.cookie = `bacx_session=${token}; path=/; max-age=3600; SameSite=Lax; Secure`;
+};
 
-interface AuthContextType {
-    user: User | null;
-    userProfile: UserProfile | null;
-    loading: boolean;
-    logout: () => Promise<void>;
-    role: 'admin' | 'student' | null;
-    connectionStatus: 'online' | 'reconnecting' | 'offline';
-    isLoggingOut: boolean;
-}
+/**
+ * Check if a user profile is complete (has required fields)
+ */
+const isProfileComplete = (profile: UserProfile | null): boolean => {
+    if (!profile) return false;
+    return Boolean(profile.wilaya) && Boolean(profile.major) && Boolean(profile.fullName || profile.displayName);
+};
 
-const AuthContext = createContext<AuthContextType>({
-    user: null,
-    userProfile: null,
-    loading: true,
-    logout: async () => { },
-    role: null,
-    connectionStatus: 'online',
-    isLoggingOut: false,
-});
+// ============================================================================
+// CONTEXT CREATION
+// ============================================================================
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// ============================================================================
+// PROVIDER COMPONENT
+// ============================================================================
 
 export function AuthProvider({
     children,
     initialUser,
-    initialProfile
+    initialProfile,
 }: {
-    children: React.ReactNode;
+    children: ReactNode;
     initialUser?: Partial<User> | null;
     initialProfile?: UserProfile | null;
 }) {
-    // HYDRATION: Initialize with server-provided state if available
-    const [user, setUser] = useState<User | null>(() => {
-        if (initialUser) return initialUser as User;
-        return null;
+    // ----- STATE -----
+    const [state, setState] = useState<AuthState>({
+        user: initialUser as User | null,
+        profile: initialProfile || null,
+        loading: !initialUser, // If we have initial data, skip loading
+        error: null,
     });
 
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(() => initialProfile || null);
-    const [role, setRole] = useState<'admin' | 'student' | null>(() => initialProfile?.role || null);
-
-    // If we have initial data, we are NOT loading.
-    const [loading, setLoading] = useState(() => !initialUser);
-
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [connectionStatus, setConnectionStatus] = useState<'online' | 'reconnecting' | 'offline'>('online');
+    const [connectionStatus, setConnectionStatus] = useState<"online" | "reconnecting" | "offline">("online");
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            // If logging out, don't process auth changes
-            if (isLoggingOut) return;
+    // Derived state
+    const role = state.profile?.role || null;
 
-            if (currentUser) {
-                const token = await currentUser.getIdToken();
-                const deviceId = getStableDeviceId();
-                const userRef = doc(db, 'users', currentUser.uid);
+    // ----- INTERNAL HELPERS -----
 
-                // Set the session cookie for Middleware
-                document.cookie = `bacx_session=${token}; path=/; max-age=3600; SameSite=Lax; Secure`;
+    /**
+     * Fetch user profile from Firestore with retry logic
+     */
+    const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
+        const userRef = doc(db, "users", uid);
+        let retries = 3;
 
-                // --- RETRY LOGIC FOR NETWORK RESILIENCE ---
-                let retries = 3;
-                let success = false;
+        while (retries > 0) {
+            try {
+                const snap = await getDoc(userRef);
+                setConnectionStatus("online");
 
-                while (retries > 0 && !success) {
-                    try {
-                        // Attempt to fetch profile details from Firestore
-                        const userSnap = await getDoc(userRef);
-                        success = true;
-                        setConnectionStatus('online');
-
-                        if (userSnap.exists()) {
-                            const data = userSnap.data();
-                            setRole(data.role || 'student');
-                            setUserProfile(data); // Store full profile to prevent flicker
-
-                            try {
-                                await registerDevice(currentUser.uid, {
-                                    deviceId,
-                                    deviceName: navigator.userAgent.slice(0, 50)
-                                });
-                            } catch (deviceError: unknown) {
-                                // Device limit logic
-                                const errorMessage = deviceError instanceof Error ? deviceError.message : String(deviceError);
-                                if (errorMessage.includes('Device limit') || errorMessage.includes('resource-exhausted')) {
-                                    await firebaseSignOut(auth);
-                                    alert("تم تجاوز حد الأجهزة المسموح به (2).");
-                                    clearAllStorage();
-                                    setUser(null);
-                                    setRole(null);
-                                    setUserProfile(null);
-                                    setLoading(false);
-                                    return;
-                                }
-                            }
-                        } else {
-                            // New user - DON'T create Firestore doc here
-                            // Let the signup flow (SignUp.tsx or onboarding) handle doc creation
-                            // This avoids race condition with email signup which writes complete data
-                            setRole('student');
-                            setUserProfile({
-                                uid: currentUser.uid,
-                                email: currentUser.email || undefined,
-                                displayName: currentUser.displayName || undefined,
-                                photoURL: currentUser.photoURL || undefined,
-                                role: 'student'
-                            });
-
-                            // Still register device for new users
-                            await registerDevice(currentUser.uid, {
-                                deviceId,
-                                deviceName: navigator.userAgent.slice(0, 50)
-                            });
-                        }
-
-                        // Success path
-                        setUser(currentUser);
-
-                    } catch (error: unknown) {
-                        console.error("Auth Error (Firestore access failed):", error);
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-
-                        // If it's a permission error (e.g. App Check / Rules) or critical failure, 
-                        // DO NOT RETRY - DO NOT BLOCK. Fallback to basic auth.
-                        if (errorMessage.includes('permission-denied') || errorMessage.includes('Missing or insufficient permissions')) {
-                            console.warn("⚠️ Firestore permission denied. Falling back to basic Auth.");
-                            success = true; // Treat as "done" so we don't retry
-
-                            // Fallback logic
-                            setUser(currentUser);
-                            setRole('student');
-                            setUserProfile({
-                                uid: currentUser.uid,
-                                email: currentUser.email || undefined,
-                                displayName: currentUser.displayName || undefined,
-                                photoURL: currentUser.photoURL || undefined
-                            });
-                            break;
-                        }
-
-                        if (errorMessage.includes('offline') || errorMessage.includes('unavailable')) {
-                            setConnectionStatus('reconnecting');
-                            retries--;
-                            if (retries > 0) {
-                                await new Promise(r => setTimeout(r, 2000));
-                            } else {
-                                // Out of retries - Fallback instead of failing
-                                console.warn("⚠️ Firestore unreachable after retries. Falling back to basic Auth.");
-                                setUser(currentUser);
-                                setRole('student');
-                                setUserProfile({
-                                    uid: currentUser.uid,
-                                    email: currentUser.email || undefined
-                                });
-                                break;
-                            }
-                        } else {
-                            // Unknown error - Fallback
-                            console.warn("⚠️ Unknown Auth Error. Falling back to basic Auth.");
-                            setUser(currentUser);
-                            setRole('student');
-                            break;
-                        }
-                    }
+                if (snap.exists()) {
+                    return snap.data() as UserProfile;
                 }
-            } else {
-                // Logged out
-                setUser(null);
-                setRole(null);
-                setUserProfile(null);
-                clearAllStorage();
+                return null;
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+
+                // Permission errors - don't retry
+                if (errorMessage.includes("permission-denied") || errorMessage.includes("Missing or insufficient permissions")) {
+                    console.warn("⚠️ Firestore permission denied");
+                    return null;
+                }
+
+                // Network errors - retry
+                if (errorMessage.includes("offline") || errorMessage.includes("unavailable")) {
+                    setConnectionStatus("reconnecting");
+                    retries--;
+                    if (retries > 0) {
+                        await new Promise((r) => setTimeout(r, 2000));
+                    } else {
+                        setConnectionStatus("offline");
+                        return null;
+                    }
+                } else {
+                    // Unknown error - don't retry
+                    console.error("Profile fetch error:", error);
+                    return null;
+                }
             }
-            setLoading(false);
-        });
+        }
+        return null;
+    }, []);
 
-        return () => unsubscribe();
-    }, [isLoggingOut]);
+    /**
+     * Create a new user profile in Firestore
+     */
+    const createProfile = async (user: User, data: Partial<UserProfile>): Promise<UserProfile> => {
+        const userRef = doc(db, "users", user.uid);
 
-    // Memoized secure logout function
-    const logout = useCallback(async () => {
+        const profile: UserProfile = {
+            uid: user.uid,
+            email: user.email || "",
+            fullName: data.fullName || "",
+            displayName: data.displayName || user.displayName || "",
+            photoURL: data.photoURL || user.photoURL || "",
+            wilaya: data.wilaya || "",
+            major: data.major || "",
+            role: "student",
+            subscriptionStatus: "free",
+            isSubscribed: false,
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp(),
+        };
+
+        await setDoc(userRef, profile);
+        return profile;
+    };
+
+    /**
+     * Register device for device limit management
+     */
+    const handleDeviceRegistration = async (uid: string): Promise<boolean> => {
         const deviceId = getStableDeviceId();
+        try {
+            await registerDevice(uid, {
+                deviceId,
+                deviceName: navigator.userAgent.slice(0, 50),
+            });
+            return true;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage.includes("Device limit") || errorMessage.includes("resource-exhausted")) {
+                return false; // Device limit reached
+            }
+            console.error("Device registration error:", error);
+            return true; // Non-critical error, allow login
+        }
+    };
 
-        // Set logging out flag to prevent auth state changes from triggering
+    // ----- AUTH METHODS -----
+
+    /**
+     * Login with email and password
+     */
+    const loginWithEmail = useCallback(async (email: string, password: string): Promise<void> => {
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+
+        try {
+            const credential = await signInWithEmailAndPassword(auth, email, password);
+            const user = credential.user;
+
+            // Set session cookie
+            await setSessionCookie(user);
+
+            // Check device limit
+            const deviceAllowed = await handleDeviceRegistration(user.uid);
+            if (!deviceAllowed) {
+                await firebaseSignOut(auth);
+                throw new Error("تم تجاوز حد الأجهزة المسموح به (2). يرجى تسجيل الخروج من جهاز آخر.");
+            }
+
+            // Fetch existing profile
+            const profile = await fetchProfile(user.uid);
+
+            setState({
+                user,
+                profile,
+                loading: false,
+                error: null,
+            });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "فشل تسجيل الدخول";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw error;
+        }
+    }, [fetchProfile]);
+
+    /**
+     * Sign up with email - ATOMIC FLOW
+     * Creates Auth user AND Firestore profile in one operation
+     */
+    const signupWithEmail = useCallback(async (data: SignupData): Promise<void> => {
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+
+        try {
+            // Step 1: Create Firebase Auth User
+            const credential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            const user = credential.user;
+
+            // Step 2: Set session cookie immediately
+            await setSessionCookie(user);
+
+            // Step 3: Create Firestore profile IMMEDIATELY (atomic)
+            const profile = await createProfile(user, {
+                fullName: data.fullName,
+                displayName: data.fullName,
+                wilaya: data.wilaya,
+                major: data.major,
+            });
+
+            // Step 4: Register device
+            await handleDeviceRegistration(user.uid);
+
+            // Step 5: Update state with complete data (no useEffect needed)
+            setState({
+                user,
+                profile,
+                loading: false,
+                error: null,
+            });
+
+            // Profile is complete, redirect will happen in UI
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "فشل إنشاء الحساب";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw error;
+        }
+    }, []);
+
+    /**
+     * Login with Google - CHECK-GATE FLOW
+     * Returns status indicating if onboarding is needed
+     */
+    const loginWithGoogle = useCallback(async (): Promise<AuthStatus> => {
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+
+        try {
+            const provider = new GoogleAuthProvider();
+            const credential = await signInWithPopup(auth, provider);
+            const user = credential.user;
+
+            // Set session cookie
+            await setSessionCookie(user);
+
+            // Check device limit
+            const deviceAllowed = await handleDeviceRegistration(user.uid);
+            if (!deviceAllowed) {
+                await firebaseSignOut(auth);
+                throw new Error("تم تجاوز حد الأجهزة المسموح به (2). يرجى تسجيل الخروج من جهاز آخر.");
+            }
+
+            // Check if profile exists in Firestore
+            const existingProfile = await fetchProfile(user.uid);
+
+            if (existingProfile && isProfileComplete(existingProfile)) {
+                // Existing complete profile - update last login
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
+
+                setState({
+                    user,
+                    profile: existingProfile,
+                    loading: false,
+                    error: null,
+                });
+
+                return "AUTHENTICATED";
+            } else {
+                // Profile missing or incomplete - needs onboarding
+                // Set partial state so UI can show onboarding form
+                setState({
+                    user,
+                    profile: existingProfile || {
+                        uid: user.uid,
+                        email: user.email || "",
+                        displayName: user.displayName || "",
+                        photoURL: user.photoURL || "",
+                        fullName: user.displayName || "",
+                        role: "student",
+                        subscriptionStatus: "free",
+                        isSubscribed: false,
+                    },
+                    loading: false,
+                    error: null,
+                });
+
+                return "REQUIRE_ONBOARDING";
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "فشل تسجيل الدخول عبر Google";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw error;
+        }
+    }, [fetchProfile]);
+
+    /**
+     * Complete onboarding for Google users
+     */
+    const completeOnboarding = useCallback(async (data: OnboardingData): Promise<void> => {
+        const { user } = state;
+        if (!user) throw new Error("No authenticated user");
+
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+
+        try {
+            const profile = await createProfile(user, {
+                fullName: data.fullName,
+                displayName: data.fullName || user.displayName || "",
+                photoURL: user.photoURL || "",
+                wilaya: data.wilaya,
+                major: data.major,
+            });
+
+            setState({
+                user,
+                profile,
+                loading: false,
+                error: null,
+            });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "فشل حفظ البيانات";
+            setState((prev) => ({ ...prev, loading: false, error: message }));
+            throw error;
+        }
+    }, [state]);
+
+    /**
+     * Logout - Complete cleanup
+     */
+    const logout = useCallback(async (): Promise<void> => {
+        const deviceId = getStableDeviceId();
+        const currentUser = state.user;
+
+        // Set logging out flag
         setIsLoggingOut(true);
 
-        // Immediately clear user state (prevents "ghost session" UI)
-        setUser(null);
-        setRole(null);
-        setUserProfile(null);
+        // Immediately clear state
+        setState({
+            user: null,
+            profile: null,
+            loading: false,
+            error: null,
+        });
 
         // Unregister device (non-blocking)
-        if (user) {
+        if (currentUser) {
             try {
-                await unregisterDevice(user.uid, deviceId);
+                await unregisterDevice(currentUser.uid, deviceId);
             } catch (error) {
                 console.error("Failed to unregister device:", error);
             }
         }
 
-        // Clear all client storage
+        // Clear all storage
         clearAllStorage();
 
         // Clear server session
         try {
-            await fetch('/api/logout', { method: 'POST' });
+            await fetch("/api/logout", { method: "POST" });
         } catch {
             // Ignore errors
         }
@@ -267,30 +482,102 @@ export function AuthProvider({
         // Sign out from Firebase
         await firebaseSignOut(auth);
 
-        // Use window.location.href or similar if needed, or if we removed router, we just rely on state change causing render or simple reload.
-        // Since we are in AuthContext, a hard redirect might be better for logout to clear internal states.
-        window.location.href = '/auth';
+        // Hard redirect to auth page
+        window.location.href = "/auth";
 
-        // Reset logging out flag after a short delay
+        // Reset flag after delay
         setTimeout(() => setIsLoggingOut(false), 500);
-    }, [user]);
+    }, [state.user]);
 
-    // If not mounted yet, show children to allow hydration to proceed, 
-    // or return null only if strict hydration match is required, but user wants content.
-    // Ideally, for "Optimistic Rendering", we just render children.
-    // However, to avoid hydration mismatch on attributes that depend on auth, we might need a mounted check *inside* components, 
-    // but globally blocking is bad.
-    // The user specifically asked to "never return null".
-    // We will render children wrapped in the provider.
+    /**
+     * Refresh profile from Firestore
+     */
+    const refreshProfile = useCallback(async (): Promise<void> => {
+        if (!state.user) return;
 
-    // NOTE: We don't block on !hasMounted anymore for the main tree.
+        const profile = await fetchProfile(state.user.uid);
+        if (profile) {
+            setState((prev) => ({ ...prev, profile }));
+        }
+    }, [state.user, fetchProfile]);
 
-    return (
-        <AuthContext.Provider value={{ user, userProfile, loading, logout, role, connectionStatus, isLoggingOut }}>
-            {children}
-            {/* {loading && <LoadingSpinner fullScreen />} */}
-        </AuthContext.Provider>
-    );
+    // ----- EFFECTS -----
+
+    /**
+     * Listen to Firebase auth state changes
+     * This is only for: page refresh, tab re-open, token refresh
+     * NOT for login/signup (those set state directly)
+     */
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            // Skip if logging out
+            if (isLoggingOut) return;
+
+            // Skip if we already have a user in state (set by login/signup methods)
+            if (state.user && currentUser?.uid === state.user.uid) return;
+
+            if (currentUser) {
+                // User is signed in - fetch their profile
+                await setSessionCookie(currentUser);
+
+                const profile = await fetchProfile(currentUser.uid);
+
+                // Only update if we don't have state already
+                setState((prev) => {
+                    if (prev.user?.uid === currentUser.uid) return prev;
+                    return {
+                        user: currentUser,
+                        profile,
+                        loading: false,
+                        error: null,
+                    };
+                });
+            } else {
+                // No user - clear state
+                setState({
+                    user: null,
+                    profile: null,
+                    loading: false,
+                    error: null,
+                });
+            }
+        });
+
+        return () => unsubscribe();
+    }, [isLoggingOut, fetchProfile, state.user]);
+
+    // ----- RENDER -----
+
+    const value: AuthContextType = {
+        ...state,
+        user: state.user,
+        profile: state.profile,
+        userProfile: state.profile, // Backward compatibility alias
+        loading: state.loading,
+        error: state.error,
+        loginWithEmail,
+        signupWithEmail,
+        loginWithGoogle,
+        completeOnboarding,
+        logout,
+        role,
+        connectionStatus,
+        isLoggingOut,
+        refreshProfile,
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => useContext(AuthContext);
+// Export the context for the hook
+export { AuthContext };
+
+// Backward-compatible useAuth export (prefer importing from @/hooks/useAuth)
+import { useContext } from "react";
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
+}

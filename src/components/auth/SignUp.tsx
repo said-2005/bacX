@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { saveStudentData } from "@/lib/user";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { ALGERIAN_WILAYAS } from "@/lib/data/wilayas";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -15,6 +14,8 @@ interface SignUpProps {
 }
 
 export function SignUp({ onToggleLogin }: SignUpProps) {
+    const { signupWithEmail } = useAuth();
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
     // Form State
@@ -43,25 +44,22 @@ export function SignUp({ onToggleLogin }: SignUpProps) {
 
         setIsLoading(true);
         try {
-            // 1. Create Auth User
-            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-
-            // 2. Save Firestore Data
-            await saveStudentData({
-                uid: userCredential.user.uid,
+            // ATOMIC: Creates Auth User + Firestore Profile in one operation
+            await signupWithEmail({
                 email: formData.email,
+                password: formData.password,
                 fullName: formData.fullName,
                 wilaya: formData.wilaya,
                 major: formData.major
-            }, { isNewUser: true });
+            });
 
             toast.success("تم إنشاء الحساب بنجاح! جاري التوجيه...");
-            // Force full reload to ensure AuthContext fetches the newly created profile (avoid stale skeleton doc)
-            window.location.href = "/dashboard";
+            // Redirect to dashboard (state is already set in context)
+            router.replace("/dashboard");
         } catch (error) {
             console.error(error);
-            // @ts-expect-error: error is unknown typed but we know it has code property in firebase auth
-            if (error.code === 'auth/email-already-in-use') {
+            const errorMessage = error instanceof Error ? error.message : "";
+            if (errorMessage.includes('auth/email-already-in-use')) {
                 toast.error("البريد الإلكتروني مستخدم بالفعل");
             } else {
                 toast.error("حدث خطأ أثناء التسجيل");
