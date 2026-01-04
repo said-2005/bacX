@@ -12,20 +12,23 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const fullName = formData.get("fullName") as string;
-    const wilaya = formData.get("wilaya") as string;
-    const major = formData.get("major") as string;
+
+    // We now receive IDs
+    const wilayaId = formData.get("wilaya_id") as string;
+    const majorId = formData.get("major_id") as string;
 
     const supabase = await createClient();
 
     // 1. Sign Up User + Pass Metadata for Trigger
+    // IMPORTANT: The trigger now expects `wilaya_id` and `major_id`
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
                 full_name: fullName,
-                wilaya: wilaya,
-                major: major,
+                wilaya_id: wilayaId,
+                major_id: majorId,
                 role: "student", // Default role
             },
         },
@@ -36,8 +39,5 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
     }
 
     // 2. Success logic
-    // The Client Context will pick up the session change if auto-confirm is on,
-    // Or behave accordingly. For now, we return success.
-
     return { success: true };
 }
