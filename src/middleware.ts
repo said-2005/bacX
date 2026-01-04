@@ -72,23 +72,21 @@ export async function middleware(request: NextRequest) {
         '/pricing',
         '/support',
         '/privacy',
-        '/terms'
+        '/terms',
+        '/api/login', // Public API
+        '/api/health' // Public API
     ];
 
     const adminRoutes = ['/admin'];
 
     // Check if the path is exactly a public route or starts with a public prefix
-    // For simple apps, exact match or sub-path match is needed.
-    // e.g. /auth/callback should be public if /auth is public? 
-    // Let's use specific logic:
     const isPublic = publicRoutes.some(p => path === p || path.startsWith(`${p}/`));
     const isAdminRoute = adminRoutes.some(p => path.startsWith(p));
+    const isApiRoute = path.startsWith('/api');
 
     // --- ACCESS CONTROL ---
 
     if (isPublic) {
-        // Even for public routes, if we have a session, we might want to redirect from /auth to /dashboard
-        // But let's keep it simple for now as per instructions.
         return NextResponse.next();
     }
 
@@ -98,6 +96,9 @@ export async function middleware(request: NextRequest) {
     const sessionCookie = request.cookies.get('bacx_session')?.value;
 
     if (!sessionCookie) {
+        if (isApiRoute) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         const loginUrl = new URL('/auth/login', request.url);
         loginUrl.searchParams.set('redirect', path);
         return NextResponse.redirect(loginUrl);
@@ -108,7 +109,13 @@ export async function middleware(request: NextRequest) {
     const claims = await verifySessionCookie(sessionCookie, isAdminRoute);
 
     if (!claims) {
-        // Invalid or expired token - redirect to login
+        // Invalid or expired token
+        if (isApiRoute) {
+             const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+             response.cookies.delete('bacx_session');
+             return response;
+        }
+
         const response = NextResponse.redirect(new URL('/auth/login', request.url));
         // Clear the invalid cookie
         response.cookies.delete('bacx_session');
@@ -121,6 +128,9 @@ export async function middleware(request: NextRequest) {
         const isAdmin = claims.role === 'admin' || claims.admin === true;
 
         if (!isAdmin) {
+             if (isApiRoute) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
             // User is authenticated but not admin
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }
@@ -133,12 +143,11 @@ export const config = {
     matcher: [
         /*
          * Match all request paths except:
-         * - api routes (they handle their own auth)
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
          * - public files (images, etc)
          */
-        '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'
+        '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'
     ],
 };
