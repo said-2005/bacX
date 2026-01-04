@@ -10,13 +10,13 @@ import {
     User, Smartphone, Shield, Eye, Lock,
     Camera, LogOut, Laptop, Bell, Moon
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { uploadFile } from "@/lib/storage";
 import { updateProfile } from "firebase/auth";
 import { doc, updateDoc, arrayRemove, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Image from "next/image";
 
 export default function SettingsPage() {
     const { user, logout } = useAuth();
@@ -72,7 +72,7 @@ export default function SettingsPage() {
             await updateProfile(user, { photoURL: url });
             setAvatarUrl(url);
             toast.success("تم تحديث الصورة الشخصية");
-        } catch (error) {
+        } catch {
             toast.error("فشل رفع الصورة");
         } finally {
             setUploadingAvatar(false);
@@ -88,7 +88,7 @@ export default function SettingsPage() {
             });
             setDevices(prev => prev.filter(d => d !== deviceId));
             toast.success("تم تسجيل الخروج من الجهاز");
-        } catch (error) {
+        } catch {
             toast.error("حدث خطأ");
         }
     };
@@ -109,7 +109,7 @@ export default function SettingsPage() {
                                 uploadingAvatar && "animate-pulse"
                             )}>
                                 {avatarUrl ? (
-                                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    <Image src={avatarUrl} alt="Avatar" fill className="object-cover" unoptimized />
                                 ) : (
                                     <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                         <User className="w-10 h-10 text-zinc-500" />

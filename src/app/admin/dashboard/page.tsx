@@ -5,8 +5,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
-    CheckCircle2, XCircle, Upload, Search, Smartphone,
-    CreditCard, LayoutDashboard, FileText, User, Loader2
+    XCircle, Upload, Search, Smartphone,
+    CreditCard, User, Loader2, FileText, Video
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -17,11 +17,9 @@ import { uploadFile } from "@/lib/storage";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-// Mock Data (Would be real Firestore query in production)
-const PENDING_PAYMENTS = [
-    { id: 1, student: "سعيد عدلي", date: "2023-10-25", amount: "2000 DA", img: "https://via.placeholder.com/150" },
-    { id: 2, student: "مريم بن", date: "2023-10-24", amount: "4000 DA", img: "https://via.placeholder.com/150" },
-];
+// Mock Data (Removed in favor of real component)
+import { PendingPaymentsView } from "@/components/admin/PendingPaymentsView";
+
 
 export default function AdminDashboard() {
     const { user, role, loading } = useAuth();
@@ -48,20 +46,6 @@ export default function AdminDashboard() {
         );
     }
 
-    const handleApprovePayment = async (id: number) => {
-        toast.promise(
-            new Promise((resolve) => setTimeout(resolve, 1000)), // Mock API call
-            {
-                loading: 'جاري تفعيل الاشتراك...',
-                success: 'تم تفعيل حساب الطالب بنجاح',
-                error: 'حدث خطأ أثناء التفعيل',
-            }
-        );
-    };
-
-    const handleRejectPayment = async (id: number) => {
-        toast.error("تم رفض طلب الاشتراك");
-    };
 
     const handleResetDevices = (studentName: string) => {
         toast.promise(
@@ -81,7 +65,7 @@ export default function AdminDashboard() {
 
         const formData = new FormData(e.currentTarget);
         const title = formData.get('title') as string;
-        const module = formData.get('module') as string;
+        const moduleName = formData.get('module') as string;
         const videoId = formData.get('videoId') as string;
         const pdfFile = (formData.get('pdf') as File);
         const description = formData.get('description') as string;
@@ -91,12 +75,12 @@ export default function AdminDashboard() {
             if (pdfFile && pdfFile.size > 0) {
                 if (pdfFile.size > 5 * 1024 * 1024) throw new Error("حجم الملف يجب ألا يتجاوز 5 ميغابايت");
 
-                pdfUrl = await uploadFile(pdfFile, `lessons/${module}/${Date.now()}_${pdfFile.name}`, (p) => setUploadProgress(p));
+                pdfUrl = await uploadFile(pdfFile, `lessons/${moduleName}/${Date.now()}_${pdfFile.name}`, (p) => setUploadProgress(p));
             }
 
             await addDoc(collection(db, "lessons"), {
                 title,
-                module,
+                module: moduleName,
                 videoId,
                 pdfUrl,
                 description,
@@ -106,9 +90,11 @@ export default function AdminDashboard() {
             toast.success("تم نشر الدرس بنجاح");
             (e.target as HTMLFormElement).reset();
             setUploadProgress(0);
-        } catch (error: any) {
+            setUploadProgress(0);
+        } catch (error: unknown) {
             console.error(error);
-            toast.error(error.message || "حدث خطأ أثناء الرفع");
+            const message = error instanceof Error ? error.message : "حدث خطأ أثناء الرفع";
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -138,7 +124,7 @@ export default function AdminDashboard() {
                     ].map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
+                            onClick={() => setActiveTab(tab.id as 'payments' | 'content' | 'devices')}
                             className={cn(
                                 "flex-1 py-3 rounded-lg flex flex-col items-center gap-1 transition-all text-xs font-medium relative outline-none",
                                 activeTab === tab.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-zinc-500 hover:text-zinc-300"
@@ -153,49 +139,7 @@ export default function AdminDashboard() {
                 <AnimatePresence mode="wait">
                     {/* PAYMENTS */}
                     {activeTab === 'payments' && (
-                        <motion.div
-                            key="payments"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-4"
-                        >
-                            <h2 className="text-lg font-bold mb-4">طلبات الاشتراك المعلقة</h2>
-                            {PENDING_PAYMENTS.map((payment) => (
-                                <GlassCard key={payment.id} className="p-4 flex flex-col gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-600 cursor-pointer hover:bg-zinc-700 transition-colors">
-                                            <FileText className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold">{payment.student}</h3>
-                                            <p className="text-sm text-zinc-400">{payment.date}</p>
-                                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full mt-1 inline-block">
-                                                {payment.amount}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2 mt-2">
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() => handleRejectPayment(payment.id)}
-                                            className="flex-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
-                                        >
-                                            <XCircle className="w-4 h-4 ml-2" />
-                                            رفض
-                                        </Button>
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => handleApprovePayment(payment.id)}
-                                            className="flex-1"
-                                        >
-                                            <CheckCircle2 className="w-4 h-4 ml-2" />
-                                            قبول
-                                        </Button>
-                                    </div>
-                                </GlassCard>
-                            ))}
-                        </motion.div>
+                        <PendingPaymentsView />
                     )}
 
                     {/* CONTENT UPLOAD */}
@@ -214,7 +158,7 @@ export default function AdminDashboard() {
                                 <form onSubmit={handleUploadLesson} className="space-y-4">
                                     <Input name="title" placeholder="عنوان الدرس" required />
                                     <Input name="module" placeholder="الوحدة (folder name)" required />
-                                    <Input name="videoId" placeholder="رابط فيديو يوتيوب (ID)" icon={LayoutDashboard} required />
+                                    <Input name="videoId" placeholder="رابط فيديو يوتيوب (ID)" icon={Video} required />
 
                                     <div className="bg-surface-highlight border border-border rounded-xl p-3 flex items-center gap-3 active:scale-[0.99] transition-transform">
                                         <FileText className="w-5 h-5 text-zinc-500" />

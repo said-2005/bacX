@@ -1,62 +1,75 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Tajawal } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, type UserProfile } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import { BackButton } from "@/components/ui/BackButton";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { AppShell } from "@/components/layout/AppShell";
+import { cookies } from "next/headers";
+import { verifySessionCookie } from "@/lib/auth-jwt";
+import { ViewTransitions } from 'next-view-transitions';
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
+  variable: "--font-sans",
   display: 'swap',
 });
 
-const tajawal = Tajawal({
-  subsets: ["arabic"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-tajawal",
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
   display: 'swap',
+});
+
+import { Amiri, Cinzel } from "next/font/google"; // Import Amiri and Cinzel
+
+const amiri = Amiri({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-amiri",
+  display: "swap",
+});
+
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-cinzel",
+  display: "swap",
 });
 
 // --- SEO & VIEWPORT ---
 export const viewport: Viewport = {
-  themeColor: '#050505',
+  themeColor: '#2563EB', // Electric Blue
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://bacx-dz.vercel.app'), // TODO: Update with real domain
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: {
-    default: "BacX - منصة النخبة التعليمية",
-    template: "%s | BacX",
+    default: "Brainy - Where Intelligence Meets Excellence",
+    template: "%s | Brainy",
   },
-  description: "المنصة التعليمية الأولى لطلاب البكالوريا في الجزائر. تجربة دراسية سينمائية تجمع بين التقنية المتقدمة والمحتوى الأكاديمي الرصين.",
-  keywords: ["bac dz", "bac algeria", "تعليم", "بكالوريا", "دروس", "منصة تعليمية"],
-  authors: [{ name: "BacX Team" }],
+  description: "منصة Brainy التعليمية الذكية لطلاب البكالوريا في الجزائر. تجربة دراسية متميزة تجمع بين التقنية المتقدمة والمحتوى الأكاديمي الراقي.",
+  keywords: ["brainy", "bac dz", "bac algeria", "تعليم", "بكالوريا", "دروس", "منصة تعليمية"],
+  authors: [{ name: "Brainy Team" }],
   openGraph: {
     type: "website",
     locale: "ar_DZ",
-    url: "https://bacx-dz.vercel.app",
-    siteName: "BacX",
-    title: "BacX - منصة النخبة التعليمية",
-    description: "استعد للبكالوريا مع أفضل الأساتذة في بيئة تعليمية متطورة.",
-    images: [
-      {
-        url: "/og-image.jpg", // Needs to be added to public folder
-        width: 1200,
-        height: 630,
-        alt: "BacX Platform Preview",
-      },
-    ],
+    url: "https://brainy-dz.vercel.app",
+    siteName: "Brainy",
+    title: "Brainy - منصة التفوق الأكاديمي",
+    description: "استعد للبكالوريا مع أفضل الأساتذة في بيئة تعليمية ذكية.",
+    images: ["/og-image.jpg"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BacX - منصة النخبة التعليمية",
-    description: "استعد للبكالوريا مع أفضل الأساتذة في بيئة تعليمية متطورة.",
+    title: "Brainy - منصة التفوق الأكاديمي",
+    description: "استعد للبكالوريا مع أفضل الأساتذة في بيئة تعليمية ذكية.",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -65,46 +78,79 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // --- SERVER AUTH HYDRATION ---
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('bacx_session')?.value;
+  let initialUser = null;
+  let initialProfile: UserProfile | null = null;
+
+  if (sessionCookie) {
+    const payload = await verifySessionCookie(sessionCookie);
+    if (payload) {
+      initialUser = {
+        uid: payload.sub as string,
+        email: payload.email as string,
+        displayName: payload.name as string || '',
+        photoURL: payload.picture as string || '',
+      };
+
+      // Infer basic profile from token to avoid flicker
+      initialProfile = {
+        uid: payload.sub as string,
+        email: payload.email as string,
+        displayName: payload.name as string,
+        photoURL: payload.picture as string,
+        role: (payload.admin || payload.role === 'admin') ? 'admin' : 'student',
+        subscriptionStatus: 'free',
+        isSubscribed: false
+      };
+    }
+  }
+
   return (
-    <html lang="ar" dir="rtl">
-      <body className={`${inter.variable} ${tajawal.variable} antialiased bg-[#050505] text-[#EDEDED]`}>
-        <NextTopLoader
-          color="#2997FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #2997FF,0 0 5px #2997FF"
-        />
-        <AuthProvider>
-          <ErrorBoundary>
-            <BackButton />
-            {children}
-            <Toaster
-              position="bottom-center"
-              richColors
-              theme="dark"
-              toastOptions={{
-                style: {
-                  background: 'rgba(10, 10, 10, 0.8)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: '#EDEDED',
-                  fontFamily: 'var(--font-tajawal)',
-                }
-              }}
-            />
-          </ErrorBoundary>
-        </AuthProvider>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
+        <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} ${cinzel.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
+          <NextTopLoader
+            color="#2563EB"
+            initialPosition={0.08}
+            crawlSpeed={200}
+            height={3}
+            crawl={true}
+            showSpinner={false}
+            easing="ease"
+            speed={200}
+            shadow="0 0 10px #2563EB,0 0 5px #3B82F6"
+          />
+          <AuthProvider initialUser={initialUser} initialProfile={initialProfile}>
+            <ErrorBoundary>
+              <AppShell>
+                <BackButton />
+                {children}
+              </AppShell>
+              <Toaster
+                position="bottom-center"
+                richColors
+                theme="dark"
+                toastOptions={{
+                  className: "glass-panel text-foreground font-sans",
+                  style: {
+                    fontFamily: 'var(--font-sans)',
+                    background: 'rgba(10, 10, 15, 0.9)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#FFF'
+                  }
+                }}
+              />
+            </ErrorBoundary>
+          </AuthProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }
