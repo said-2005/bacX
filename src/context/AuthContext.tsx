@@ -127,13 +127,7 @@ const clearAllStorage = (): void => {
     }
 };
 
-/**
- * Set session cookie for middleware authentication
- */
-const setSessionCookie = async (user: User): Promise<void> => {
-    const token = await user.getIdToken();
-    document.cookie = `bacx_session=${token}; path=/; max-age=3600; SameSite=Lax; Secure`;
-};
+
 
 /**
  * Check if a user profile is complete (has required fields)
@@ -295,7 +289,13 @@ export function AuthProvider({
             const user = credential.user;
 
             // Set session cookie
-            await setSessionCookie(user);
+            // Server-Side Session Creation
+            const idToken = await user.getIdToken();
+            await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
 
             // Check device limit
             const deviceAllowed = await handleDeviceRegistration(user.uid);
@@ -341,8 +341,13 @@ export function AuthProvider({
             const credential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             const user = credential.user;
 
-            // Step 2: Set session cookie immediately
-            await setSessionCookie(user);
+            // Step 2: Server-Side Session Creation
+            const idToken = await user.getIdToken();
+            await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
 
             // Step 3: Create Firestore profile IMMEDIATELY (atomic)
             const profile = await createProfile(user, {
@@ -387,7 +392,13 @@ export function AuthProvider({
             const user = credential.user;
 
             // Set session cookie
-            await setSessionCookie(user);
+            // Server-Side Session Creation
+            const idToken = await user.getIdToken();
+            await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
 
             // Check device limit
             const deviceAllowed = await handleDeviceRegistration(user.uid);
@@ -498,7 +509,7 @@ export function AuthProvider({
 
         // Clear server session
         try {
-            await fetch("/api/logout", { method: "POST" });
+            await fetch("/api/auth/logout", { method: "POST" });
         } catch {
             // Ignore errors
         }
@@ -560,7 +571,20 @@ export function AuthProvider({
             if (currentUser) {
                 // User is signed in
                 try {
-                    await setSessionCookie(currentUser);
+                    // Do NOT set cookie here manually anymore. 
+                    // Session is assumed valid or established via Login Flow.
+                    // If session expired on server but client is logged in = Middleware will redirect to login.
+                    // If client is logged in but session is missing, we could try to restore it:
+                    if (!document.cookie.includes('bacx_session')) {
+                        console.log("Restoring session cookie...");
+                        const idToken = await currentUser.getIdToken();
+                        await fetch("/api/auth/login", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ idToken }),
+                        });
+                    }
+
                     const profile = await fetchProfile(currentUser.uid);
 
                     setState({

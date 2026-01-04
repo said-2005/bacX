@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
 
     // --- GLOBAL RATE LIMITING (EDGE) ---
     // Optimization: Only rate limit sensitive AUTH routes to save Redis Quota
-    const isAuthApi = path.startsWith('/api/auth') || path === '/api/login' || path === '/api/register';
+    const isAuthApi = path.startsWith('/api/auth');
 
     if (ratelimit && isAuthApi) {
         const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ||

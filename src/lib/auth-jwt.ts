@@ -42,7 +42,8 @@ export async function verifySessionCookie(cookie: string, fullValidation: boolea
 
         // Only do full validation (issuer/audience) for admin routes
         if (fullValidation) {
-            options.issuer = `https://securetoken.google.com/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`;
+            // Session Cookies use a different issuer than ID Tokens
+            options.issuer = `https://session.firebase.google.com/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`;
             options.audience = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
         }
 
