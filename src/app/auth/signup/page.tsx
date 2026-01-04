@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 export default function SignupPage() {
-    const { signupWithEmail } = useAuth();
+    const { signupWithEmail, loading } = useAuth();
     const router = useRouter(); // Keeping router if needed for anything else, though AuthContext handles nav. Actually, let's keep it clean.
 
     const [isLoading, setIsLoading] = useState(false);
