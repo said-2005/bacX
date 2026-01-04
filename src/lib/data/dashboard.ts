@@ -1,4 +1,4 @@
-import { db } from "@/lib/firebase-admin";
+import { createClient } from "@/utils/supabase/server";
 import { UserProfile } from "@/context/AuthContext";
 
 export interface DashboardData {
@@ -11,35 +11,55 @@ export interface DashboardData {
 
 /**
  * Fetches initial data for the dashboard on the server.
- * Parallelizes independent fetches for performance.
+ * Uses Supabase Client for Server Components.
  */
 export async function getDashboardData(uid: string): Promise<DashboardData> {
-    const [announcementSnap, userSnap] = await Promise.all([
-        db.collection("announcements")
-            .orderBy("createdAt", "desc")
+    const supabase = await createClient();
+
+    // Parallelize fetches
+    const [announcementRes, profileRes] = await Promise.all([
+        supabase
+            .from("announcements")
+            .select("content, created_at")
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
             .limit(1)
-            .get(),
-        db.collection("users").doc(uid).get(),
+            .single(),
+
+        supabase
+            .from("profiles")
+            .select(`
+                *,
+                wilayas ( full_label ),
+                majors ( label )
+            `)
+            .eq("id", uid)
+            .single()
     ]);
 
+    // Process Announcement
     let announcement = null;
-    if (!announcementSnap.empty) {
-        const doc = announcementSnap.docs[0];
-        const data = doc.data();
+    if (announcementRes.data) {
         announcement = {
-            content: data.content,
-            createdAt: data.createdAt.toDate(),
+            content: announcementRes.data.content,
+            createdAt: new Date(announcementRes.data.created_at),
         };
     }
 
+    // Process Profile
     let userProfile: UserProfile | null = null;
-    if (userSnap.exists) {
-        // Cast the data to UserProfile. 
-        // Note: Firestore Admin SDK returns standard JS objects, which matches the interface roughly.
-        // We might need to handle Timestamp conversion if we strictly used Date in UserProfile, 
-        // but UserProfile uses 'unknown' for dates in the definition I saw earlier:
-        // createdAt?: unknown; lastLogin?: unknown; -> This is safe.
-        userProfile = userSnap.data() as UserProfile;
+    if (profileRes.data) {
+        const raw = profileRes.data;
+        // Map Relational Data to flat strings for UserProfile compatibility
+        userProfile = {
+            ...raw,
+            wilaya: raw.wilayas?.full_label, // Flatten relation
+            major: raw.majors?.label,        // Flatten relation
+            // Ensure types match UserProfile interface
+            created_at: raw.created_at,
+            // Strip the relation objects if not needed in the type, but JS will keep them. 
+            // We just ensure 'wilaya' and 'major' properties exist.
+        } as unknown as UserProfile;
     }
 
     return {

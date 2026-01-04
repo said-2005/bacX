@@ -53,7 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchProfile = useCallback(async (userId: string) => {
         const { data, error } = await supabase
             .from("profiles")
-            .select("*")
+            .select(`
+                *,
+                wilayas ( full_label ),
+                majors ( label )
+            `)
             .eq("id", userId)
             .single();
 
@@ -61,7 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("Error fetching profile:", error);
             return null;
         }
-        return data as UserProfile;
+
+        // Map relational data to flat strings
+        const profile = {
+            ...data,
+            wilaya: data.wilayas?.full_label,
+            major: data.majors?.label
+        };
+
+        return profile as unknown as UserProfile;
     }, [supabase]);
 
     const handleNavigation = useCallback(async (profile: UserProfile | null) => {
