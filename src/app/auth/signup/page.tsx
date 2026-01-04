@@ -71,7 +71,8 @@ export default function SignupPage() {
             });
 
             toast.success("تم إنشاء الحساب بنجاح! جاري التوجيه...");
-            router.push("/dashboard");
+            toast.success("تم إنشاء الحساب بنجاح! جاري التوجيه...");
+            // Removed: router.push("/dashboard"); as AuthContext handles it via signupWithEmail calling handleRedirect
         } catch (error) {
             console.error(error);
             if ((error as { code?: string }).code === 'auth/email-already-in-use') {

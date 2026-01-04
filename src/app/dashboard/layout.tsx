@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, profile, loading, checkProfileStatus } = useAuth();
@@ -24,14 +24,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, [user, profile, loading, router, checkProfileStatus]);
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-[#020617]">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
-    if (!user) return null; // Will redirect
+    // While redirecting, show skeleton to prevent flash
+    if (!user) return <DashboardSkeleton />;
 
     return <>{children}</>;
 }

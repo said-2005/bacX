@@ -181,9 +181,30 @@ export function AuthProvider({
      */
     const checkProfileStatus = useCallback((user: User | null, profile: UserProfile | null): AuthStatus => {
         if (!user) return "UNAUTHENTICATED";
+        // Admins are always considered authenticated/complete for navigation purposes
+        if (profile?.role === 'admin') return "AUTHENTICATED"; // Goal 3: Admin Skip
         if (isProfileComplete(profile)) return "AUTHENTICATED";
         return "REQUIRE_ONBOARDING";
     }, []);
+
+    /**
+     * Centralized Navigation Handler (Goal 3)
+     */
+    const handleNavigation = useCallback(async (user: User, profile: UserProfile | null) => {
+        if (profile?.role === 'admin') {
+            // Admin Redirect
+            router.replace("/admin");
+            return;
+        }
+
+        const status = checkProfileStatus(user, profile);
+        if (status === "REQUIRE_ONBOARDING") {
+            router.replace("/complete-profile");
+        } else {
+            router.replace("/dashboard");
+        }
+    }, [router, checkProfileStatus]);
+
 
     /**
      * Fetch user profile from Firestore with retry logic
@@ -314,20 +335,15 @@ export function AuthProvider({
                 error: null,
             });
 
-            // Redirect based on profile status
-            const status = checkProfileStatus(user, profile);
-            if (status === "REQUIRE_ONBOARDING") {
-                router.replace("/complete-profile");
-            } else {
-                router.replace("/dashboard");
-            }
+            // Unified Redirect
+            await handleNavigation(user, profile);
 
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "فشل تسجيل الدخول";
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [fetchProfile, checkProfileStatus, router]);
+    }, [fetchProfile, checkProfileStatus, router, handleNavigation]);
 
     /**
      * Sign up with email - ATOMIC FLOW
@@ -368,15 +384,15 @@ export function AuthProvider({
                 error: null,
             });
 
-            // Step 6: Direct redirect to dashboard (Profile is guaranteed complete)
-            router.replace("/dashboard");
+            // Step 6: Direct redirect to dashboard (Unified)
+            await handleNavigation(user, profile);
 
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "فشل إنشاء الحساب";
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [router]);
+    }, [router, handleNavigation]);
 
     /**
      * Login with Google - CHECK-GATE FLOW
@@ -410,7 +426,7 @@ export function AuthProvider({
             // Check if profile exists in Firestore
             const existingProfile = await fetchProfile(user.uid);
 
-            if (existingProfile && isProfileComplete(existingProfile)) {
+            if (existingProfile && (existingProfile.role === 'admin' || isProfileComplete(existingProfile))) {
                 // Existing complete profile - update last login
                 const userRef = doc(db, "users", user.uid);
                 await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
@@ -422,7 +438,7 @@ export function AuthProvider({
                     error: null,
                 });
 
-                router.replace("/dashboard");
+                await handleNavigation(user, existingProfile);
                 return "AUTHENTICATED";
             } else {
                 // Profile missing or incomplete - needs onboarding
@@ -441,7 +457,7 @@ export function AuthProvider({
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [fetchProfile, router]);
+    }, [fetchProfile, router, handleNavigation]);
 
     /**
      * Complete onboarding for Google users
@@ -469,13 +485,13 @@ export function AuthProvider({
                 error: null,
             });
 
-            router.replace("/dashboard");
+            await handleNavigation(user, profile);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "فشل حفظ البيانات";
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [state.user, router]);
+    }, [state.user, router, handleNavigation]);
 
     /**
      * Logout - Complete cleanup
@@ -573,9 +589,16 @@ export function AuthProvider({
                 try {
                     // Do NOT set cookie here manually anymore. 
                     // Session is assumed valid or established via Login Flow.
-                    // If session expired on server but client is logged in = Middleware will redirect to login.
-                    // If client is logged in but session is missing, we could try to restore it:
-                    if (!document.cookie.includes('bacx_session')) {
+
+                    // Check for Hydration (Goal 2: Eliminate Redundant Read)
+                    if (state.profile && state.profile.uid === currentUser.uid) {
+                        // Already hydrated from Server Component!
+                        setState(prev => ({ ...prev, user: currentUser, loading: false }));
+                        return;
+                    }
+
+                    // Restore Session Cookie if missing (Safety Net)
+                    if (typeof document !== 'undefined' && !document.cookie.includes('bacx_session')) {
                         console.log("Restoring session cookie...");
                         const idToken = await currentUser.getIdToken();
                         await fetch("/api/auth/login", {
@@ -602,6 +625,10 @@ export function AuthProvider({
                         loading: false,
                         error: "Failed to load profile"
                     });
+
+                    // Fail-safe redirect if profile load fails catastrophically?
+                    // Maybe just let error boundary handle it, or force logout.
+                    // logout(); 
                 }
             } else {
                 // No user
