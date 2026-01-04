@@ -13,7 +13,6 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { registerDevice, unregisterDevice } from "@/actions/device";
-import { useRouter, usePathname } from "next/navigation";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -71,7 +70,7 @@ interface AuthContextType extends AuthState {
     isLoggingOut: boolean;
     refreshProfile: () => Promise<void>;
 
-    // Check Profile / Redirection
+    // Check Profile 
     checkProfileStatus: (user: User, profile: UserProfile | null) => AuthStatus;
 
     // DEDUPLICATION
@@ -157,8 +156,6 @@ export function AuthProvider({
     initialUser?: Partial<User> | null;
     initialProfile?: UserProfile | null;
 }) {
-    const router = useRouter();
-    const pathname = usePathname();
 
     // ----- STATE -----
     const [state, setState] = useState<AuthState>({
@@ -186,24 +183,6 @@ export function AuthProvider({
         if (isProfileComplete(profile)) return "AUTHENTICATED";
         return "REQUIRE_ONBOARDING";
     }, []);
-
-    /**
-     * Centralized Navigation Handler (Goal 3)
-     */
-    const handleNavigation = useCallback(async (user: User, profile: UserProfile | null) => {
-        if (profile?.role === 'admin') {
-            // Admin Redirect
-            router.replace("/admin");
-            return;
-        }
-
-        const status = checkProfileStatus(user, profile);
-        if (status === "REQUIRE_ONBOARDING") {
-            router.replace("/complete-profile");
-        } else {
-            router.replace("/dashboard");
-        }
-    }, [router, checkProfileStatus]);
 
 
     /**
@@ -335,15 +314,12 @@ export function AuthProvider({
                 error: null,
             });
 
-            // Unified Redirect
-            await handleNavigation(user, profile);
-
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "فشل تسجيل الدخول";
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [fetchProfile, checkProfileStatus, router, handleNavigation]);
+    }, [fetchProfile, checkProfileStatus]);
 
     /**
      * Sign up with email - ATOMIC FLOW
@@ -384,15 +360,12 @@ export function AuthProvider({
                 error: null,
             });
 
-            // Step 6: Direct redirect to dashboard (Unified)
-            await handleNavigation(user, profile);
-
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "فشل إنشاء الحساب";
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [router, handleNavigation]);
+    }, []);
 
     /**
      * Login with Google - CHECK-GATE FLOW
@@ -438,7 +411,6 @@ export function AuthProvider({
                     error: null,
                 });
 
-                await handleNavigation(user, existingProfile);
                 return "AUTHENTICATED";
             } else {
                 // Profile missing or incomplete - needs onboarding
@@ -449,7 +421,6 @@ export function AuthProvider({
                     error: null,
                 });
 
-                router.replace("/complete-profile");
                 return "REQUIRE_ONBOARDING";
             }
         } catch (error: unknown) {
@@ -457,7 +428,7 @@ export function AuthProvider({
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [fetchProfile, router, handleNavigation]);
+    }, [fetchProfile]);
 
     /**
      * Complete onboarding for Google users
@@ -485,13 +456,12 @@ export function AuthProvider({
                 error: null,
             });
 
-            await handleNavigation(user, profile);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "فشل حفظ البيانات";
             setState((prev) => ({ ...prev, loading: false, error: message }));
             throw error;
         }
-    }, [state.user, router, handleNavigation]);
+    }, [state.user]);
 
     /**
      * Logout - Complete cleanup
