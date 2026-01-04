@@ -21,9 +21,10 @@ export default function LoginPage() {
         try {
             await loginWithEmail(email, password);
             toast.success("تم تسجيل الدخول بنجاح");
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            toast.error(err.message || "فشل تسجيل الدخول");
+            const errorMessage = err instanceof Error ? err.message : "فشل تسجيل الدخول";
+            toast.error(errorMessage);
         }
     };
 

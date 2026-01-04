@@ -1,17 +1,15 @@
 "use client";
 
 import React from 'react';
-import { motion, useScroll, useTransform, MotionStyle } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowLeft, Play } from "lucide-react";
 import Link from "next/link";
 import { NeuralBackground } from "@/components/ui/NeuralBackground";
 import { BrainyLogo } from "@/components/ui/BrainyLogo";
 
-interface HeroSectionProps {
-    // No props needed as scroll logic is internal
-}
+// No props interface needed
 
-export function HeroSection({ }: HeroSectionProps) {
+export function HeroSection() {
     const containerRef = React.useRef<HTMLElement>(null);
     const { scrollYProgress } = useScroll({
         target: containerRef,

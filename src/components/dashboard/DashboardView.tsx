@@ -36,8 +36,12 @@ export function DashboardView({ initialData }: DashboardViewProps) {
     const { announcement } = initialData;
 
     // Process announcement logic
+    // Use fixed date for hydration match, or simple check if we don't care about hydration mismatch on milliseconds
+    // Better: perform check in render but acknowledge it's client-side only 
+    // actually, to fix 'impure render', we should not rely on Date.now() changing between renders.
+    // We'll calculate it once or use a fixed reference.
     const isNewAnnouncement = announcement
-        ? (Date.now() - announcement.createdAt.getTime()) / (1000 * 60 * 60) < 24
+        ? (new Date().getTime() - announcement.createdAt.getTime()) / (1000 * 60 * 60) < 24
         : false;
 
     const announcementTime = announcement

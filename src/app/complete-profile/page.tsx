@@ -9,7 +9,7 @@ import { BrainyStoneLogoSVG } from "@/components/ui/BrainyStoneLogoSVG";
 import { User, MapPin, BookOpen, AlertCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+
 
 // --- DATA CONSTANTS ---
 // (Ideally imported from a shared constant file, but duplicating for safety/speed now)
@@ -39,7 +39,7 @@ const MAJORS = [
 
 export default function CompleteProfilePage() {
     const { user, completeOnboarding, loading, error } = useAuth();
-    const router = useRouter();
+    // const router = useRouter(); // Unused
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -49,11 +49,13 @@ export default function CompleteProfilePage() {
 
     // Initialize with user data if available
     useEffect(() => {
-        if (user) {
-            setFormData(prev => ({
-                ...prev,
-                fullName: user.displayName || ""
-            }));
+        if (user && user.displayName) {
+            setFormData(prev => {
+                if (prev.fullName !== user.displayName) {
+                    return { ...prev, fullName: user.displayName || "" };
+                }
+                return prev;
+            });
         }
     }, [user]);
 
