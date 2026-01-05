@@ -70,8 +70,8 @@ export default function AdminDashboard() {
         const description = formData.get('description') as string;
 
         try {
-            let pdfUrl = "";
-            let lessonSlug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+            // let pdfUrl = ""; // Warn: Unused
+            const lessonSlug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''); // Fix: const
 
             if (pdfFile && pdfFile.size > 0) {
                 if (pdfFile.size > 10 * 1024 * 1024) throw new Error("حجم الملف يجب ألا يتجاوز 10 ميغابايت");
@@ -83,14 +83,14 @@ export default function AdminDashboard() {
                 // Let's use a 'lessons' bucket
                 const filePath = `${moduleName}/${Date.now()}_${pdfFile.name}`;
 
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('lessons') // Need to ensure this bucket exists
                     .upload(filePath, pdfFile);
 
                 if (uploadError) throw uploadError;
 
-                const { data: { publicUrl } } = supabase.storage.from('lessons').getPublicUrl(filePath);
-                pdfUrl = publicUrl;
+                // const { data: { publicUrl } } = supabase.storage.from('lessons').getPublicUrl(filePath);
+                // pdfUrl = publicUrl; // Warn: Unused
                 setUploadProgress(70);
             }
 

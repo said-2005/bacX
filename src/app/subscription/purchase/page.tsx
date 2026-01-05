@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
-import { Upload, CheckCircle, Smartphone, Landmark, Loader2, Crown, AlertCircle, ImageIcon } from "lucide-react";
-import Link from "next/link";
+import { Upload, CheckCircle, Smartphone, Landmark, Loader2, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 interface Plan {
     id: string;
@@ -46,14 +44,15 @@ export default function PurchasePage() {
     const [selectedMethod, setSelectedMethod] = useState<"CCP" | "BaridiMob">("CCP");
 
     // Plans State
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [plans, setPlans] = useState<Plan[]>(STATIC_PLANS);
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>("annual");
-    const [loadingPlans, setLoadingPlans] = useState(false);
+    // const [loadingPlans, setLoadingPlans] = useState(false); // Warn: Unused
 
     // Upload State
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    // const [previewUrl, setPreviewUrl] = useState<string | null>(null); // Warn: Unused
 
     const methods = {
         CCP: {
@@ -86,10 +85,10 @@ export default function PurchasePage() {
 
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
-            reader.onloadend = () => setPreviewUrl(reader.result as string);
+            // reader.onloadend = () => setPreviewUrl(reader.result as string);
             reader.readAsDataURL(file);
         } else {
-            setPreviewUrl(null);
+            // setPreviewUrl(null);
         }
     };
 
@@ -114,7 +113,7 @@ export default function PurchasePage() {
             const fileName = `${user.id}_${Date.now()}.${fileExt}`;
             const filePath = `${fileName}`;
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('receipts')
                 .upload(filePath, receiptFile);
 
@@ -148,7 +147,8 @@ export default function PurchasePage() {
 
         } catch (error: any) {
             console.error("Submit error:", error);
-            toast.error("فشل إرسال الطلب", { description: error.message });
+            const msg = error instanceof Error ? error.message : "Error";
+            toast.error("فشل إرسال الطلب", { description: msg });
         } finally {
             setIsSubmitting(false);
         }

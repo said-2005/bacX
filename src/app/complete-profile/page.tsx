@@ -48,16 +48,21 @@ export default function CompleteProfilePage() {
     });
 
     // Initialize with user data if available
+    // Initialize with user data if available - NO EFFECT (Fix lint)
+    // We can rely on 'user' being available eventually, but better to set it once or let the user fill it.
+    // Actually, we can check 'user' on render or just use key-based reset if we really want sync.
+    // For now, let's just pre-fill if user is present on mount, or leave it.
+    // A better pattern is to use `defaultValue` or `key` on the form, OR only setState if empty.
+
+    // Fix: Just use an effect that CHECKS if we need to update to avoid loop/warning, 
+    // BUT the linter complained about sync state update.
+    // Best fix: Set initial state lazily or check inside effect with a ref? 
+    // Simplest: Check condition strictly before setting.
     useEffect(() => {
-        if (user && user.displayName) {
-            setFormData(prev => {
-                if (prev.fullName !== user.displayName) {
-                    return { ...prev, fullName: user.displayName || "" };
-                }
-                return prev;
-            });
+        if (user?.displayName && formData.fullName !== user.displayName && formData.fullName === "") {
+            setFormData(prev => ({ ...prev, fullName: user.displayName || "" }));
         }
-    }, [user]);
+    }, [user, formData.fullName]);
 
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));

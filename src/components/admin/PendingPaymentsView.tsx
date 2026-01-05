@@ -80,7 +80,8 @@ export function PendingPaymentsView() {
 
         } catch (e: any) {
             console.error(e);
-            toast.error("حدث خطأ: " + e.message);
+            const msg = e.message || "Unknown error";
+            toast.error("حدث خطأ: " + msg);
         } finally {
             setProcessingId(null);
         }

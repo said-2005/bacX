@@ -4,6 +4,8 @@ import { Book, Calculator, Atom, Dna, Globe, Languages, ChevronLeft } from "luci
 import { GlassCard } from "@/components/ui/GlassCard";
 
 // Map slugs to Icons manually since we store icon strings in DB
+// Map slugs to Icons manually since we store icon strings in DB
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<string, any> = {
     math: Calculator,
     physics: Atom,
@@ -40,7 +42,7 @@ export default async function SubjectsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(subjects || []).map((subject, index) => {
+                {(subjects || []).map((subject) => {
                     const Icon = ICON_MAP[subject.slug] || Book;
 
                     return (
