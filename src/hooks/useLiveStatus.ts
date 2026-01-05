@@ -1,65 +1,69 @@
-import { useState, useEffect } from "react";
-import { doc, onSnapshot, Timestamp, FirestoreError } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+"use client";
 
-interface LiveStatus {
-    isLive: boolean;
-    youtubeId: string;
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+
+export interface LiveSession {
+    id: string;
     title: string;
-    startedAt?: Timestamp | null;
+    status: "scheduled" | "live" | "ended";
+    started_at: string | null;
+    viewer_count: number;
+    youtube_id: string | null;
 }
 
 export function useLiveStatus() {
-    const [status, setStatus] = useState<LiveStatus>({
-        isLive: false,
-        youtubeId: "",
-        title: "",
-        startedAt: null
-    });
+    const supabase = createClient();
+    const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 1. Listen to Public Config (Always Allowed)
-        const unsubConfig = onSnapshot(doc(db, "config", "live_stream"), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setStatus(prev => ({ ...prev, ...(data as Partial<LiveStatus>) }));
+        // 1. Initial Fetch
+        const fetchLive = async () => {
+            const { data } = await supabase
+                .from("live_sessions")
+                .select("*")
+                .or("status.eq.live,status.eq.scheduled")
+                .order("started_at", { ascending: false })
+                .limit(1)
+                .single();
 
-                // If not live, clear ID immediately
-                if (!data.isLive) {
-                    setStatus(prev => ({ ...prev, youtubeId: "" }));
-                }
+            if (data) {
+                setLiveSession(data as LiveSession);
             } else {
-                setStatus({ isLive: false, youtubeId: "", title: "", startedAt: null });
+                setLiveSession(null);
             }
             setLoading(false);
-        });
+        };
 
-        // 2. Listen to Secret Stream (Protected - will fail if not subscribed)
-        // We use a separate listener so the public data doesn't get blocked by the private error
-        const unsubSecret = onSnapshot(doc(db, "secret_stream", "current"),
-            (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    setStatus((prev: LiveStatus) => ({ ...prev, youtubeId: data.youtubeId || "" }));
+        fetchLive();
+
+        // 2. Realtime Subscription
+        const channel = supabase
+            .channel('public:live_sessions')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'live_sessions'
+                },
+                (payload) => {
+                    // Refresh data on any change (simple approach) or handle payload
+                    // For simplicity, we just refetch or inspect the payload
+                    if (payload.eventType === 'DELETE') {
+                        setLiveSession(null);
+                    } else {
+                        setLiveSession(payload.new as LiveSession);
+                    }
                 }
-            },
-            (error: FirestoreError) => {
-                // Permission Denied or Not Logged In - Expected for free users
-                // Just verify we don't have a stale ID
-                if (error.code === 'permission-denied') {
-                    // console.log("Stream is protected. Upgrade to view.");
-                } else {
-                    // console.error("Secret stream error:", error);
-                }
-            }
-        );
+            )
+            .subscribe();
 
         return () => {
-            unsubConfig();
-            unsubSecret();
+            supabase.removeChannel(channel);
         };
-    }, []);
+    }, [supabase]);
 
-    return { ...status, loading };
+    return { liveSession, loading };
 }
