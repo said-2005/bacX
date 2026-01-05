@@ -7,7 +7,7 @@ import NextTopLoader from "nextjs-toploader";
 import { BackButton } from "@/components/ui/BackButton";
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { AppShell } from "@/components/layout/AppShell";
-import { cookies } from "next/headers";
+
 import { createClient } from "@/utils/supabase/server"; // Use Supabase Server Client
 import { ViewTransitions } from 'next-view-transitions';
 
