@@ -38,7 +38,7 @@ export function Skeleton({ className, width, height, ...props }: SkeletonProps) 
                     ease: "linear",
                 }}
                 style={{
-                    background: "linear-gradient(90deg, transparent 0%, rgba(37, 99, 235, 0.1) 50%, transparent 100%)",
+                    background: "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%)",
                 }}
             />
         </motion.div>
