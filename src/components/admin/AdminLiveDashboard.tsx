@@ -48,7 +48,6 @@ export default function AdminLiveDashboard() {
             // Use current live data or fallback to form data if needed, 
             // mostly we trust the Hook data as 'Active Truth'.
             const idToArchive = currentId || youtubeId;
-            const titleToArchive = currentTitle || title;
 
             await archiveStream(idToArchive);
 

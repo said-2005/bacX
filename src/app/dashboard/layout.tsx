@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const { user, profile, loading, checkProfileStatus } = useAuth();
+    const { user, loading, checkProfileStatus } = useAuth();
     const router = useRouter();
 
     useEffect(() => {

@@ -1,3 +1,5 @@
+"use client";
+
 import { useLiveStatus } from "@/hooks/useLiveStatus";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2, Lock, SignalHigh, Radio, CalendarClock } from "lucide-react";
