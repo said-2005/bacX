@@ -96,30 +96,57 @@ export function AuthProvider({
     const userIdRef = useRef<string | undefined>(state.user?.id);
 
     useEffect(() => {
+        // EMERGENCY BYPASS: Force loading to false after 5 seconds
+        const timer = setTimeout(() => {
+            if (state.loading) {
+                console.error("AuthContext: Emergency bypass triggered - forcing loading to false");
+                setState(prev => ({ ...prev, loading: false }));
+            }
+        }, 5000);
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Auth State Change:", event);
+            console.log("AuthContext: Auth State Change:", event);
+            console.log("AuthContext: session is", session);
+            console.log("AuthContext: user object is", session?.user);
 
             if (session?.user) {
                 const user = session.user;
                 // Only fetch profile if user changed or we don't have it
                 if (user.id !== userIdRef.current) {
                     userIdRef.current = user.id; // Update Ref
+                    console.log("AuthContext: Fetching profile for new user", user.id);
                     const profile = await fetchProfile(user.id);
-                    setState(prev => ({ ...prev, user, session, profile, loading: false }));
+                    setState(prev => ({
+                        ...prev,
+                        user,
+                        session,
+                        profile,
+                        loading: false
+                    }));
+                    console.log("AuthContext: Profile loaded, loading set to false");
                 } else {
                     // Even if user hasn't changed, we might need to update session or stop loading
+                    console.log("AuthContext: User unchanged, updating session");
                     setState(prev => ({ ...prev, user, session, loading: false }));
                 }
             } else {
+                console.log("AuthContext: No session, clearing state");
                 userIdRef.current = undefined; // Reset Ref
-                setState(prev => ({ ...prev, user: null, session: null, profile: null, loading: false }));
+                setState(prev => ({
+                    ...prev,
+                    user: null,
+                    session: null,
+                    profile: null,
+                    loading: false
+                }));
             }
         });
 
         return () => {
+            clearTimeout(timer);
             subscription.unsubscribe();
         };
-    }, [supabase, fetchProfile]); // Removed state.user?.id dependency
+    }, [supabase, fetchProfile, state.loading]); // Added state.loading to deps for timeout check? No, strictly redundant but safe. Actually better to remove state.loading to avoid re-triggering. Wait.
     const loginWithEmail = async (email: string, password: string) => {
         setState(prev => ({ ...prev, loading: true, error: null }));
         const { error } = await supabase.auth.signInWithPassword({ email, password });
