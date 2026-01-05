@@ -41,8 +41,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen w-full bg-background font-sans overflow-hidden text-foreground selection:bg-primary/30">
             {/* Sidebar — Desktop Wrapper */}
-            <aside className="hidden lg:block w-[280px] h-full shrink-0 relative z-[60]">
-                <div className="h-full w-full glass-nav border-l border-glass-border">
+            <aside className="hidden lg:block w-[280px] h-full shrink-0 relative z-[60] pointer-events-auto">
+                <div className="h-full w-full glass-nav border-l border-glass-border pointer-events-auto">
                     <Sidebar />
                 </div>
             </aside>
@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full relative min-w-0">
                 {/* Top Navigation */}
-                <header className="h-16 w-full z-40 shrink-0 glass-nav border-b border-glass-border sticky top-0">
+                <header className="h-16 w-full z-40 shrink-0 glass-nav border-b border-glass-border sticky top-0 pointer-events-auto">
                     <TopNav />
                 </header>
 
