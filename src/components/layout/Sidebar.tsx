@@ -32,7 +32,7 @@ export function Sidebar() {
     const [isSubjectsOpen, setIsSubjectsOpen] = useState(true);
 
     return (
-        <div className="w-full h-full flex flex-col bg-transparent relative">
+        <div className="w-full h-full flex flex-col bg-transparent relative z-50 pointer-events-auto">
             {/* Logo - Perfectly Centered */}
             <div className="h-24 flex items-center justify-center border-b border-white/5 mx-6">
                 <Link href="/dashboard" className="group">

@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen w-full bg-background font-sans overflow-hidden text-foreground selection:bg-primary/30">
             {/* Sidebar — Desktop Wrapper */}
-            <aside className="hidden lg:block w-[280px] h-full shrink-0 relative z-50">
+            <aside className="hidden lg:block w-[280px] h-full shrink-0 relative z-[60]">
                 <div className="h-full w-full glass-nav border-l border-glass-border">
                     <Sidebar />
                 </div>

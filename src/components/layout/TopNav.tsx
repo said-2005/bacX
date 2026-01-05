@@ -175,7 +175,7 @@ export function TopNav() {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                 transition={{ duration: 0.2 }}
-                                className="absolute left-0 mt-4 w-80 glass-panel rounded-2xl shadow-2xl overflow-hidden z-50 ring-1 ring-white/10"
+                                className="absolute left-0 mt-4 w-80 glass-panel rounded-2xl shadow-2xl overflow-hidden z-[70] ring-1 ring-white/10"
                             >
                                 <div className="p-4 border-b border-white/5 flex justify-between items-center">
                                     <h3 className="font-bold text-white text-sm">الإشعارات</h3>
@@ -245,7 +245,7 @@ export function TopNav() {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                 transition={{ duration: 0.2 }}
-                                className="absolute left-0 mt-4 w-60 glass-panel rounded-2xl shadow-2xl overflow-hidden z-50 ring-1 ring-white/10"
+                                className="absolute left-0 mt-4 w-60 glass-panel rounded-2xl shadow-2xl overflow-hidden z-[70] ring-1 ring-white/10"
                             >
                                 <div className="p-4 border-b border-white/5 bg-white/5">
                                     <p className="font-bold text-white truncate">{userDisplayName || "الطالب"}</p>
@@ -297,13 +297,13 @@ export function TopNav() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsSearchOpen(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
                         />
                         <motion.div
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="absolute top-0 left-0 right-0 h-24 bg-[#0A0A0F] z-[70] border-b border-white/10 flex items-center px-4 md:px-32 shadow-2xl"
+                            className="absolute top-0 left-0 right-0 h-24 bg-[#0A0A0F] z-[101] border-b border-white/10 flex items-center px-4 md:px-32 shadow-2xl"
                         >
                             <Search className="w-6 h-6 text-primary shrink-0 ml-4" />
                             <input
