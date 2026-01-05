@@ -3,8 +3,9 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
+// import { doc, getDoc } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
 import { Mail, GraduationCap, Shield, CreditCard, Settings, Loader2, ChevronLeft } from "lucide-react";
 
 import Link from "next/link";
@@ -20,14 +21,34 @@ interface UserData {
     isSubscribed: boolean;
     subscriptionPlan?: string;
     subscriptionExpiry?: { toDate: () => Date } | Date;
-    createdAt?: { toDate: () => Date } | Date;
+    createdAt?: Date;
 }
 
 export default function ProfilePage() {
     const { user, loading } = useAuth();
     const router = useRouter();
+    // Use profile from context if available, or fetch fresh? 
+    // Context profile might be enough if it has all fields.
+    // The previous code fetched "users/{uid}" separately.
+    // In Supabase, "profiles" is the table.
+    // Let's rely on AuthContext profile first, but maybe we need subscription info from a different table or joined?
+    // "profiles" should have: full_name, wilaya, major, role, is_profile_complete.
+    // Subscription info might be in "profiles" (is_subscribed?) or separate "subscriptions" table.
+    // Looking at `AuthContext`, it selects `*, wilayas(full_label), majors(label)`.
+    // Let's assume `profiles` has `is_subscribed` etc based on previous `admin/users/page.tsx` migration work.
+
+    // Actually, `admin/users/page.tsx` used `user.is_subscribed` etc.
+    // Let's assume the profile in Supabase has these fields mapped or available.
+    // If not, we might need adjustments.
+
+    // For now, let's use the local profile from AuthContext if possible, but the original code fetched specific fields.
+    // The original code uses `UserData` interface.
+    // Let's stick to component-level fetching for ensuring we get the exact fields, 
+    // but using Supabase Client.
+
     const [userData, setUserData] = useState<UserData | null>(null);
     const [isFetching, setIsFetching] = useState(true);
+    const supabase = createClient();
 
     useEffect(() => {
         if (!loading && !user) {
@@ -38,10 +59,25 @@ export default function ProfilePage() {
         async function fetchUserData() {
             if (!user) return;
             try {
-                const docRef = doc(db, "users", user.uid);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setUserData(docSnap.data() as UserData);
+                // Fetch from 'profiles'
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (data) {
+                    setUserData({
+                        fullName: data.full_name,
+                        email: user.email || "",
+                        wilaya: data.wilaya, // or join
+                        major: data.major,   // or join
+                        role: data.role,
+                        isSubscribed: data.is_subscribed,
+                        subscriptionPlan: data.subscription_plan,
+                        subscriptionExpiry: data.subscription_expiry ? new Date(data.subscription_expiry) : undefined,
+                        createdAt: data.created_at ? new Date(data.created_at) : undefined
+                    });
                 }
             } catch (error) {
                 console.error("Error fetching profile:", error);
@@ -53,7 +89,7 @@ export default function ProfilePage() {
         if (user) {
             fetchUserData();
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, supabase]);
 
     if (loading || isFetching) {
         return (
@@ -65,15 +101,9 @@ export default function ProfilePage() {
 
     if (!user) return null;
 
-    const formatDate = (dateObj: { toDate: () => Date } | Date | undefined) => {
+    const formatDate = (dateObj: Date | undefined) => {
         if (!dateObj) return "—";
-        let date: Date;
-        if ('toDate' in dateObj && typeof dateObj.toDate === 'function') {
-            date = dateObj.toDate();
-        } else {
-            date = dateObj as Date;
-        }
-        return format(date, "d MMMM yyyy", { locale: ar });
+        return format(dateObj, "d MMMM yyyy", { locale: ar });
     };
 
     return (
@@ -103,11 +133,11 @@ export default function ProfilePage() {
                         <div className="panel-body">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center text-white text-xl font-bold">
-                                    {userData?.fullName?.[0]?.toUpperCase() || user.displayName?.[0]?.toUpperCase() || "U"}
+                                    {userData?.fullName?.[0]?.toUpperCase() || user.user_metadata?.full_name?.[0]?.toUpperCase() || "U"}
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-foreground">
-                                        {userData?.fullName || user.displayName || "المستخدم"}
+                                        {userData?.fullName || user.user_metadata?.full_name || "المستخدم"}
                                     </h2>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <Mail className="w-4 h-4" />

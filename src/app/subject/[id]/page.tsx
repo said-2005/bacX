@@ -3,8 +3,9 @@
 import { useAuth } from "@/context/AuthContext";
 import { VideoCard } from "@/components/dashboard/VideoCard";
 import { useState, useEffect, use } from "react";
-import { collection, query, where, orderBy, getDocs, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
+// import { collection, query, where, orderBy, getDocs, Timestamp } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +18,7 @@ interface Lesson {
     duration?: string;
     thumbnail?: string;
     videoUrl: string;
-    createdAt: Timestamp;
+    createdAt: string | Date;
 }
 
 export default function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,18 +28,35 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const supabase = createClient();
+
     useEffect(() => {
         async function fetchLessons() {
             try {
                 // Fetch lessons for this specific subject
-                const q = query(
-                    collection(db, "lessons"),
-                    where("subject", "==", decodedSubject),
-                    orderBy("createdAt", "desc")
-                );
-                const querySnapshot = await getDocs(q);
-                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lesson));
-                setLessons(data);
+                const { data, error } = await supabase
+                    .from('lessons')
+                    .select('*')
+                    .eq('subject', decodedSubject)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data) {
+                    setLessons(data.map((doc: any) => ({
+                        id: doc.id,
+                        title: doc.title,
+                        subject: doc.subject,
+                        instructor: doc.instructor,
+                        duration: doc.duration,
+                        thumbnail: doc.thumbnail,
+                        videoUrl: doc.video_url || doc.videoUrl, // Handle snake_case
+                        createdAt: doc.created_at // Supabase returns string, but interface asks for Timestamp? 
+                        // We should update Interface to string or Date, or cast it.
+                        // Since we don't use createdAt in UI loop, maybe just keep it loosely typed or map.
+                        // Let's update Interface next.
+                    } as unknown as Lesson)));
+                }
             } catch (error) {
                 console.error("Error fetching lessons:", error);
             } finally {
@@ -49,7 +67,7 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
         if (user) {
             fetchLessons();
         }
-    }, [user, decodedSubject]);
+    }, [user, decodedSubject, supabase]);
 
     if (authLoading || loading) return <div className="p-8"><LessonSkeleton /></div>;
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
+// import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { FileQuestion, Download, Search } from "lucide-react";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
@@ -20,13 +21,31 @@ export default function ExercisesPage() {
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const supabase = createClient();
+
     useEffect(() => {
         async function fetchExercises() {
             try {
-                const q = query(collection(db, "exercises"), orderBy("createdAt", "desc"), limit(20));
-                const querySnapshot = await getDocs(q);
-                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exercise));
-                setExercises(data);
+                // Supabase Fetch
+                const { data, error } = await supabase
+                    .from("exercises")
+                    .select("*")
+                    .order("created_at", { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                if (data) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    setExercises(data.map((doc: any) => ({
+                        id: doc.id,
+                        title: doc.title,
+                        subject: doc.subject,
+                        pdfUrl: doc.pdf_url || doc.pdfUrl, // Handle snake_case or legacy match
+                        year: doc.year,
+                        difficulty: doc.difficulty
+                    })));
+                }
             } catch (error) {
                 console.error("Error fetching exercises:", error);
             } finally {
@@ -34,7 +53,7 @@ export default function ExercisesPage() {
             }
         }
         fetchExercises();
-    }, []);
+    }, [supabase]);
 
     if (loading) return <LessonSkeleton />;
 

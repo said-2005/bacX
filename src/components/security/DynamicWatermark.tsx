@@ -2,7 +2,8 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import { User } from "firebase/auth";
+import { User } from "@supabase/supabase-js";
+// import { User } from "firebase/auth";
 import { hashUID } from "@/lib/hash";
 
 interface DynamicWatermarkProps {
@@ -14,8 +15,8 @@ export const DynamicWatermark = memo(({ user }: DynamicWatermarkProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (user) {
-            hashUID(user.uid).then(hash => {
+        if (user?.id) {
+            hashUID(user.id).then(hash => {
                 const id = user.email ? user.email.split('@')[0] : hash;
                 setWatermarkStr(`${id} • ${hash} • BRAINY PROTECTED`);
             });

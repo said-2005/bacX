@@ -12,6 +12,8 @@ import { useRouter } from "next/navigation";
 export function Sidebar() {
     const [activeTab, setActiveTab] = useState<'syllabus' | 'chat'>('syllabus');
     const { user, role } = useAuth();
+    const { profile } = useAuth();
+    const isAdmin = profile?.role === 'admin' || (user as { isSubscribed?: boolean } | null)?.isSubscribed;
     const router = useRouter();
 
     const hasAccess = role === 'admin' || (user as { isSubscribed?: boolean } | null)?.isSubscribed;

@@ -9,6 +9,7 @@ interface Device {
     lastSeen: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function registerDevice(userId: string, _deviceInfo: { userAgent: string; deviceId?: string }) {
     if (!userId) throw new Error("User ID required");
 

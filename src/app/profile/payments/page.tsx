@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
+// import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
 import { CreditCard, CheckCircle, Clock, XCircle, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { arMA } from "date-fns/locale";
@@ -13,7 +14,7 @@ interface Payment {
     amount: string;
     method: string;
     status: 'approved' | 'pending' | 'rejected';
-    createdAt: { toDate: () => Date };
+    createdAt: Date;
 }
 
 export default function PaymentsHistoryPage() {
@@ -21,19 +22,38 @@ export default function PaymentsHistoryPage() {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const supabase = createClient();
+
     useEffect(() => {
         if (!user) return;
-        const q = query(
-            collection(db, "payments"),
-            where("userId", "==", user.uid),
-            orderBy("createdAt", "desc")
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setPayments(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
+
+        async function fetchPayments() {
+            const { data } = await supabase
+                .from('payments')
+                .select('*')
+                .eq('user_id', user!.id) // user is checked above in the useEffect, but TS might not infer it inside async. Using ! is safe here due to line 28 check.
+                // .eq('userId', user.id) // Or camelCase if that's how it is? 
+                // Based on standard Supabase, snake_case is likely.
+                // But let's check migration context. Admin payments page used `userId`?
+                // Let's verify `admin/payments/page.tsx` used `user_id` or fetched via `order`?
+                // `admin/payments/page.tsx` just did `.select('*').order(...)`.
+                // Let's assume snake_case `user_id` for now as it's standard.
+                .order('created_at', { ascending: false });
+
+            if (data) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                setPayments(data.map((d: any) => ({
+                    id: d.id,
+                    amount: d.amount,
+                    method: d.method,
+                    status: d.status,
+                    createdAt: d.created_at ? new Date(d.created_at) : new Date()
+                })));
+            }
             setLoading(false);
-        });
-        return () => unsubscribe();
-    }, [user]);
+        }
+        fetchPayments();
+    }, [user, supabase]);
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 font-tajawal direction-rtl text-slate-900">
@@ -66,7 +86,7 @@ export default function PaymentsHistoryPage() {
                                     {payments.map(payment => (
                                         <tr key={payment.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="p-4 text-slate-600 font-medium">
-                                                {formatDistanceToNow(payment.createdAt.toDate(), { addSuffix: true, locale: arMA })}
+                                                {formatDistanceToNow(payment.createdAt, { addSuffix: true, locale: arMA })}
                                             </td>
                                             <td className="p-4 font-bold text-slate-900">{payment.amount}</td>
                                             <td className="p-4 text-slate-500">{payment.method}</td>

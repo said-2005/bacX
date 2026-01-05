@@ -2,31 +2,50 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { updateProfile, updatePassword } from "firebase/auth";
+// import { updateProfile, updatePassword } from "firebase/auth";
+import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { User, Lock, Save, Loader2 } from "lucide-react";
 
 export default function SettingsPage() {
-    const { user } = useAuth();
-    const [name, setName] = useState(user?.displayName || "");
+    const { user, profile } = useAuth();
+    // Default to metadata or profile
+    const [name, setName] = useState(user?.user_metadata?.full_name || profile?.full_name || "");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const supabase = createClient();
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            if (user && name !== user.displayName) {
-                await updateProfile(user, { displayName: name });
+            if (user && name !== (user.user_metadata?.full_name || profile?.full_name)) {
+                // Update Supabase Auth Metadata
+                const { error: authError } = await supabase.auth.updateUser({
+                    data: { full_name: name }
+                });
+                if (authError) throw authError;
+
+                // Update Public Profile Table
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({ full_name: name, updated_at: new Date().toISOString() })
+                    .eq('id', user.id);
+                if (profileError) throw profileError;
+
                 toast.success("تم تحديث الاسم بنجاح");
             }
+
             if (user && password.length >= 6) {
-                await updatePassword(user, password);
+                const { error: passError } = await supabase.auth.updateUser({ password });
+                if (passError) throw passError;
+
                 toast.success("تم تحديث كلمة المرور");
                 setPassword("");
             }
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "فشل التحديث");
+        } catch (err: any) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            toast.error(err.message || "فشل التحديث");
         } finally {
             setIsLoading(false);
         }

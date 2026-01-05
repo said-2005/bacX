@@ -5,8 +5,9 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { PlayCircle, Lock, Search, Clock } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, limit, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
+// import { collection, getDocs, query, orderBy, limit, Timestamp } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
 import { LessonSkeleton } from "@/components/skeletons/LessonSkeleton";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -15,7 +16,7 @@ interface LessonSummary {
     title: string;
     subject: string;
     duration: string;
-    createdAt: Timestamp; // More specific than any
+    createdAt: string | Date; // More specific than any
     isLocked?: boolean;
 }
 
@@ -32,14 +33,30 @@ export default function LessonsIndexPage() {
         if (!authLoading && !user) router.replace("/auth");
     }, [user, authLoading, router]);
 
+    const supabase = createClient();
+
     useEffect(() => {
         async function fetchLessons() {
             try {
                 // Fetch all lessons (Limit 20 for V1)
-                const q = query(collection(db, "lessons"), orderBy("createdAt", "desc"), limit(20));
-                const querySnapshot = await getDocs(q);
-                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LessonSummary));
-                setLessons(data);
+                const { data, error } = await supabase
+                    .from('lessons')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                if (data) {
+                    setLessons(data.map((doc: any) => ({
+                        id: doc.id,
+                        title: doc.title,
+                        subject: doc.subject,
+                        duration: doc.duration,
+                        createdAt: doc.created_at,
+                        isLocked: doc.is_locked
+                    } as unknown as LessonSummary)));
+                }
             } catch (error) {
                 console.error("Error fetching lessons:", error);
             } finally {
@@ -47,7 +64,7 @@ export default function LessonsIndexPage() {
             }
         }
         fetchLessons();
-    }, []);
+    }, [supabase]);
 
     const filteredLessons = filter === "All" ? lessons : lessons.filter(l => l.subject === filter);
     const subjects = ["All", "الرياضيات", "الفيزياء", "العلوم"];

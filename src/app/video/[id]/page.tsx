@@ -2,8 +2,9 @@
 
 import { useEffect, useState, use, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
+// import { doc, getDoc } from "firebase/firestore";
+// import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
@@ -27,7 +28,7 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
     // React 19: Unwrap params
     const { id } = use(params);
 
-    const { user, loading: authLoading } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
     const router = useRouter();
 
     const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -35,27 +36,37 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
     const [denied, setDenied] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // const { user, profile } = useAuth(); // Removed redundant destructuring
+
     const fetchLesson = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            // 1. Check Subscription (Client-side fail-fast, real security is Firestore Rules)
-            const userRef = doc(db, "users", user!.uid);
-            const userSnap = await getDoc(userRef);
-            const userData = userSnap.data();
-
-            if (userData?.role !== 'admin' && !userData?.isSubscribed) {
+            // 1. Check Subscription (Client-side fail-fast, real security is RLS)
+            // Use profile from AuthContext
+            if (profile?.role !== 'admin' && !profile?.is_subscribed) {
                 setDenied(true);
                 setLoading(false);
                 return;
             }
 
             // 2. Fetch Lesson
-            const lessonRef = doc(db, "lessons", id);
-            const lessonSnap = await getDoc(lessonRef);
+            const supabase = createClient();
+            const { data, error } = await supabase
+                .from('lessons')
+                .select('*')
+                .eq('id', id)
+                .single();
 
-            if (lessonSnap.exists()) {
-                setLesson(lessonSnap.data() as Lesson);
+            if (data) {
+                setLesson({
+                    title: data.title,
+                    description: data.description,
+                    videoUrl: data.video_url || data.videoUrl,
+                    pdfUrl: data.pdf_url || data.pdfUrl,
+                    subject: data.subject,
+                    duration: data.duration
+                });
                 setDenied(false);
             } else {
                 toast.error("الدرس غير موجود");
@@ -63,19 +74,11 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
             }
         } catch (err: unknown) {
             console.error(err);
-            const errorCode = (typeof err === 'object' && err !== null && 'code' in err)
-                ? (err as { code: string }).code
-                : '';
-
-            if (errorCode === 'permission-denied') {
-                setDenied(true);
-            } else {
-                setError("فشل في تحميل الدرس. يرجى التحقق من الاتصال.");
-            }
+            setError("فشل في تحميل الدرس. يرجى التحقق من الاتصال.");
         } finally {
             setLoading(false);
         }
-    }, [user, id, router]);
+    }, [user, profile, id, router]);
 
     useEffect(() => {
         if (authLoading) return;

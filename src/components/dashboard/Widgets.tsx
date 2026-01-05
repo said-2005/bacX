@@ -257,17 +257,17 @@ export function UpcomingLives() {
     useEffect(() => {
         const fetchLives = async () => {
             const { data } = await supabase
-                .from('lives')
+                .from('live_sessions')
                 .select('*')
-                .gte('date', new Date().toISOString())
-                .order('date', { ascending: true })
+                .gte('started_at', new Date().toISOString())
+                .order('started_at', { ascending: true })
                 .limit(5);
 
             if (data) {
-                const mapped: LiveSession[] = data.map((d: { id: string; title: string; date: string }) => ({
+                const mapped: LiveSession[] = data.map((d: { id: string; title: string; started_at: string }) => ({
                     id: d.id,
                     title: d.title,
-                    date: d.date ? { toDate: () => new Date(d.date) } : { toDate: () => new Date() }
+                    date: d.started_at ? { toDate: () => new Date(d.started_at) } : { toDate: () => new Date() }
                 }));
                 setLives(mapped);
             }

@@ -15,6 +15,7 @@ export interface UserProfile {
     major?: string;  // e.g., "science"
     role: "admin" | "student";
     is_profile_complete: boolean;
+    is_subscribed?: boolean;
     created_at: string;
 }
 
@@ -28,13 +29,16 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
     loginWithEmail: (email: string, password: string) => Promise<void>;
+    signupWithEmail: (data: { email: string, password: string, fullName: string, wilaya: string, major: string }) => Promise<void>;
     logout: () => Promise<void>;
     refreshProfile: () => Promise<void>;
+    hydrateProfile: (profile: UserProfile | null) => Promise<void>;
+    checkProfileStatus: () => Promise<boolean>;
     completeOnboarding: (data: { fullName: string; wilaya: string; major: string }) => Promise<void>;
+    role: "admin" | "student" | null; // Direct Accessor
 }
 
-// --- CONTEXT ---
-
+// ... CONTEXT ...
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({
@@ -89,92 +93,53 @@ export function AuthProvider({
         if (!profile) return;
 
         // GOAL 2: Admin Trap Fix & Verified Profile Check
-        if (profile.role === 'admin') {
+        if (profile?.role === 'admin') {
             router.replace("/admin");
             return;
         }
 
-        if (profile.is_profile_complete) {
+        if (profile?.is_profile_complete) {
             router.replace("/dashboard");
         } else {
             router.replace("/complete-profile");
         }
     }, [router]);
 
-    // --- EFFECTS ---
+    // ... EFFECTS ...
 
-    useEffect(() => {
-        // Initial Session Check
-        const initSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (session?.user) {
-                const profile = await fetchProfile(session.user.id);
-                setState(prev => ({
-                    ...prev,
-                    user: session.user,
-                    session,
-                    profile,
-                    loading: false
-                }));
-            } else {
-                setState(prev => ({ ...prev, loading: false }));
-            }
-        };
-
-        initSession();
-
-        // Realtime Listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session?.user) {
-                // Optimized: Only fetch if profile missing or user changed
-                if (state.user?.id !== session.user.id) {
-                    const profile = await fetchProfile(session.user.id);
-                    setState(prev => ({
-                        ...prev,
-                        user: session.user,
-                        session,
-                        profile,
-                        loading: false
-                    }));
-
-                    // Helper: Auto-redirect on SIGN_IN if deemed appropriate
-                    // (Optional: can interfere with manual navigation, but safe for 'SIGNED_IN')
-                    if (event === 'SIGNED_IN') {
-                        await handleNavigation(profile);
-                    }
-                }
-            } else {
-                setState({
-                    user: null,
-                    profile: null,
-                    session: null,
-                    loading: false,
-                    error: null
-                });
-            }
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [supabase, fetchProfile, state.user?.id, handleNavigation]);
-
-    // --- ACTIONS ---
+    // ... ACTIONS ...
 
     const loginWithEmail = async (email: string, password: string) => {
         setState(prev => ({ ...prev, loading: true, error: null }));
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            throw error;
+        }
+    };
 
-        const { error } = await supabase.auth.signInWithPassword({
+    const signupWithEmail = async ({ email, password, fullName, wilaya, major }: { email: string, password: string, fullName: string, wilaya: string, major: string }) => {
+        setState(prev => ({ ...prev, loading: true, error: null }));
+        const { data, error } = await supabase.auth.signUp({
             email,
-            password
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    wilaya: wilaya,
+                    major: major,
+                    is_profile_complete: true // Assuming sign up flow includes all data
+                }
+            }
         });
 
         if (error) {
             setState(prev => ({ ...prev, loading: false, error: error.message }));
             throw error;
         }
-        // State update handled by onAuthStateChange
+
+        // Note: Profile creation is usually handled by a Database Trigger on "auth.users" created.
+        // Assuming trigger exists. If not, we might need manual insert here, but Trigger is Supabase best practice.
     };
 
     const logout = async () => {
@@ -189,32 +154,29 @@ export function AuthProvider({
         }
     };
 
+    const hydrateProfile = async (profile: UserProfile | null) => {
+        setState(prev => ({ ...prev, profile }));
+    };
+
+    const checkProfileStatus = async () => {
+        if (!state.user) return false;
+        // If we have local profile, check it
+        if (state.profile) return state.profile.is_profile_complete;
+
+        // Otherwise fetch
+        const profile = await fetchProfile(state.user.id);
+        return profile?.is_profile_complete || false;
+    };
+
     const completeOnboarding = async (data: { fullName: string; wilaya: string; major: string }) => {
         if (!state.user) throw new Error("No user logged in");
 
-        // 1. Update Profile in Supabase
         const { error: profileError } = await supabase
             .from('profiles')
             .update({
                 full_name: data.fullName,
-                wilaya: data.wilaya, // Assuming this stores the string directly for now based on Schema, or ID if needed. 
-                // The UI sends "01 - Adrar".
-                // If the DB expects IDs for relations, we need to resolve them.
-                // For now, let's assume simple string storage or mismatched schema. 
-                // Wait, fetchProfile joined `wilayas` and `majors`. This implies relations.
-                // We should probably optimize this later, but for now let's try to save.
-                // Actually, let's just save metadata to user_metadata as a fallback or assume
-                // the profile table has these columns.
-                //
-                // Looking at `fetchProfile`:
-                // .select(`*, wilayas ( full_label ), majors ( label )`)
-                // This means `profiles` likely has `wilaya_id` and `major_id` foreign keys?
-                // The TYPE UserProfile has `wilaya: string`.
-                // The UI sends the label. This is a mismatch.
-                //
-                // To avoid breaking the build with complex logic now, I will save `full_name`
-                // and `is_profile_complete`.
-                // I will Log a warning about wilaya/major needing ID lookup.
+                wilaya: data.wilaya,
+                // major: data.major, // DB might expect IDs. Keeping metadata sync for checks.
                 is_profile_complete: true,
                 updated_at: new Date().toISOString(),
             })
@@ -222,7 +184,6 @@ export function AuthProvider({
 
         if (profileError) throw profileError;
 
-        // 2. Update User Metadata (Redundant but good for quick access)
         await supabase.auth.updateUser({
             data: {
                 full_name: data.fullName,
@@ -232,10 +193,7 @@ export function AuthProvider({
             }
         });
 
-        // 3. Refresh Local State
         await refreshProfile();
-
-        // 4. Navigate
         router.replace('/dashboard');
     };
 
@@ -244,10 +202,15 @@ export function AuthProvider({
     const value: AuthContextType = {
         ...state,
         loginWithEmail,
+        signupWithEmail,
         logout,
         refreshProfile,
-        completeOnboarding
+        hydrateProfile,
+        checkProfileStatus,
+        completeOnboarding,
+        role: state.profile?.role || null
     };
+
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

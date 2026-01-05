@@ -1,16 +1,11 @@
-"use client";
-
 import { useLiveStatus } from "@/hooks/useLiveStatus";
 import { useAuth } from "@/context/AuthContext";
+import { Loader2, Lock, SignalHigh, Radio, CalendarClock } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { Radio, SignalHigh, CalendarClock, Lock } from "lucide-react";
-import { Loader2 } from "lucide-react";
 import { DynamicWatermark } from "@/components/security/DynamicWatermark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 // Separate component for redirect to avoid hydration issues
 function RedirectToAuth() {
@@ -29,53 +24,35 @@ function RedirectToAuth() {
 
 export default function LivePage() {
     const { isLive, youtubeId, title, loading: statusLoading } = useLiveStatus();
-    const { user, loading: authLoading } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
 
-
+    // Derived state for subscription - no need for useEffect if we just trust the profile
+    // But we might want a local loading state if checks were async.
+    // Since profile is synchronous (once loaded), we can just derive it during render or use a simple Effect.
 
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkingSub, setCheckingSub] = useState(true);
 
-
-    // --- 1. SECURITY: SUBSCRIPTION CHECK ---
     useEffect(() => {
-        async function checkSubscription() {
-            if (!user) {
-                setCheckingSub(false);
-                return;
-            }
-            try {
-                const userRef = doc(db, 'users', user.uid);
-                const snap = await getDoc(userRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    // Allow if admin or isSubscribed
-                    if (data.role === 'admin' || data.isSubscribed === true) {
-                        setIsSubscribed(true);
-                    }
-                }
-            } catch (err) {
-                console.error("Sub check failed", err);
-            } finally {
-                setCheckingSub(false);
-            }
+        if (authLoading) return;
+
+        if (!user) {
+            setCheckingSub(false);
+            return;
         }
 
-        if (!authLoading) {
-            checkSubscription();
+        // If user exists, we check profile
+        // Profile might be null initially even if user exists? AuthProvider handles this.
+        if (profile) {
+            const hasAccess = profile.role === 'admin' || !!profile.is_subscribed;
+            setIsSubscribed(hasAccess);
+            setCheckingSub(false);
+        } else {
+            // If profile is still null but not authLoading, maybe it failed to load or just initial hydration delay?
+            // We'll set checkingSub to false to allow "Not Subscribed" view if it persists.
+            setCheckingSub(false);
         }
-    }, [user, authLoading]);
-
-
-
-    // --- LOADING STATES ---
-    if (statusLoading || authLoading || checkingSub) {
-        return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            </div>
-        );
-    }
+    }, [user, profile, authLoading]);
 
     // --- GUARD: NOT AUTHENTICATED ---
     // Use a component with useEffect for redirect to avoid hydration issues
