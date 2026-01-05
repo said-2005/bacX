@@ -131,7 +131,7 @@ export function AuthProvider({
 
     const logout = async () => {
         await supabase.auth.signOut();
-        router.replace("/auth/login");
+        router.replace("/login");
     };
 
     const refreshProfile = async () => {

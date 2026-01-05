@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
         path.startsWith('/complete-profile');
 
     if (isProtectedRoute && !user) {
-        return NextResponse.redirect(new URL('/auth/login', request.url));
+        return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // --- AUTH ROUTES ---

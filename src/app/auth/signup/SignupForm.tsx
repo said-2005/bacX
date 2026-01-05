@@ -164,7 +164,7 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                     <div className="mt-6 text-center">
                         <p className="text-text-muted text-sm">
                             لديك حساب بالفعل؟{" "}
-                            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                            <Link href="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
                                 تسجيل الدخول
                             </Link>
                         </p>

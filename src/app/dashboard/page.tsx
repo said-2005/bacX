@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {
-        redirect("/auth/login");
+        redirect("/login");
     }
 
     // 2. Fetch Dashboard Data (Server-Side)
