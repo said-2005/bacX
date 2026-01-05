@@ -40,7 +40,7 @@ export default function ContentPage() {
             }
         }
         fetchLive();
-    }, []);
+    }, [supabase]);
 
     const handleSaveLive = async () => {
         setLoading(true);

@@ -12,8 +12,13 @@ async function requireAdmin() {
     return createAdminClient();
 }
 
+// Types
+interface SubjectData { name: string; icon: string; order: number; }
+interface UnitData { name: string; order: number; }
+interface LessonData { title: string; videoUrl: string; duration: string; isFree: boolean; order: number; }
+
 // SUBJECTS
-export async function createSubject(data: any) {
+export async function createSubject(data: SubjectData) {
     try {
         const admin = await requireAdmin();
         const { error } = await admin.from('subjects').insert({
@@ -38,7 +43,7 @@ export async function deleteSubject(id: string) {
 }
 
 // UNITS
-export async function createUnit(subjectId: string, data: any) {
+export async function createUnit(subjectId: string, data: UnitData) {
     try {
         const admin = await requireAdmin();
         const { error } = await admin.from('units').insert({
@@ -61,7 +66,7 @@ export async function deleteUnit(id: string) {
 }
 
 // LESSONS
-export async function createLesson(unitId: string, data: any) {
+export async function createLesson(unitId: string, data: LessonData) {
     try {
         const admin = await requireAdmin();
         const { error } = await admin.from('lessons').insert({

@@ -43,7 +43,7 @@ export async function toggleLiveStream(data: { isLive: boolean; youtubeId: strin
     }
 }
 
-export async function archiveStream(youtubeId: string, title: string, subject: string) {
+export async function archiveStream(youtubeId: string) {
     try {
         const admin = await requireAdmin();
 
@@ -54,10 +54,10 @@ export async function archiveStream(youtubeId: string, title: string, subject: s
         // Better to use ID if we had it, but youtubeId is unique enough for active stream context usually.
 
         // 2. Add to lessons library (if archiving means adding to lessons)
-        // Or maybe there is an 'archives' table? 
+        // Or maybe there is an 'archives' table?
         // Based on AdminLiveDashboard "Archive in lessons library", we should add to `lessons` table.
         // But lessons need unit_id...
-        // For now, let's just mark it ended. 
+        // For now, let's just mark it ended.
         // If we need to add to lessons, we might need a "Live Archive" unit or similar.
         // I will just return success for now as "Archived" state might just mean "Ended" in live_sessions.
 

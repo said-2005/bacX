@@ -40,9 +40,14 @@ export function TopNav() {
     const [searchQuery, setSearchQuery] = useState("");
 
     // TODO: Migrate to Supabase Realtime
-    const [isLiveActive, setIsLiveActive] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    // const [isLiveActive, setIsLiveActive] = useState(false);
+    // const [notifications, setNotifications] = useState<Notification[]>([]);
+    // const [unreadCount, setUnreadCount] = useState(0);
+
+    // Temp placeholders to avoid lint errors until implemented
+    const isLiveActive = false;
+    const notifications: Notification[] = [];
+    const unreadCount = 0;
 
     const profileRef = useRef<HTMLDivElement>(null);
     const notificationRef = useRef<HTMLDivElement>(null);

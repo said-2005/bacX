@@ -39,7 +39,7 @@ export default function UsersPage() {
                 .limit(20);
 
             if (data) {
-                const mapped = data.map((d: any) => ({
+                const mapped = data.map((d: { id: string; full_name: string; email: string; role: 'student' | 'admin' | 'guest'; is_subscribed: boolean; banned: boolean }) => ({
                     id: d.id,
                     displayName: d.full_name,
                     email: d.email,
@@ -52,7 +52,7 @@ export default function UsersPage() {
             }
         };
         fetchUsers();
-    }, []);
+    }, [supabase]);
 
     // async function fetchUsers() {
     //     setLoading(true);

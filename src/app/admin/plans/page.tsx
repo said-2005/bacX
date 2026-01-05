@@ -41,7 +41,7 @@ export default function PlanManager() {
         const fetchPlans = async () => {
             const { data } = await supabase.from('plans').select('*').order('price', { ascending: true });
             if (data) {
-                const mapped = data.map((d: any) => ({
+                const mapped = data.map((d: { id: string; title: string; price: string; duration_days: number; features: string[]; is_active: boolean; is_popular: boolean }) => ({
                     id: d.id,
                     title: d.title,
                     price: d.price,
@@ -55,7 +55,7 @@ export default function PlanManager() {
             setLoading(false);
         };
         fetchPlans();
-    }, []);
+    }, [supabase]);
 
     const handleFeatureChange = (index: number, value: string) => {
         const newFeatures = [...(formData.features || [])];
@@ -93,7 +93,14 @@ export default function PlanManager() {
         setIsSubmitting(true);
         try {
             const cleanFeatures = formData.features?.filter(f => f.trim() !== "") || [];
-            const payload = { ...formData, features: cleanFeatures };
+            const payload = {
+                title: formData.title || "",
+                price: formData.price || "",
+                durationDays: formData.durationDays || 365,
+                features: cleanFeatures,
+                isActive: formData.isActive || false,
+                isPopular: formData.isPopular || false
+            };
 
             let result;
             if (editId) {

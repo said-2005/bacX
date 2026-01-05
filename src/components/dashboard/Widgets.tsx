@@ -174,19 +174,18 @@ export function AnnouncementsFeed() {
                 .limit(3);
 
             if (data) {
-                const mapped = data.map((d: any) => ({
+                const mapped: Announcement[] = data.map((d: { id: string; content: string; created_at: string; is_important: boolean }) => ({
                     id: d.id,
                     content: d.content,
                     createdAt: d.created_at ? { toDate: () => new Date(d.created_at) } : { toDate: () => new Date() },
                     isImportant: d.is_important
                 }));
-                // @ts-ignore - Adjusting types for compatibility
                 setAnnouncements(mapped);
             }
             setLoading(false);
         };
         fetchAnnouncements();
-    }, []);
+    }, [supabase]);
 
     return (
         <div className="academic-card p-5 h-full flex flex-col">
@@ -265,17 +264,16 @@ export function UpcomingLives() {
                 .limit(5);
 
             if (data) {
-                const mapped = data.map((d: any) => ({
+                const mapped: LiveSession[] = data.map((d: { id: string; title: string; date: string }) => ({
                     id: d.id,
                     title: d.title,
                     date: d.date ? { toDate: () => new Date(d.date) } : { toDate: () => new Date() }
                 }));
-                // @ts-ignore
                 setLives(mapped);
             }
         };
         fetchLives();
-    }, []);
+    }, [supabase]);
 
     return (
         <div className="academic-card p-5 flex flex-col">

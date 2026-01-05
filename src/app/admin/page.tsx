@@ -47,7 +47,7 @@ export default function AdminDashboard() {
             }
         }
         fetchStats();
-    }, []);
+    }, [supabase]);
 
     const cards = [
         { title: "إجمالي المستخدمين", value: stats.totalUsers, icon: Users, color: "text-blue-500" },

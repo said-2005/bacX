@@ -19,6 +19,17 @@ interface PaymentRequest {
     createdAt: string | any;
 }
 
+interface PaymentRecord {
+    id: string;
+    amount: number;
+    receipt_url: string;
+    created_at: string;
+    status: string;
+    user_id: string;
+    profiles?: { full_name: string; email: string };
+    users?: { email: string };
+}
+
 export default function PaymentsPage() {
     const [payments, setPayments] = useState<PaymentRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -28,34 +39,31 @@ export default function PaymentsPage() {
     const supabase = createClient();
 
     useEffect(() => {
-        const fetchPayments = async () => {
-            const { data, error } = await supabase
+        const fetchPending = async () => {
+            const { data } = await supabase
                 .from("payments")
-                .select("*")
+                .select("*, profiles:user_id(full_name, email), users:user_id(email)") // users is alias for auth.users if possible? or just profiles relation 
+                // Assuming standard relation setup. If 'users' is not a relation on public table, this might fail.
+                // Assuming 'profiles' is the main user table.
                 .eq("status", "pending");
 
             if (data) {
-                // Map snake_case to camelCase if needed, or update interface. 
-                // Interface expects: id, userId, userName, amount, method, receiptsUrl, status, createdAt
-                // DB likely has: user_id, user_name, receipt_url, created_at.
-                // I'll map it manually here.
-                const mapped = data.map((d: any) => ({
+                const mapped = (data as unknown as PaymentRecord[]).map((d) => ({
                     id: d.id,
-                    userId: d.user_id,
-                    userName: d.user_name,
-                    amount: d.amount,
-                    method: d.method,
-                    planId: d.plan_id,
+                    amount: String(d.amount),
+                    method: 'CCP',
                     receiptUrl: d.receipt_url,
-                    status: d.status,
-                    createdAt: d.created_at // string, interface expects Timestamp? Update interface too.
+                    userId: d.user_id,
+                    userName: d.profiles?.full_name || d.users?.email || 'Unknown',
+                    createdAt: d.created_at || new Date().toISOString(),
+                    status: 'pending' as const
                 }));
                 setPayments(mapped);
             }
             setLoading(false);
         };
-        fetchPayments();
-    }, []);
+        fetchPending();
+    }, [supabase]);
 
     const handleProcess = async (payment: PaymentRequest, status: 'approved' | 'rejected') => {
         setProcessingId(payment.id);

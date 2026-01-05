@@ -37,7 +37,7 @@ export default function AcademicManager() {
             if (data) setSubjects(data);
         };
         fetchSubjects();
-    }, []);
+    }, [supabase]);
 
     // --- FETCH UNITS (When Subject Selected) ---
     useEffect(() => {
@@ -47,7 +47,7 @@ export default function AcademicManager() {
             if (data) setUnits(data);
         };
         fetchUnits();
-    }, [selectedSubject]);
+    }, [selectedSubject, supabase]);
 
     // --- FETCH LESSONS (When Unit Selected) ---
     useEffect(() => {
@@ -57,7 +57,7 @@ export default function AcademicManager() {
             const { data } = await supabase.from('lessons').select('*').eq('unit_id', selectedUnit.id).order('order', { ascending: true });
 
             if (data) {
-                const mapped = data.map((d: any) => ({
+                const mapped = data.map((d: { id: string; title: string; video_url: string; duration: string; order: number; is_free: boolean }) => ({
                     id: d.id,
                     title: d.title,
                     videoUrl: d.video_url,
@@ -69,7 +69,7 @@ export default function AcademicManager() {
             }
         };
         fetchLessons();
-    }, [selectedUnit]);
+    }, [selectedUnit, supabase]);
 
     // --- HANDLERS ---
     const handleAdd = async () => {

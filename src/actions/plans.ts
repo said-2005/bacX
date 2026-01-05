@@ -17,7 +17,16 @@ async function requireAdmin() {
     return createAdminClient();
 }
 
-export async function createPlan(data: any) {
+interface PlanData {
+    title: string;
+    price: string;
+    durationDays: number;
+    features: string[];
+    isActive: boolean;
+    isPopular: boolean;
+}
+
+export async function createPlan(data: PlanData) {
     try {
         const admin = await requireAdmin();
         const { error } = await admin.from('plans').insert({
@@ -36,7 +45,7 @@ export async function createPlan(data: any) {
     }
 }
 
-export async function updatePlan(id: string, data: any) {
+export async function updatePlan(id: string, data: PlanData) {
     try {
         const admin = await requireAdmin();
         const { error } = await admin.from('plans').update({
