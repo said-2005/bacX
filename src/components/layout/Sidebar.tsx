@@ -51,18 +51,17 @@ export function Sidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                prefetch={true}
+                                prefetch={false}
                                 className={cn(
-                                    "relative flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden",
+                                    "relative z-50 flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden cursor-pointer",
                                     isActive
                                         ? "bg-primary/10 text-white"
                                         : "text-white/60 hover:text-white hover:bg-white/5"
                                 )}
                             >
-                                {/* Active Indicator Border */}
+                                {/* Active Indicator - CSS Only */}
                                 {isActive && (
-                                    <motion.div
-                                        layoutId="activeTab"
+                                    <div
                                         className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-l-full shadow-[0_0_15px_rgba(37,99,235,0.6)]"
                                     />
                                 )}
@@ -109,8 +108,9 @@ export function Sidebar() {
                                         <Link
                                             key={subject.id}
                                             href={`/subject/${subject.id}`}
+                                            prefetch={false}
                                             className={cn(
-                                                "relative flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4", // Indentation via margin-right
+                                                "relative z-50 flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4 cursor-pointer", // Indentation via margin-right
                                                 isActive ? "bg-primary/5 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
                                             )}
                                         >
@@ -129,7 +129,8 @@ export function Sidebar() {
 
                                 <Link
                                     href="/subjects"
-                                    className="flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4"
+                                    prefetch={false}
+                                    className="relative z-50 flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4 cursor-pointer"
                                 >
                                     <div className="w-5 flex justify-center"><ChevronRight className="w-4 h-4" /></div>
                                     <span>عرض كل المواد...</span>
@@ -144,9 +145,9 @@ export function Sidebar() {
                     <div className="pt-4 border-t border-white/5 mx-4">
                         <Link
                             href="/admin"
-                            prefetch={true}
+                            prefetch={false}
                             className={cn(
-                                "flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group",
+                                "relative z-50 flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group cursor-pointer",
                                 pathname.startsWith('/admin') ? "bg-red-500/10 text-red-500" : "text-white/60 hover:text-red-400 hover:bg-red-500/5"
                             )}
                         >
