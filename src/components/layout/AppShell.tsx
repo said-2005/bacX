@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
@@ -9,6 +10,16 @@ import { BottomNav } from "./BottomNav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Prevent hydration mismatch by only rendering after mount
+    if (!isMounted) {
+        return null;
+    }
 
     // Routes that should NOT have the dashboard layout
     const publicRoutes = ['/', '/auth', '/maintenance', '/pricing'];
