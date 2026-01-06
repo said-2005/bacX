@@ -1,6 +1,6 @@
 "use client";
 
-import Link from 'next/link';
+import { Link } from 'next-view-transitions';
 import { usePathname } from "next/navigation";
 import { Home, User, Crown, Settings, ChevronDown, ChevronRight, Brain, Calculator, FlaskConical, Microscope } from "lucide-react";
 
@@ -32,7 +32,7 @@ export function Sidebar() {
     const [isSubjectsOpen, setIsSubjectsOpen] = useState(true);
 
     return (
-        <div className="w-full h-full flex flex-col bg-transparent relative z-50 pointer-events-auto">
+        <div className="w-full h-full flex flex-col bg-transparent relative z-[70] pointer-events-auto">
             {/* Logo - Perfectly Centered */}
             <div className="h-24 flex items-center justify-center border-b border-white/5 mx-6">
                 <Link href="/dashboard" className="group">
@@ -51,9 +51,9 @@ export function Sidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                prefetch={false}
+                                onClick={() => console.log("Sidebar: Link clicked to", item.href)}
                                 className={cn(
-                                    "relative z-50 flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden cursor-pointer",
+                                    "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden cursor-pointer",
                                     isActive
                                         ? "bg-primary/10 text-white"
                                         : "text-white/60 hover:text-white hover:bg-white/5"
@@ -108,9 +108,9 @@ export function Sidebar() {
                                         <Link
                                             key={subject.id}
                                             href={`/subject/${subject.id}`}
-                                            prefetch={false}
+                                            onClick={() => console.log("Sidebar: Subject Link clicked to", `/subject/${subject.id}`)}
                                             className={cn(
-                                                "relative z-50 flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4 cursor-pointer", // Indentation via margin-right
+                                                "relative z-[80] flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4 cursor-pointer",
                                                 isActive ? "bg-primary/5 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
                                             )}
                                         >
@@ -129,8 +129,8 @@ export function Sidebar() {
 
                                 <Link
                                     href="/subjects"
-                                    prefetch={false}
-                                    className="relative z-50 flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4 cursor-pointer"
+                                    onClick={() => console.log("Sidebar: Link clicked to /subjects")}
+                                    className="relative z-[80] flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4 cursor-pointer"
                                 >
                                     <div className="w-5 flex justify-center"><ChevronRight className="w-4 h-4" /></div>
                                     <span>عرض كل المواد...</span>
@@ -145,9 +145,9 @@ export function Sidebar() {
                     <div className="pt-4 border-t border-white/5 mx-4">
                         <Link
                             href="/admin"
-                            prefetch={false}
+                            onClick={() => console.log("Sidebar: Admin Link clicked")}
                             className={cn(
-                                "relative z-50 flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group cursor-pointer",
+                                "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group cursor-pointer",
                                 pathname.startsWith('/admin') ? "bg-red-500/10 text-red-500" : "text-white/60 hover:text-red-400 hover:bg-red-500/5"
                             )}
                         >
