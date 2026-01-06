@@ -3,7 +3,6 @@ import { IBM_Plex_Sans_Arabic, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider, type UserProfile } from "@/context/AuthContext";
 import { Toaster } from "sonner";
-import { ViewTransitions } from 'next-view-transitions';
 
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
 
@@ -112,27 +111,26 @@ export default async function RootLayout({
     <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} ${cinzel.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
         <AuthProvider initialUser={initialUser} hydratedProfile={initialProfile}>
-          <ViewTransitions>
-            <ErrorBoundary>
-              {children}
-              <Toaster
-                position="bottom-center"
-                richColors
-                theme="dark"
-                toastOptions={{
-                  className: "glass-panel text-foreground font-sans",
-                  style: {
-                    fontFamily: 'var(--font-sans)',
-                    background: 'rgba(10, 10, 15, 0.9)',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#FFF'
-                  }
-                }}
-              />
-            </ErrorBoundary>
-          </ViewTransitions>
+          <ErrorBoundary>
+            {children}
+            <Toaster
+              position="bottom-center"
+              richColors
+              theme="dark"
+              toastOptions={{
+                className: "glass-panel text-foreground font-sans",
+                style: {
+                  fontFamily: 'var(--font-sans)',
+                  background: 'rgba(10, 10, 15, 0.9)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#FFF'
+                }
+              }}
+            />
+          </ErrorBoundary>
         </AuthProvider>
       </body>
     </html>
   );
 }
+

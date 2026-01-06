@@ -26,6 +26,36 @@ export default function DashboardLayout({
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
+
+        // DOM FORENSICS: Detect any fixed full-screen elements that could block clicks
+        if (process.env.NODE_ENV === 'development') {
+            const detectBlockingElements = () => {
+                const allElements = document.querySelectorAll('*');
+                allElements.forEach((el) => {
+                    const style = window.getComputedStyle(el);
+                    const isFixed = style.position === 'fixed';
+                    const isAbsolute = style.position === 'absolute';
+                    const isFullWidth = el.clientWidth >= window.innerWidth * 0.9;
+                    const isFullHeight = el.clientHeight >= window.innerHeight * 0.9;
+                    const hasNoPointerEvents = style.pointerEvents === 'none';
+                    const isTransparent = parseFloat(style.opacity) < 0.1 || style.backgroundColor === 'transparent';
+
+                    if ((isFixed || isAbsolute) && isFullWidth && isFullHeight && !hasNoPointerEvents) {
+                        console.warn('🚨 DOM FORENSICS: Potential click blocker detected!', {
+                            element: el,
+                            className: el.className,
+                            id: el.id,
+                            tagName: el.tagName,
+                            zIndex: style.zIndex,
+                            pointerEvents: style.pointerEvents,
+                            opacity: style.opacity,
+                        });
+                    }
+                });
+            };
+            // Run after a short delay to let DOM settle
+            setTimeout(detectBlockingElements, 1000);
+        }
     }, []);
 
     // Auth redirect
