@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -22,10 +22,29 @@ export default function DashboardLayout({
     const pathname = usePathname();
     const [isMounted, setIsMounted] = useState(false);
 
+    // CRITICAL: Track if redirect has been initiated to prevent loop
+    const hasRedirected = useRef(false);
+
     // Mounted guard - ensures we only render after client is ready
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
+
+        // CACHE-BUSTING: Handle stale chunk errors (404 for .js chunks)
+        const handleError = (event: ErrorEvent) => {
+            if (event.message && event.message.includes('ChunkLoadError')) {
+                console.warn('🔄 Stale chunk detected, forcing hard reload...');
+                // Clear service worker cache and reload
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => caches.delete(name));
+                    });
+                }
+                window.location.reload();
+            }
+        };
+
+        window.addEventListener('error', handleError);
 
         // DOM FORENSICS: Detect any fixed full-screen elements that could block clicks
         if (process.env.NODE_ENV === 'development') {
@@ -38,7 +57,6 @@ export default function DashboardLayout({
                     const isFullWidth = el.clientWidth >= window.innerWidth * 0.9;
                     const isFullHeight = el.clientHeight >= window.innerHeight * 0.9;
                     const hasNoPointerEvents = style.pointerEvents === 'none';
-                    const isTransparent = parseFloat(style.opacity) < 0.1 || style.backgroundColor === 'transparent';
 
                     if ((isFixed || isAbsolute) && isFullWidth && isFullHeight && !hasNoPointerEvents) {
                         console.warn('🚨 DOM FORENSICS: Potential click blocker detected!', {
@@ -56,13 +74,27 @@ export default function DashboardLayout({
             // Run after a short delay to let DOM settle
             setTimeout(detectBlockingElements, 1000);
         }
+
+        return () => {
+            window.removeEventListener('error', handleError);
+        };
     }, []);
 
-    // Auth redirect
+    // Auth redirect - with loop prevention
     useEffect(() => {
-        if (!loading && !user) {
+        // Only redirect once, when loading is complete and user is null
+        if (!loading && !user && !hasRedirected.current) {
+            hasRedirected.current = true;
             console.log("DashboardLayout: Redirecting to login...");
-            router.replace("/login");
+            // Use setTimeout to break out of React's render cycle
+            setTimeout(() => {
+                router.replace("/login");
+            }, 0);
+        }
+
+        // Reset redirect flag if user becomes available (e.g., after login)
+        if (user) {
+            hasRedirected.current = false;
         }
     }, [loading, user, router]);
 

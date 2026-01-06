@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from "next/navigation";
-import { Home, User, Crown, Settings, ChevronDown, ChevronRight, Brain, Calculator, FlaskConical, Microscope } from "lucide-react";
+import { Home, User, Crown, Settings, ChevronDown, ChevronRight, Brain, Calculator, FlaskConical, Microscope, HelpCircle } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,8 @@ export function Sidebar() {
                 <div className="space-y-2">
                     {mainNavItems.map((item) => {
                         const isActive = pathname === item.href;
-                        const Icon = item.icon;
+                        // CRITICAL: Fallback to HelpCircle to prevent SVG path errors
+                        const Icon = item.icon || HelpCircle;
 
                         return (
                             <motion.div
@@ -108,7 +109,8 @@ export function Sidebar() {
                                 className="space-y-1 overflow-hidden"
                             >
                                 {subjects.map((subject) => {
-                                    const Icon = subject.icon;
+                                    // CRITICAL: Fallback to HelpCircle to prevent SVG path errors
+                                    const Icon = subject.icon || HelpCircle;
                                     const isActive = pathname.includes(subject.id);
 
                                     return (
