@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from 'next-view-transitions';
+import Link from 'next/link';
 import { usePathname } from "next/navigation";
 import { Home, User, Crown, Settings, ChevronDown, ChevronRight, Brain, Calculator, FlaskConical, Microscope } from "lucide-react";
 
@@ -48,35 +48,42 @@ export function Sidebar() {
                         const Icon = item.icon;
 
                         return (
-                            <Link
+                            <motion.div
                                 key={item.href}
-                                href={item.href}
-                                onClick={() => console.log("Sidebar: Link clicked to", item.href)}
-                                className={cn(
-                                    "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden cursor-pointer",
-                                    isActive
-                                        ? "bg-primary/10 text-white"
-                                        : "text-white/60 hover:text-white hover:bg-white/5"
-                                )}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
-                                {/* Active Indicator - CSS Only */}
-                                {isActive && (
-                                    <div
-                                        className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-l-full shadow-[0_0_15px_rgba(37,99,235,0.6)]"
-                                    />
-                                )}
+                                <Link
+                                    href={item.href}
+                                    className={cn(
+                                        "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden cursor-pointer",
+                                        isActive
+                                            ? "bg-primary/10 text-white"
+                                            : "text-white/60 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    {/* Active Indicator - Glowing */}
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="activeIndicator"
+                                            className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-l-full shadow-[0_0_20px_rgba(37,99,235,0.8)]"
+                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                        />
+                                    )}
 
-                                <Icon className={cn(
-                                    "w-6 h-6 shrink-0 transition-colors duration-300",
-                                    isActive ? "text-primary drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]" : "group-hover:text-primary"
-                                )} />
-                                <span className={cn(
-                                    "text-base font-medium tracking-wide",
-                                    isActive ? "text-white" : ""
-                                )}>
-                                    {item.label}
-                                </span>
-                            </Link>
+                                    <Icon className={cn(
+                                        "w-6 h-6 shrink-0 transition-colors duration-300",
+                                        isActive ? "text-primary drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]" : "group-hover:text-primary"
+                                    )} />
+                                    <span className={cn(
+                                        "text-base font-medium tracking-wide",
+                                        isActive ? "text-white" : ""
+                                    )}>
+                                        {item.label}
+                                    </span>
+                                </Link>
+                            </motion.div>
                         );
                     })}
                 </div>
@@ -105,36 +112,50 @@ export function Sidebar() {
                                     const isActive = pathname.includes(subject.id);
 
                                     return (
-                                        <Link
+                                        <motion.div
                                             key={subject.id}
-                                            href={`/subject/${subject.id}`}
-                                            onClick={() => console.log("Sidebar: Subject Link clicked to", `/subject/${subject.id}`)}
-                                            className={cn(
-                                                "relative z-[80] flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4 cursor-pointer",
-                                                isActive ? "bg-primary/5 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
-                                            )}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                         >
-                                            {isActive && (
-                                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary/50 rounded-l-full" />
-                                            )}
+                                            <Link
+                                                href={`/subject/${subject.id}`}
+                                                className={cn(
+                                                    "relative z-[80] flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4 cursor-pointer",
+                                                    isActive ? "bg-primary/5 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
+                                                )}
+                                            >
+                                                {isActive && (
+                                                    <motion.div
+                                                        layoutId="subjectActiveIndicator"
+                                                        className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full shadow-[0_0_12px_rgba(37,99,235,0.6)]"
+                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                    />
+                                                )}
 
-                                            <Icon className={cn(
-                                                "w-5 h-5 shrink-0 transition-colors",
-                                                isActive ? "text-primary" : "group-hover:text-primary/70"
-                                            )} />
-                                            <span className="text-sm font-medium">{subject.label}</span>
-                                        </Link>
+                                                <Icon className={cn(
+                                                    "w-5 h-5 shrink-0 transition-colors",
+                                                    isActive ? "text-primary" : "group-hover:text-primary/70"
+                                                )} />
+                                                <span className="text-sm font-medium">{subject.label}</span>
+                                            </Link>
+                                        </motion.div>
                                     );
                                 })}
 
-                                <Link
-                                    href="/subjects"
-                                    onClick={() => console.log("Sidebar: Link clicked to /subjects")}
-                                    className="relative z-[80] flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4 cursor-pointer"
+                                <motion.div
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                 >
-                                    <div className="w-5 flex justify-center"><ChevronRight className="w-4 h-4" /></div>
-                                    <span>عرض كل المواد...</span>
-                                </Link>
+                                    <Link
+                                        href="/subjects"
+                                        className="relative z-[80] flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4 cursor-pointer"
+                                    >
+                                        <div className="w-5 flex justify-center"><ChevronRight className="w-4 h-4" /></div>
+                                        <span>عرض كل المواد...</span>
+                                    </Link>
+                                </motion.div>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -143,17 +164,22 @@ export function Sidebar() {
                 {/* Admin Section */}
                 {role === 'admin' && (
                     <div className="pt-4 border-t border-white/5 mx-4">
-                        <Link
-                            href="/admin"
-                            onClick={() => console.log("Sidebar: Admin Link clicked")}
-                            className={cn(
-                                "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group cursor-pointer",
-                                pathname.startsWith('/admin') ? "bg-red-500/10 text-red-500" : "text-white/60 hover:text-red-400 hover:bg-red-500/5"
-                            )}
+                        <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         >
-                            <Settings className="w-6 h-6 shrink-0" />
-                            <span className="font-medium">لوحة التحكم</span>
-                        </Link>
+                            <Link
+                                href="/admin"
+                                className={cn(
+                                    "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group cursor-pointer",
+                                    pathname.startsWith('/admin') ? "bg-red-500/10 text-red-500" : "text-white/60 hover:text-red-400 hover:bg-red-500/5"
+                                )}
+                            >
+                                <Settings className="w-6 h-6 shrink-0" />
+                                <span className="font-medium">لوحة التحكم</span>
+                            </Link>
+                        </motion.div>
                     </div>
                 )}
             </div>
