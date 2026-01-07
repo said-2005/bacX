@@ -27,25 +27,69 @@ export default function DashboardLayout({
 
     // Mounted guard - ensures we only render after client is ready
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
+    }, []);
 
-        // CACHE-BUSTING: Handle stale chunk errors (404 for .js chunks)
-        const handleError = (event: ErrorEvent) => {
-            if (event.message && event.message.includes('ChunkLoadError')) {
-                console.warn('🔄 Stale chunk detected, forcing hard reload...');
-                // Clear service worker cache and reload
-                if ('caches' in window) {
-                    caches.keys().then(names => {
-                        names.forEach(name => caches.delete(name));
-                    });
-                }
-                window.location.reload();
-            }
-        };
+    // Auth redirect logic - only runs after mounted and auth resolved
+    useEffect(() => {
+        if (!isMounted || loading) return;
 
-        window.addEventListener('error', handleError);
+        if (!user && !hasRedirected.current) {
+            hasRedirected.current = true;
+            router.replace('/login');
+        }
+    }, [isMounted, loading, user, router]);
 
-        // DOM FORENSICS: Detect any fixed full-screen elements that could block clicks
-        if (process.env.NODE_ENV === 'development') {
-            const detectBlockingElements = () => {
+    // Show loading while auth is resolving or not mounted
+    if (!isMounted || loading) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    // If no user after auth resolved, show loading (redirect in progress)
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#050505] flex">
+            {/* Sidebar - Desktop Only */}
+            <aside className="hidden lg:flex w-72 flex-col fixed inset-y-0 right-0 z-40 border-l border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
+                <Sidebar />
+            </aside>
+
+            {/* Main Content Area */}
+            <main className="flex-1 lg:mr-72">
+                {/* Top Navigation */}
+                <TopNav />
+
+                {/* Page Content with Back Button */}
+                <div className="relative">
+                    {/* Back Button - Show on nested pages */}
+                    {pathname !== '/dashboard' && (
+                        <div className="absolute top-4 right-4 z-30">
+                            <BackButton />
+                        </div>
+                    )}
+
+                    {/* Animated Page Content */}
+                    <AnimatePresence mode="wait">
+                        <PageTransition key={pathname}>
+                            {children}
+                        </PageTransition>
+                    </AnimatePresence>
+                </div>
+            </main>
+
+            {/* Bottom Navigation - Mobile Only */}
+            <BottomNav />
+        </div>
+    );
+}
