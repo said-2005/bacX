@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { DiagnosticOverlay } from "@/components/debug/DiagnosticOverlay";
 
 import { createClient } from "@/utils/supabase/server";
 
@@ -130,6 +131,7 @@ export default async function RootLayout({
               }}
             />
           </ErrorBoundary>
+          <DiagnosticOverlay />
         </AuthProvider>
       </body>
     </html>

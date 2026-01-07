@@ -31,13 +31,15 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // LIGHTWEIGHT: Use getSession() instead of getUser() 
-    // getSession() reads from cookie, getUser() hits Supabase API
+    // LIGHTWEIGHT: Use getSession() instead of getUser() - reads from cookie only
     const { data: { session } } = await supabase.auth.getSession()
 
     const path = request.nextUrl.pathname;
 
-    // --- PROTECTED ROUTES ---
+    // DIAGNOSTIC: Add trace header
+    response.headers.set('x-middleware-trace', `hit:${Date.now()}`);
+
+    // Protected routes
     const isProtectedRoute =
         path.startsWith('/dashboard') ||
         path.startsWith('/admin') ||
@@ -51,9 +53,8 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // --- AUTH ROUTES ---
+    // Auth routes redirect
     const isAuthRoute = path.startsWith('/auth') || path.startsWith('/login');
-
     if (isAuthRoute && session) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
