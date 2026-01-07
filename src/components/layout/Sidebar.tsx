@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { Home, User, Crown, Settings, ChevronDown, ChevronRight, Brain, Calculator, FlaskConical, Microscope, HelpCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -22,22 +21,29 @@ const subjects = [
     { id: "philosophy", label: "الفلسفة", icon: Brain },
 ];
 
+// FORCE HARD NAVIGATION - bypass Next.js router entirely
+function navigate(href: string) {
+    window.location.href = href;
+}
 
 export function Sidebar() {
     const pathname = usePathname();
     const { profile } = useAuth();
 
-    // Default to 'student' if no profile
     const role = profile?.role || 'student';
     const [isSubjectsOpen, setIsSubjectsOpen] = useState(true);
 
     return (
         <div className="w-full h-full flex flex-col bg-transparent relative z-[70] pointer-events-auto">
-            {/* Logo - Perfectly Centered */}
+            {/* Logo */}
             <div className="h-24 flex items-center justify-center border-b border-white/5 mx-6">
-                <Link href="/dashboard" prefetch={false} className="group cursor-pointer">
+                <a
+                    href="/dashboard"
+                    onClick={(e) => { e.preventDefault(); navigate("/dashboard"); }}
+                    className="group cursor-pointer"
+                >
                     <BrainyLogo variant="navbar" className="h-12 w-auto" />
-                </Link>
+                </a>
             </div>
 
             {/* Main Navigation */}
@@ -48,10 +54,10 @@ export function Sidebar() {
                         const Icon = item.icon || HelpCircle;
 
                         return (
-                            <Link
+                            <a
                                 key={item.href}
                                 href={item.href}
-                                prefetch={false}
+                                onClick={(e) => { e.preventDefault(); navigate(item.href); }}
                                 className={cn(
                                     "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group overflow-hidden",
                                     isActive
@@ -59,13 +65,9 @@ export function Sidebar() {
                                         : "text-white/60 hover:text-white hover:bg-white/5"
                                 )}
                             >
-                                {/* Active Indicator - Glowing */}
                                 {isActive && (
-                                    <div
-                                        className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-l-full shadow-[0_0_20px_rgba(37,99,235,0.8)]"
-                                    />
+                                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-l-full shadow-[0_0_20px_rgba(37,99,235,0.8)]" />
                                 )}
-
                                 <Icon className={cn(
                                     "w-6 h-6 shrink-0 transition-colors duration-300",
                                     isActive ? "text-primary drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]" : "group-hover:text-primary"
@@ -76,7 +78,7 @@ export function Sidebar() {
                                 )}>
                                     {item.label}
                                 </span>
-                            </Link>
+                            </a>
                         );
                     })}
                 </div>
@@ -99,38 +101,35 @@ export function Sidebar() {
                                 const subjectHref = `/subject/${subject.id}`;
 
                                 return (
-                                    <Link
+                                    <a
                                         key={subject.id}
                                         href={subjectHref}
-                                        prefetch={false}
+                                        onClick={(e) => { e.preventDefault(); navigate(subjectHref); }}
                                         className={cn(
                                             "relative z-[80] flex items-center gap-4 px-6 py-3 rounded-xl transition-all duration-300 group mr-4",
                                             isActive ? "bg-primary/5 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
                                         )}
                                     >
                                         {isActive && (
-                                            <div
-                                                className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full shadow-[0_0_12px_rgba(37,99,235,0.6)]"
-                                            />
+                                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full shadow-[0_0_12px_rgba(37,99,235,0.6)]" />
                                         )}
-
                                         <Icon className={cn(
                                             "w-5 h-5 shrink-0 transition-colors",
                                             isActive ? "text-primary" : "group-hover:text-primary/70"
                                         )} />
                                         <span className="text-sm font-medium">{subject.label}</span>
-                                    </Link>
+                                    </a>
                                 );
                             })}
 
-                            <Link
+                            <a
                                 href="/subjects"
-                                prefetch={false}
+                                onClick={(e) => { e.preventDefault(); navigate("/subjects"); }}
                                 className="relative z-[80] flex items-center gap-4 px-6 py-3 text-sm text-primary/70 hover:text-primary transition-colors mr-4"
                             >
                                 <div className="w-5 flex justify-center"><ChevronRight className="w-4 h-4" /></div>
                                 <span>عرض كل المواد...</span>
-                            </Link>
+                            </a>
                         </div>
                     )}
                 </div>
@@ -138,9 +137,9 @@ export function Sidebar() {
                 {/* Admin Section */}
                 {role === 'admin' && (
                     <div className="pt-4 border-t border-white/5 mx-4">
-                        <Link
+                        <a
                             href="/admin"
-                            prefetch={false}
+                            onClick={(e) => { e.preventDefault(); navigate("/admin"); }}
                             className={cn(
                                 "relative z-[80] flex items-center gap-4 px-6 py-3.5 rounded-xl transition-all duration-300 group",
                                 pathname.startsWith('/admin') ? "bg-red-500/10 text-red-500" : "text-white/60 hover:text-red-400 hover:bg-red-500/5"
@@ -148,20 +147,19 @@ export function Sidebar() {
                         >
                             <Settings className="w-6 h-6 shrink-0" />
                             <span className="font-medium">لوحة التحكم</span>
-                        </Link>
+                        </a>
                     </div>
                 )}
             </div>
 
-            {/* Premium Upgrade Card - Floating Glass */}
+            {/* Premium Upgrade Card */}
             <div className="p-6 relative z-10">
-                <Link
+                <a
                     href="/subscription"
-                    prefetch={false}
+                    onClick={(e) => { e.preventDefault(); navigate("/subscription"); }}
                     className="group relative block w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)] hover:-translate-y-1"
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
                     <div className="relative flex items-start gap-4">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
                             <Crown className="w-6 h-6 text-white" />
@@ -171,7 +169,7 @@ export function Sidebar() {
                             <p className="text-xs text-white/50 leading-relaxed">افتح جميع الدروس والتمارين الآن</p>
                         </div>
                     </div>
-                </Link>
+                </a>
             </div>
         </div>
     );
