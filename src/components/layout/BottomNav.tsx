@@ -28,6 +28,7 @@ export function BottomNav() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            prefetch={false}
                             className={`relative flex flex-col items-center justify-center transition-all duration-300 ${isActive
                                 ? "text-primary -translate-y-1"
                                 : "text-white/50 hover:text-white"
