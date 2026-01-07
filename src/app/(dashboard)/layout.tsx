@@ -59,22 +59,24 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] flex">
-            {/* Sidebar - Desktop Only */}
+        <div className="min-h-screen bg-[#050505] relative">
+            {/* Sidebar - Desktop Only, Fixed on Right */}
             <aside className="hidden lg:flex w-72 flex-col fixed inset-y-0 right-0 z-40 border-l border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
                 <Sidebar />
             </aside>
 
-            {/* Main Content Area */}
-            <main className="flex-1 lg:mr-72">
-                {/* Top Navigation */}
-                <TopNav />
+            {/* Main Content Wrapper - Offset by sidebar width on desktop */}
+            <div className="lg:mr-72 min-h-screen flex flex-col">
+                {/* Top Navigation - Fixed at top */}
+                <header className="sticky top-0 z-30 h-20 border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl">
+                    <TopNav />
+                </header>
 
-                {/* Page Content with Back Button */}
-                <div className="relative">
+                {/* Page Content */}
+                <main className="flex-1 relative">
                     {/* Back Button - Show on nested pages */}
                     {pathname !== '/dashboard' && (
-                        <div className="absolute top-4 right-4 z-30">
+                        <div className="absolute top-4 right-4 z-20">
                             <BackButton />
                         </div>
                     )}
@@ -85,8 +87,8 @@ export default function DashboardLayout({
                             {children}
                         </PageTransition>
                     </AnimatePresence>
-                </div>
-            </main>
+                </main>
+            </div>
 
             {/* Bottom Navigation - Mobile Only */}
             <BottomNav />
