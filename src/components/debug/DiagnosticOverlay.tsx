@@ -44,6 +44,7 @@ declare global {
     interface Window {
         __DIAG_NAV_START?: (target: string) => void;
         __DIAG_CHECKPOINT?: (label: string) => void;
+        __DIAG_FETCH_TIME?: (ms: number) => void;
         __originalFetch?: typeof fetch;
         __DIAG_AUTH_CHANGE?: (state: string) => void;
     }
