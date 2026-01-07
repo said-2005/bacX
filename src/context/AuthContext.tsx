@@ -146,7 +146,7 @@ export function AuthProvider({
             clearTimeout(timer);
             subscription.unsubscribe();
         };
-    }, [supabase, fetchProfile, state.loading]); // Added state.loading to deps for timeout check? No, strictly redundant but safe. Actually better to remove state.loading to avoid re-triggering. Wait.
+    }, [supabase, fetchProfile]);
     const loginWithEmail = async (email: string, password: string) => {
         setState(prev => ({ ...prev, loading: true, error: null }));
         const { error } = await supabase.auth.signInWithPassword({ email, password });
