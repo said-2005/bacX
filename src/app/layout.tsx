@@ -3,6 +3,7 @@ import { IBM_Plex_Sans_Arabic, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider, type UserProfile } from "@/context/AuthContext";
 import { Toaster } from "sonner";
+import NextTopLoader from "nextjs-toploader";
 
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
 
@@ -110,6 +111,17 @@ export default async function RootLayout({
   return (
     <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} ${cinzel.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
+        <NextTopLoader
+          color="#2563EB"
+          initialPosition={0.1}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #2563EB,0 0 5px #2563EB"
+        />
         <AuthProvider initialUser={initialUser} hydratedProfile={initialProfile}>
           <ErrorBoundary>
             {children}
