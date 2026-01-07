@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNav } from "@/components/layout/TopNav";
@@ -17,7 +16,6 @@ export default function DashboardLayout({
 }) {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
     const [isMounted, setIsMounted] = useState(false);
 
     // CRITICAL: Track if redirect has been initiated to prevent loop
@@ -56,7 +54,7 @@ export default function DashboardLayout({
         );
     }
 
-    // SIMPLE LAYOUT - Matching admin layout structure
+    // SIMPLE LAYOUT - No animations, reliable rendering
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans" dir="rtl">
             {/* Sidebar - Desktop Only, Fixed on Right */}
@@ -71,19 +69,9 @@ export default function DashboardLayout({
                     <TopNav />
                 </header>
 
-                {/* Page Content - Smooth fade-in animation */}
+                {/* Page Content - Simple render */}
                 <main className="p-6 lg:p-10">
-                    <motion.div
-                        key={pathname}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                            duration: 0.3,
-                            ease: "easeOut"
-                        }}
-                    >
-                        {children}
-                    </motion.div>
+                    {children}
                 </main>
             </div>
 
