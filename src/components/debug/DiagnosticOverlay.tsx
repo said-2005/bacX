@@ -1,415 +1,346 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { usePathname, useSelectedLayoutSegments } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 /**
- * DIAGNOSTIC OVERLAY v11 - NUCLEAR BIOPSY
- * - Force hard reload button
- * - Re-render stress test
- * - Provider lock-in check
- * - Context collapse detection
+ * SHADOW HIJACKER v12 - THE COMMAND CENTER
+ * - Intercepts all sidebar clicks
+ * - Shadow fetch with RSC header
+ * - Raw server response display
+ * - Long task detector
  */
 
-interface TimerResult {
-    label: string;
+interface ShadowFetchResult {
+    url: string;
+    status: "PENDING" | "SUCCESS" | "ERROR" | "TIMEOUT";
+    statusCode: number | null;
+    responseSize: number | null;
+    responseTime: number | null;
+    responsePreview: string;
+    error: string | null;
+}
+
+interface LongTask {
+    name: string;
     duration: number;
     timestamp: number;
 }
 
-interface RenderCount {
-    component: string;
-    count: number;
-    windowStart: number;
+interface HijackerState {
+    isOpen: boolean;
+    targetUrl: string | null;
+    shadowFetch: ShadowFetchResult | null;
+    verdict: string | null;
+    longTasks: LongTask[];
+    rawStream: string;
+    uiFrozen: boolean;
 }
 
-interface DiagnosticState {
-    authState: "LOADING" | "AUTHENTICATED" | "NULL";
-    routerStatus: "IDLE" | "NAVIGATING";
-    pathname: string;
-    renderCount: number;
-    timers: TimerResult[];
-    totalWaitTime: number | null;
-    waitStartTime: number | null;
-    criticalAlert: boolean;
-    culpritFile: string | null;
-    culpritReason: string | null;
-    targetRoute: string | null;
-    renderCounts: RenderCount[];
-    infiniteLoopDetected: string | null;
-    contextCollapse: string | null;
-    authContextValue: string;
-}
-
-const STORAGE_KEY = 'diag_probe_v11';
-
-// Global event bus
+// Global hijacker
 declare global {
     interface Window {
-        __DIAG_NAV_START?: (target: string) => void;
-        __DIAG_CHECKPOINT?: (phase: string, source?: string) => void;
-        __DIAG_FETCH_TIME?: (ms: number) => void;
-        __DIAG_PROFILE?: (name: string, time: number, phase: string) => void;
-        __DIAG_RENDER?: (component: string) => void;
-        __originalFetch?: typeof fetch;
+        __HIJACK_NAV?: (url: string) => void;
     }
 }
 
-// ============================================================================
-// MAIN DIAGNOSTIC OVERLAY
-// ============================================================================
-export function DiagnosticOverlay() {
+export function ShadowHijacker() {
     const pathname = usePathname();
-    const segments = useSelectedLayoutSegments();
-    const { user, loading, profile } = useAuth();
-
-    const [state, setState] = useState<DiagnosticState>(() => {
-        if (typeof window !== 'undefined') {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    return {
-                        ...parsed,
-                        routerStatus: "IDLE",
-                        waitStartTime: null,
-                        renderCounts: [],
-                        infiniteLoopDetected: null,
-                        contextCollapse: null,
-                    };
-                }
-            } catch (e) { }
-        }
-        return {
-            authState: "LOADING",
-            routerStatus: "IDLE",
-            pathname: "",
-            renderCount: 0,
-            timers: [],
-            totalWaitTime: null,
-            waitStartTime: null,
-            criticalAlert: false,
-            culpritFile: null,
-            culpritReason: null,
-            targetRoute: null,
-            renderCounts: [],
-            infiniteLoopDetected: null,
-            contextCollapse: null,
-            authContextValue: "unknown",
-        };
+    const [state, setState] = useState<HijackerState>({
+        isOpen: false,
+        targetUrl: null,
+        shadowFetch: null,
+        verdict: null,
+        longTasks: [],
+        rawStream: "",
+        uiFrozen: false,
     });
 
-    const waitStartRef = useRef<number | null>(null);
-    const navigationTarget = useRef<string | null>(null);
-    const renderCountsRef = useRef<Map<string, { count: number; windowStart: number }>>(new Map());
+    const fetchAbortRef = useRef<AbortController | null>(null);
+    const lastHeartbeat = useRef<number>(Date.now());
+    const frameCount = useRef<number>(0);
 
     // =========================================================================
-    // SAVE TO LOCALSTORAGE
-    // =========================================================================
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    timers: state.timers,
-                    totalWaitTime: state.totalWaitTime,
-                    criticalAlert: state.criticalAlert,
-                    culpritFile: state.culpritFile,
-                    culpritReason: state.culpritReason,
-                    pathname: state.pathname,
-                    infiniteLoopDetected: state.infiniteLoopDetected,
-                }));
-            } catch (e) { }
-        }
-    }, [state.timers, state.totalWaitTime, state.criticalAlert, state.culpritFile, state.culpritReason, state.pathname, state.infiniteLoopDetected]);
-
-    // =========================================================================
-    // AUTH CONTEXT MONITORING
+    // LONG TASK DETECTOR
     // =========================================================================
     useEffect(() => {
-        let authState: DiagnosticState["authState"] = "NULL";
-        if (loading) authState = "LOADING";
-        else if (user) authState = "AUTHENTICATED";
+        if (typeof window === "undefined" || !window.PerformanceObserver) return;
 
-        // Check for context collapse
-        const authContextValue = `user:${user ? 'Y' : 'N'} loading:${loading} profile:${profile ? 'Y' : 'N'}`;
+        try {
+            const observer = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    if (entry.duration > 50) {
+                        setState(prev => ({
+                            ...prev,
+                            longTasks: [...prev.longTasks, {
+                                name: entry.name || "anonymous",
+                                duration: entry.duration,
+                                timestamp: Date.now(),
+                            }].slice(-5),
+                        }));
+                    }
+                }
+            });
 
-        // Detect if auth becomes undefined during navigation
-        let contextCollapse: string | null = null;
-        if (state.routerStatus === "NAVIGATING") {
-            if (user === undefined) {
-                contextCollapse = "AUTH_USER_UNDEFINED";
-            }
+            observer.observe({ entryTypes: ["longtask"] });
+            return () => observer.disconnect();
+        } catch (e) {
+            // Long task API not supported
         }
-
-        setState(prev => ({
-            ...prev,
-            authState,
-            authContextValue,
-            contextCollapse,
-            pathname,
-            renderCount: prev.renderCount + 1,
-        }));
-    }, [user, loading, profile, pathname, state.routerStatus]);
+    }, []);
 
     // =========================================================================
-    // RENDER COUNT MONITOR
+    // MAIN THREAD HEARTBEAT
     // =========================================================================
-    const handleRender = useCallback((component: string) => {
-        const now = Date.now();
-        const entry = renderCountsRef.current.get(component);
+    useEffect(() => {
+        let animationFrameId: number;
 
-        if (entry && now - entry.windowStart < 1000) {
-            entry.count++;
-            if (entry.count > 10) {
+        const heartbeat = () => {
+            const now = Date.now();
+            const delta = now - lastHeartbeat.current;
+            lastHeartbeat.current = now;
+            frameCount.current++;
+
+            // If more than 200ms since last frame, UI is frozen
+            if (delta > 200 && state.isOpen) {
                 setState(prev => ({
                     ...prev,
-                    infiniteLoopDetected: component,
-                    culpritReason: `${component} rendered ${entry.count} times in 1 second - INFINITE_RENDER_LOOP`,
+                    uiFrozen: true,
                 }));
             }
-        } else {
-            renderCountsRef.current.set(component, { count: 1, windowStart: now });
-        }
-    }, []);
 
-    // =========================================================================
-    // TIMER LISTENER
-    // =========================================================================
-    useEffect(() => {
-        const handleTimer = (e: CustomEvent<{ label: string; duration: number }>) => {
-            const { label, duration } = e.detail;
-            setState(prev => {
-                const existing = prev.timers.findIndex(t => t.label === label);
-                const newTimer: TimerResult = { label, duration, timestamp: Date.now() };
-
-                let newTimers: TimerResult[];
-                if (existing >= 0) {
-                    newTimers = [...prev.timers];
-                    newTimers[existing] = newTimer;
-                } else {
-                    newTimers = [...prev.timers, newTimer].slice(-12);
-                }
-
-                return { ...prev, timers: newTimers };
-            });
+            animationFrameId = requestAnimationFrame(heartbeat);
         };
 
-        window.addEventListener('diag-timer', handleTimer as EventListener);
-        return () => window.removeEventListener('diag-timer', handleTimer as EventListener);
-    }, []);
+        animationFrameId = requestAnimationFrame(heartbeat);
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [state.isOpen]);
 
     // =========================================================================
-    // NAVIGATION START
+    // SHADOW FETCH - THE HIJACKER
     // =========================================================================
-    const handleNavStart = useCallback((target: string) => {
-        const now = Date.now();
-        waitStartRef.current = now;
-        navigationTarget.current = target;
-        renderCountsRef.current.clear();
+    const executeShadowFetch = async (url: string) => {
+        // Abort any previous fetch
+        if (fetchAbortRef.current) {
+            fetchAbortRef.current.abort();
+        }
+
+        fetchAbortRef.current = new AbortController();
+        const startTime = Date.now();
 
         setState(prev => ({
             ...prev,
-            routerStatus: "NAVIGATING",
-            waitStartTime: now,
-            totalWaitTime: null,
-            criticalAlert: false,
-            culpritFile: null,
-            culpritReason: null,
-            targetRoute: target,
-            infiniteLoopDetected: null,
-            contextCollapse: null,
+            isOpen: true,
+            targetUrl: url,
+            shadowFetch: {
+                url,
+                status: "PENDING",
+                statusCode: null,
+                responseSize: null,
+                responseTime: null,
+                responsePreview: "",
+                error: null,
+            },
+            verdict: null,
+            rawStream: "",
+            uiFrozen: false,
+            longTasks: [],
         }));
-    }, []);
 
-    useEffect(() => {
-        window.__DIAG_NAV_START = handleNavStart;
-        window.__DIAG_RENDER = handleRender;
-        return () => {
-            delete window.__DIAG_NAV_START;
-            delete window.__DIAG_RENDER;
-        };
-    }, [handleNavStart, handleRender]);
+        try {
+            // Shadow fetch with RSC header
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "RSC": "1",
+                    "Next-Router-State-Tree": "[]",
+                    "Next-Router-Prefetch": "1",
+                },
+                signal: fetchAbortRef.current.signal,
+            });
 
-    // =========================================================================
-    // NAVIGATION END
-    // =========================================================================
-    useEffect(() => {
-        if (waitStartRef.current && navigationTarget.current) {
-            const totalWait = Date.now() - waitStartRef.current;
-            const isCritical = totalWait > 3000;
+            const responseTime = Date.now() - startTime;
+            const text = await response.text();
 
-            let culpritReason = state.culpritReason;
-            if (isCritical && !culpritReason) {
-                culpritReason = "CLIENT_ROUTER_DEADLOCK - Try Force Hard Reload button";
+            setState(prev => ({
+                ...prev,
+                shadowFetch: {
+                    url,
+                    status: response.ok ? "SUCCESS" : "ERROR",
+                    statusCode: response.status,
+                    responseSize: text.length,
+                    responseTime,
+                    responsePreview: text.slice(0, 2000),
+                    error: response.ok ? null : `HTTP ${response.status}`,
+                },
+                rawStream: text.slice(0, 5000),
+                verdict: response.ok
+                    ? "🟢 SERVER ALIVE - Data received. If UI is frozen, it's HYDRATION DEADLOCK."
+                    : `🔴 SERVER ERROR - ${response.status}`,
+            }));
+
+        } catch (err) {
+            const responseTime = Date.now() - startTime;
+            const errorMsg = err instanceof Error ? err.message : "Unknown error";
+
+            if (errorMsg.includes("aborted")) {
+                return; // User cancelled
             }
 
             setState(prev => ({
                 ...prev,
-                routerStatus: "IDLE",
-                totalWaitTime: totalWait,
-                criticalAlert: isCritical,
-                culpritReason,
-                timers: [
-                    ...prev.timers.filter(t => t.label !== 'TOTAL_WAIT_TIME'),
-                    { label: 'TOTAL_WAIT_TIME', duration: totalWait, timestamp: Date.now() }
-                ],
+                shadowFetch: {
+                    url,
+                    status: responseTime > 10000 ? "TIMEOUT" : "ERROR",
+                    statusCode: null,
+                    responseSize: null,
+                    responseTime,
+                    responsePreview: "",
+                    error: errorMsg,
+                },
+                verdict: responseTime > 10000
+                    ? "🔴 SERVER PARALYSIS - No response after 10 seconds"
+                    : `🔴 FETCH FAILED - ${errorMsg}`,
             }));
-
-            waitStartRef.current = null;
-            navigationTarget.current = null;
         }
-    }, [pathname, state.culpritReason]);
+    };
 
     // =========================================================================
-    // LIVE ELAPSED
+    // GLOBAL HIJACKER REGISTRATION
     // =========================================================================
-    const [liveElapsed, setLiveElapsed] = useState(0);
     useEffect(() => {
-        if (state.routerStatus !== "NAVIGATING" || !state.waitStartTime) return;
-        const interval = setInterval(() => {
-            setLiveElapsed(Date.now() - state.waitStartTime!);
-        }, 100);
-        return () => clearInterval(interval);
-    }, [state.routerStatus, state.waitStartTime]);
+        window.__HIJACK_NAV = (url: string) => {
+            executeShadowFetch(url);
+        };
+        return () => {
+            delete window.__HIJACK_NAV;
+        };
+    }, []);
 
     // =========================================================================
-    // FORCE HARD RELOAD
+    // CLOSE PANEL
     // =========================================================================
-    const forceHardReload = () => {
-        const target = state.targetRoute || '/dashboard';
-        console.log(`[FORCE] Hard reload to: ${target}`);
-        window.location.href = target;
+    const closePanel = () => {
+        if (fetchAbortRef.current) {
+            fetchAbortRef.current.abort();
+        }
+        setState(prev => ({ ...prev, isOpen: false }));
     };
 
     // =========================================================================
-    // CLEAR
+    // FORCE HARD NAVIGATE
     // =========================================================================
-    const clearTimers = () => {
-        setState(prev => ({
-            ...prev,
-            timers: [],
-            totalWaitTime: null,
-            criticalAlert: false,
-            culpritFile: null,
-            culpritReason: null,
-            infiniteLoopDetected: null,
-            contextCollapse: null,
-        }));
-        localStorage.removeItem(STORAGE_KEY);
-    };
-
-    // =========================================================================
-    // COLORS
-    // =========================================================================
-    const getColor = (duration: number) => {
-        if (duration > 100) return { bg: "bg-red-500/30", text: "text-red-400", flash: true };
-        if (duration > 50) return { bg: "bg-yellow-500/30", text: "text-yellow-400", flash: false };
-        return { bg: "bg-green-500/20", text: "text-green-400", flash: false };
+    const forceHardNavigate = () => {
+        if (state.targetUrl) {
+            window.location.href = state.targetUrl;
+        }
     };
 
     // =========================================================================
     // RENDER
     // =========================================================================
-    const isNavigating = state.routerStatus === "NAVIGATING";
-    const bgColor = state.criticalAlert
-        ? "bg-red-900 border-red-500"
-        : isNavigating && liveElapsed > 3000
-            ? "bg-red-900 border-red-500 animate-pulse"
-            : "bg-black border-white/30";
+    if (!state.isOpen) {
+        return null;
+    }
+
+    const sf = state.shadowFetch;
 
     return (
-        <div className={`fixed bottom-4 left-4 z-[9999] ${bgColor} border-2 rounded-lg p-4 font-mono text-xs shadow-2xl min-w-[380px] max-h-[600px] overflow-y-auto`}>
+        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-xl overflow-auto p-4">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/20 pb-2 mb-3">
-                <span className="text-white font-bold text-sm">☢️ NUCLEAR BIOPSY v11</span>
-                {isNavigating && (
-                    <span className={`font-bold ${liveElapsed > 3000 ? 'text-red-400 animate-pulse text-lg' : liveElapsed > 1000 ? 'text-yellow-400' : 'text-green-400'}`}>
-                        {(liveElapsed / 1000).toFixed(1)}s
-                    </span>
-                )}
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-white font-mono">
+                    👁️ SHADOW HIJACKER v12 - COMMAND CENTER
+                </h1>
+                <div className="flex items-center gap-4">
+                    <div className={`w-3 h-3 rounded-full ${state.uiFrozen ? 'bg-red-500' : 'bg-green-500'} animate-pulse`} />
+                    <span className="text-white/50 font-mono text-sm">Frame: {frameCount.current}</span>
+                    <button
+                        onClick={closePanel}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg"
+                    >
+                        ✕ Close
+                    </button>
+                </div>
             </div>
 
-            {/* FORCE HARD RELOAD BUTTON */}
-            {(state.criticalAlert || (isNavigating && liveElapsed > 2000)) && (
+            {/* Target URL */}
+            <div className="mb-4 p-4 bg-white/5 rounded-lg">
+                <span className="text-white/40 text-sm">TARGET:</span>
+                <div className="text-blue-400 font-mono text-lg">{state.targetUrl}</div>
+            </div>
+
+            {/* Main Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Server Status */}
+                <div className="p-4 bg-white/5 rounded-lg">
+                    <h2 className="text-white/60 text-sm mb-3 uppercase tracking-wider">RAW SERVER STATUS</h2>
+                    <div className={`text-3xl font-bold mb-2 ${sf?.status === "PENDING" ? "text-yellow-400 animate-pulse" :
+                            sf?.status === "SUCCESS" ? "text-green-400" :
+                                "text-red-400"
+                        }`}>
+                        {sf?.status || "—"}
+                    </div>
+                    {sf?.statusCode && (
+                        <div className="text-white/60">HTTP {sf.statusCode}</div>
+                    )}
+                    {sf?.responseTime && (
+                        <div className="text-white/40">{sf.responseTime}ms</div>
+                    )}
+                    {sf?.responseSize && (
+                        <div className="text-white/40">{(sf.responseSize / 1024).toFixed(1)} KB</div>
+                    )}
+                    {sf?.error && (
+                        <div className="text-red-400 text-sm mt-2">{sf.error}</div>
+                    )}
+                </div>
+
+                {/* Verdict */}
+                <div className="p-4 bg-white/5 rounded-lg">
+                    <h2 className="text-white/60 text-sm mb-3 uppercase tracking-wider">THE VERDICT</h2>
+                    <div className={`text-lg font-bold ${state.verdict?.includes("🟢") ? "text-green-400" : "text-red-400"
+                        }`}>
+                        {state.verdict || "Waiting for response..."}
+                    </div>
+                    {state.uiFrozen && (
+                        <div className="mt-2 text-orange-400 animate-pulse">
+                            ⚠️ UI THREAD FROZEN
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Emergency Bypass */}
+            <div className="mb-4">
                 <button
-                    onClick={forceHardReload}
-                    className="w-full mb-3 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-sm animate-pulse"
+                    onClick={forceHardNavigate}
+                    className="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-lg"
                 >
-                    ⚠️ FORCE HARD RELOAD → {state.targetRoute || '/dashboard'}
+                    🚀 JUMP TO PAGE (HARD) → {state.targetUrl}
                 </button>
-            )}
-
-            {/* VERDICT DISPLAY */}
-            {state.criticalAlert && state.culpritReason && (
-                <div className="mb-3 p-3 bg-red-500/40 border-2 border-red-500 rounded-lg">
-                    <div className="text-red-300 text-[10px] uppercase tracking-wider mb-1">🎯 VERDICT:</div>
-                    <div className="text-white font-bold text-sm">
-                        {state.culpritReason}
-                    </div>
-                    {state.infiniteLoopDetected && (
-                        <div className="text-orange-400 text-[10px] mt-1">
-                            ⚠️ INFINITE_RENDER_LOOP: {state.infiniteLoopDetected}
-                        </div>
-                    )}
-                    {state.contextCollapse && (
-                        <div className="text-purple-400 text-[10px] mt-1">
-                            ⚠️ CONTEXT_COLLAPSE: {state.contextCollapse}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* TOTAL WAIT TIME */}
-            {state.totalWaitTime !== null && (
-                <div className={`mb-3 p-3 rounded-lg text-center ${state.totalWaitTime > 3000 ? 'bg-red-500/50' : state.totalWaitTime > 1000 ? 'bg-yellow-500/30' : 'bg-green-500/20'}`}>
-                    <div className="text-white/60 text-[10px] uppercase tracking-wider">TOTAL WAIT TIME</div>
-                    <div className={`text-2xl font-bold ${state.totalWaitTime > 3000 ? 'text-red-400' : state.totalWaitTime > 1000 ? 'text-yellow-400' : 'text-green-400'}`}>
-                        {(state.totalWaitTime / 1000).toFixed(2)}s
-                    </div>
-                </div>
-            )}
-
-            {/* Context Status */}
-            <div className="mb-3 p-2 bg-white/5 rounded text-[10px]">
-                <div className="text-white/40 mb-1">CONTEXT STATUS:</div>
-                <div className="text-cyan-400 font-mono">{state.authContextValue}</div>
             </div>
 
-            {/* Timer Results */}
-            <div className="space-y-1 mb-3">
-                <div className="text-white/50 text-[10px] uppercase tracking-wider mb-1">TIMING:</div>
-                {state.timers.length === 0 ? (
-                    <div className="text-white/30 text-center py-2">Click a link...</div>
-                ) : (
-                    state.timers.sort((a, b) => b.duration - a.duration).slice(0, 6).map((timer) => {
-                        const color = getColor(timer.duration);
-                        return (
-                            <div
-                                key={timer.label}
-                                className={`flex items-center justify-between px-2 py-1 rounded ${color.bg} ${color.flash ? 'animate-pulse' : ''}`}
-                            >
-                                <span className="text-white/80 text-[10px]">{timer.label}</span>
-                                <span className={`font-bold ${color.text}`}>
-                                    {timer.duration.toFixed(0)}ms
-                                </span>
+            {/* Long Tasks */}
+            {state.longTasks.length > 0 && (
+                <div className="mb-4 p-4 bg-orange-500/20 border border-orange-500/50 rounded-lg">
+                    <h2 className="text-orange-400 text-sm mb-2 uppercase tracking-wider">⚠️ LONG TASKS DETECTED ({'>'}50ms)</h2>
+                    <div className="space-y-1 font-mono text-sm">
+                        {state.longTasks.map((task, i) => (
+                            <div key={i} className="flex justify-between text-orange-300">
+                                <span>{task.name}</span>
+                                <span className="text-orange-400">{task.duration.toFixed(0)}ms</span>
                             </div>
-                        );
-                    })
-                )}
-            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-            {/* Clear Button */}
-            <button
-                onClick={clearTimers}
-                className="w-full py-2 bg-white/10 hover:bg-white/20 rounded text-white/70 hover:text-white transition-colors text-[10px] uppercase tracking-wider"
-            >
-                Reset
-            </button>
-
-            {/* Footer */}
-            <div className="mt-2 pt-2 border-t border-white/10 text-[9px] text-white/30">
-                v11 | 💾 Persisted
+            {/* RSC Raw Stream */}
+            <div className="p-4 bg-white/5 rounded-lg">
+                <h2 className="text-white/60 text-sm mb-3 uppercase tracking-wider">RSC STREAM (RAW DATA)</h2>
+                <pre className="text-green-400/80 font-mono text-[10px] whitespace-pre-wrap break-all max-h-64 overflow-y-auto bg-black/50 p-3 rounded">
+                    {state.rawStream || (sf?.status === "PENDING" ? "Waiting for data..." : "No data received")}
+                </pre>
             </div>
         </div>
     );
