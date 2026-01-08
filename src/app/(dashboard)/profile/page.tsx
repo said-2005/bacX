@@ -35,12 +35,6 @@ export default function ProfilePage() {
 
     useEffect(() => {
         async function fetchUserData() {
-            // Checkpoint: fetch started
-            if (typeof window !== "undefined") {
-                window.__DIAG_CHECKPOINT?.("PROFILE_FETCH_START");
-            }
-            const start = performance.now();
-
             if (!user) {
                 setIsFetching(false);
                 return;
@@ -68,14 +62,6 @@ export default function ProfilePage() {
             } catch {
                 // Silent fail - show skeleton/empty state
             } finally {
-                const end = performance.now();
-                const fetchTime = end - start;
-                console.log(`[PROFILE] FETCH_TIME: ${fetchTime.toFixed(0)}ms`);
-
-                // Checkpoint: fetch done
-                if (typeof window !== "undefined") {
-                    window.__DIAG_FETCH_TIME?.(fetchTime);
-                }
                 setIsFetching(false);
             }
         }
