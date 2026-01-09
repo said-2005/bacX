@@ -5,8 +5,10 @@ import { AuthProvider, type UserProfile } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 
 import { GlobalErrorBoundary as ErrorBoundary } from "@/components/GlobalErrorBoundary";
+import { NerveSniper } from "@/components/diagnostics/NerveSniper";
 
 import { createClient } from "@/utils/supabase/server";
+
 
 
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
@@ -125,6 +127,8 @@ export default async function RootLayout({
                 }
               }}
             />
+            {/* V14: Nerve Sniper - Precision Freeze Debugger */}
+            <NerveSniper />
           </ErrorBoundary>
         </AuthProvider>
       </body>
