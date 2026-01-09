@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -96,7 +96,7 @@ export function AuthProvider({
 
     useEffect(() => {
         // BACKGROUND AUTH LISTENER: Never blocks navigation
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
             // Skip INITIAL_SESSION if we already have SSR data
             if (event === 'INITIAL_SESSION' && hasInitialized.current) {
                 // Just sync the session object, don't re-fetch profile
