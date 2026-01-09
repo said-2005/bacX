@@ -109,6 +109,10 @@ export default async function RootLayout({
 
   return (
     <html lang="ar" dir="rtl" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        {/* V17: THE ALERT BOMBER - Runs before React hydration */}
+        <script src="/v17-alert-bomber.js" defer={false} />
+      </head>
       <body className={`${ibmPlexSansArabic.variable} ${playfairDisplay.variable} ${amiri.variable} ${cinzel.variable} antialiased bg-background text-foreground font-sans selection:bg-primary/30`}>
         <AuthProvider initialUser={initialUser} hydratedProfile={initialProfile}>
           <ErrorBoundary>
