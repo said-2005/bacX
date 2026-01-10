@@ -131,29 +131,32 @@ export function getLessonVideoId(lessonId: string): string {
 
     // For now, let's return a string that LOOKS like it might need decryption, 
     // but the player might need to be patched to handle "demo" mode if API is missing.
-    export interface NewsItem {
-        id: string;
-        title: string;
-        date: string;
-        category: "دراسة" | "إعلان" | "تحديث";
-    }
+    return `enc_${lessonId}_${EDUCATIONAL_VIDEO_ID}`;
+}
 
-    export const NEWS: NewsItem[] = [
-        { id: "1", title: "تم تحديث محتوى مادة الفيزياء - وحدة الكهرباء", date: "منذ 2 ساعة", category: "دراسة" },
-        { id: "2", title: "موعد الاختبار التجريبي الأول يوم السبت", date: "منذ 5 ساعات", category: "إعلان" },
-        { id: "3", title: "تعديل في توقيت الحصة المباشرة ليوم الغد", date: "أمس", category: "تحديث" },
-        { id: "4", title: "نصائح للتحضير الجيد للامتحانات الوطنية", date: "أمس", category: "دراسة" },
-    ];
+export interface NewsItem {
+    id: string;
+    title: string;
+    date: string;
+    category: "دراسة" | "إعلان" | "تحديث";
+}
 
-    export interface Appointment {
-        id: string;
-        title: string;
-        timestamp: string; // ISO Status
-        type: "live" | "exam";
-    }
+export const NEWS: NewsItem[] = [
+    { id: "1", title: "تم تحديث محتوى مادة الفيزياء - وحدة الكهرباء", date: "منذ 2 ساعة", category: "دراسة" },
+    { id: "2", title: "موعد الاختبار التجريبي الأول يوم السبت", date: "منذ 5 ساعات", category: "إعلان" },
+    { id: "3", title: "تعديل في توقيت الحصة المباشرة ليوم الغد", date: "أمس", category: "تحديث" },
+    { id: "4", title: "نصائح للتحضير الجيد للامتحانات الوطنية", date: "أمس", category: "دراسة" },
+];
 
-    export const APPOINTMENTS: Appointment[] = [
-        { id: "1", title: "حصة الرياضيات المباشرة", timestamp: "2026-03-10T20:00:00", type: "live" },
-        { id: "2", title: "اختبار الفيزياء النووية", timestamp: "2026-03-15T15:00:00", type: "exam" },
-    ];
+export interface Appointment {
+    id: string;
+    title: string;
+    timestamp: string; // ISO Status
+    type: "live" | "exam";
+}
+
+export const APPOINTMENTS: Appointment[] = [
+    { id: "1", title: "حصة الرياضيات المباشرة", timestamp: "2026-03-10T20:00:00", type: "live" },
+    { id: "2", title: "اختبار الفيزياء النووية", timestamp: "2026-03-15T15:00:00", type: "exam" },
+];
 
