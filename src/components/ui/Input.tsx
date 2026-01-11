@@ -6,15 +6,16 @@ import { cn } from "@/lib/utils";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     icon?: LucideIcon;
+    iconClassName?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-    ({ icon: Icon, className, ...props }, ref) => {
+    ({ icon: Icon, className, iconClassName, ...props }, ref) => {
         return (
             <div className="relative w-full">
                 {Icon && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <Icon className="h-5 w-5 text-text-muted" />
+                        <Icon className={cn("h-5 w-5 text-text-muted", iconClassName)} />
                     </div>
                 )}
                 <input

@@ -1,160 +1,264 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from "react";
+import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { WifiOff, Loader2 } from "lucide-react";
 
-// Stable Fingerprinting
-const getStableDeviceId = () => {
-    if (typeof window === 'undefined') return 'server';
-    const components = [
-        navigator.userAgent,
-        navigator.language,
-        screen.colorDepth,
-        screen.width + 'x' + screen.height,
-        new Date().getTimezoneOffset(),
-        navigator.hardwareConcurrency,
-    ];
-    const raw = components.join('||');
-    let hash = 5381;
-    for (let i = 0; i < raw.length; i++) hash = (hash * 33) ^ raw.charCodeAt(i);
-    return 'device_' + (hash >>> 0).toString(16);
-};
+// --- TYPES ---
 
-interface AuthContextType {
-    user: User | null;
-    loading: boolean;
-    logout: () => Promise<void>;
-    role: 'admin' | 'student' | null;
-    connectionStatus: 'online' | 'reconnecting' | 'offline';
+export interface UserProfile {
+    id: string;
+    email: string;
+    full_name?: string;
+    wilaya?: string; // e.g., "16 - Algiers"
+    major?: string;  // e.g., "science"
+    role: "admin" | "student";
+    is_profile_complete: boolean;
+    is_subscribed?: boolean;
+    created_at: string;
 }
 
-const AuthContext = createContext<AuthContextType>({
-    user: null,
-    loading: true,
-    logout: async () => { },
-    role: null,
-    connectionStatus: 'online',
-});
+export interface AuthState {
+    user: User | null;
+    profile: UserProfile | null;
+    session: Session | null;
+    loading: boolean;
+    error: string | null;
+}
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [role, setRole] = useState<'admin' | 'student' | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [connectionStatus, setConnectionStatus] = useState<'online' | 'reconnecting' | 'offline'>('online');
+export interface AuthContextType extends AuthState {
+    loginWithEmail: (email: string, password: string) => Promise<void>;
+    signupWithEmail: (data: { email: string, password: string, fullName: string, wilaya: string, major: string }) => Promise<void>;
+    logout: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
+    hydrateProfile: (profile: UserProfile | null) => Promise<void>;
+    checkProfileStatus: () => Promise<boolean>;
+    completeOnboarding: (data: { fullName: string; wilaya: string; major: string }) => Promise<void>;
+    role: "admin" | "student" | null; // Direct Accessor
+}
+
+// ... CONTEXT ...
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({
+    children,
+    initialUser = null,
+    hydratedProfile = null
+}: {
+    children: ReactNode;
+    initialUser?: User | null;
+    hydratedProfile?: UserProfile | null;
+}) {
+    const supabase = createClient();
     const router = useRouter();
 
+    const [state, setState] = useState<AuthState>({
+        user: initialUser,
+        profile: hydratedProfile,
+        session: null,
+        loading: false, // OPTIMISTIC: Never block UI on auth - trust SSR hydration
+        error: null,
+    });
+
+    // --- HELPERS ---
+
+    const fetchProfile = useCallback(async (userId: string) => {
+        const { data, error } = await supabase
+            .from("profiles")
+            .select(`
+                *,
+                wilayas ( full_label ),
+                majors ( label )
+            `)
+            .eq("id", userId)
+            .single();
+
+        if (error) {
+            console.error("Error fetching profile:", error);
+            return null;
+        }
+
+        // Map relational data to flat strings
+        const profile = {
+            ...data,
+            wilaya: data.wilayas?.full_label,
+            major: data.majors?.label
+        };
+
+        return profile as unknown as UserProfile;
+    }, [supabase]);
+
+    // Track if we've completed initial auth check
+    const hasInitialized = useRef(!!initialUser);
+    // Track current user ID to avoid duplicate fetches
+    const userIdRef = useRef<string | undefined>(initialUser?.id);
+
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                const deviceId = getStableDeviceId();
-                const userRef = doc(db, 'users', currentUser.uid);
-
-                // --- RETRY LOGIC FOR NETWORK RESILIENCE ---
-                let retries = 3;
-                let success = false;
-
-                while (retries > 0 && !success) {
-                    try {
-                        const userSnap = await getDoc(userRef);
-                        success = true; // Fetch succeeded
-                        setConnectionStatus('online');
-
-                        if (userSnap.exists()) {
-                            const data = userSnap.data();
-                            const activeDevices = data.activeDevices || [];
-                            setRole(data.role || 'student');
-
-                            if (!activeDevices.includes(deviceId)) {
-                                // Check limit before writing (Client check is UX only, Server rules enforce security)
-                                if (activeDevices.length >= 2 && data.role !== 'admin') {
-                                    await firebaseSignOut(auth);
-                                    alert("تم تجاوز حد الأجهزة المسموح به (2).");
-                                    setUser(null);
-                                    setRole(null);
-                                    setLoading(false);
-                                    return;
-                                } else {
-                                    // Register new device with Atomic ArrayUnion
-                                    await updateDoc(userRef, {
-                                        activeDevices: arrayUnion(deviceId)
-                                    });
-                                }
-                            }
-                        } else {
-                            // First Login
-                            await setDoc(userRef, {
-                                email: currentUser.email,
-                                activeDevices: [deviceId],
-                                role: 'student',
-                                createdAt: new Date(),
-                                isSubscribed: false,
-                                displayName: currentUser.displayName || "",
-                                photoURL: currentUser.photoURL || ""
-                            });
-                            setRole('student');
-                        }
-                        setUser(currentUser);
-
-                    } catch (error: any) {
-                        console.error("Auth Error:", error);
-                        // Only retry if it looks like a network error
-                        if (error.code === 'unavailable' || error.message.includes('offline')) {
-                            setConnectionStatus('reconnecting');
-                            toast("جاري إعادة الاتصال...", { icon: <WifiOff className="w-4 h-4" /> });
-                            retries--;
-                            await new Promise(r => setTimeout(r, 2000)); // Wait 2s
-                        } else {
-                            // Fatal Error (Permission Denied etc)
-                            await firebaseSignOut(auth);
-                            setUser(null);
-                            setRole(null);
-                            setLoading(false);
-                            return;
-                        }
-                    }
+        // BACKGROUND AUTH LISTENER: Never blocks navigation
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+            // Skip INITIAL_SESSION if we already have SSR data
+            if (event === 'INITIAL_SESSION' && hasInitialized.current) {
+                // Just sync the session object, don't re-fetch profile
+                if (session) {
+                    setState(prev => ({ ...prev, session }));
                 }
-
-                if (!success) {
-                    // Failed after retries
-                    setConnectionStatus('offline');
-                    toast.error("يبدو أن هناك مشكلة في الاتصال بالانترنت");
-                    // We don't force logout here to be nice, just show offline state? 
-                    // Or force logout for security? Let's keep user session but disable features.
-                }
-
-            } else {
-                setUser(null);
-                setRole(null);
+                return;
             }
-            setLoading(false);
+
+            if (session?.user) {
+                const user = session.user;
+
+                if (!hasInitialized.current) {
+                    // First client-side auth - silently hydrate
+                    hasInitialized.current = true;
+                    userIdRef.current = user.id;
+                    const profile = await fetchProfile(user.id);
+                    setState(prev => ({ ...prev, user, session, profile }));
+                } else if (user.id !== userIdRef.current) {
+                    // User actually changed (rare: account switch)
+                    userIdRef.current = user.id;
+                    const profile = await fetchProfile(user.id);
+                    setState(prev => ({ ...prev, user, session, profile }));
+                } else {
+                    // Same user, just session refresh - update session only
+                    setState(prev => ({ ...prev, session }));
+                }
+            } else if (hasInitialized.current && userIdRef.current) {
+                // Actual logout (not initial empty state)
+                userIdRef.current = undefined;
+                setState(prev => ({
+                    ...prev,
+                    user: null,
+                    session: null,
+                    profile: null
+                }));
+            }
         });
 
-        return () => unsubscribe();
-    }, []);
-
-    const logout = async () => {
-        const deviceId = getStableDeviceId();
-        // Optional: Remove device on logout? 
-        // Logic: Usually we keep it until they manually revoke, to prevent "Device Hopping".
-        await firebaseSignOut(auth);
-        router.push('/auth');
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [supabase, fetchProfile]);
+    const loginWithEmail = async (email: string, password: string) => {
+        setState(prev => ({ ...prev, loading: true, error: null }));
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            throw error;
+        }
     };
 
-    return (
-        <AuthContext.Provider value={{ user, loading, logout, role, connectionStatus }}>
-            {!loading && children}
-            {loading && (
-                <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                </div>
-            )}
-        </AuthContext.Provider>
-    );
+    const signupWithEmail = async ({ email, password, fullName, wilaya, major }: { email: string, password: string, fullName: string, wilaya: string, major: string }) => {
+        setState(prev => ({ ...prev, loading: true, error: null }));
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    wilaya: wilaya,
+                    major: major,
+                    is_profile_complete: true // Assuming sign up flow includes all data
+                }
+            }
+        });
+
+        if (error) {
+            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            throw error;
+        }
+
+        // Note: Profile creation is usually handled by a Database Trigger on "auth.users" created.
+        // Assuming trigger exists. If not, we might need manual insert here, but Trigger is Supabase best practice.
+    };
+
+    const logout = async () => {
+        try {
+            console.log("Logging out...");
+            await supabase.auth.signOut();
+            console.log("Logged out from Supabase, redirecting...");
+            // Hard redirect to clear all states and memory
+            window.location.href = "/login";
+        } catch (error) {
+            console.error("Logout failed", error);
+            // Force redirect anyway
+            window.location.href = "/login";
+        }
+    };
+
+    const refreshProfile = async () => {
+        if (state.user) {
+            const profile = await fetchProfile(state.user.id);
+            setState(prev => ({ ...prev, profile }));
+        }
+    };
+
+    const hydrateProfile = async (profile: UserProfile | null) => {
+        setState(prev => ({ ...prev, profile }));
+    };
+
+    const checkProfileStatus = async () => {
+        if (!state.user) return false;
+        // If we have local profile, check it
+        if (state.profile) return state.profile.is_profile_complete;
+
+        // Otherwise fetch
+        const profile = await fetchProfile(state.user.id);
+        return profile?.is_profile_complete || false;
+    };
+
+    const completeOnboarding = async (data: { fullName: string; wilaya: string; major: string }) => {
+        if (!state.user) throw new Error("No user logged in");
+
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+                full_name: data.fullName,
+                wilaya: data.wilaya,
+                // major: data.major, // DB might expect IDs. Keeping metadata sync for checks.
+                is_profile_complete: true,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', state.user.id);
+
+        if (profileError) throw profileError;
+
+        await supabase.auth.updateUser({
+            data: {
+                full_name: data.fullName,
+                wilaya: data.wilaya,
+                major: data.major,
+                is_profile_complete: true
+            }
+        });
+
+        await refreshProfile();
+        router.replace('/dashboard');
+    };
+
+    // --- RENDER ---
+
+    const value: AuthContextType = {
+        ...state,
+        loginWithEmail,
+        signupWithEmail,
+        logout,
+        refreshProfile,
+        hydrateProfile,
+        checkProfileStatus,
+        completeOnboarding,
+        role: state.profile?.role || null
+    };
+
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
+};
