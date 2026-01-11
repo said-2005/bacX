@@ -174,10 +174,17 @@ export function AuthProvider({
     };
 
     const logout = async () => {
-        console.log("Logging out...");
-        await supabase.auth.signOut();
-        console.log("Logged out from Supabase, redirecting...");
-        router.replace("/login");
+        try {
+            console.log("Logging out...");
+            await supabase.auth.signOut();
+            console.log("Logged out from Supabase, redirecting...");
+            // Hard redirect to clear all states and memory
+            window.location.href = "/login";
+        } catch (error) {
+            console.error("Logout failed", error);
+            // Force redirect anyway
+            window.location.href = "/login";
+        }
     };
 
     const refreshProfile = async () => {
