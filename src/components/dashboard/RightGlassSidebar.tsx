@@ -81,10 +81,10 @@ export default function RightGlassSidebar() {
       </nav>
 
       {/* Logout Section */}
-      <div className="px-3 mt-2 pt-2 border-t border-white/5 mx-4">
+      <div className="px-3 mt-2 pt-2 border-t border-white/5 mx-4 relative z-[60]">
         <button
           onClick={handleLogout}
-          className={`w-full relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group overflow-hidden text-red-400/70 hover:text-red-400 hover:bg-red-500/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]`}
+          className={`w-full relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group overflow-hidden text-red-400/70 hover:text-red-400 hover:bg-red-500/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] cursor-pointer active:scale-95`}
         >
           <LogOut className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
           {!isCollapsed && (

@@ -69,7 +69,7 @@ export default function StickyGlassMenu() {
                             <div className="h-px bg-white/5 my-1" />
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-300/70 hover:text-red-400 transition-colors text-sm w-full text-right"
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-300/70 hover:text-red-400 transition-colors text-sm w-full text-right cursor-pointer"
                             >
                                 <LogOut size={16} />
                                 <span>تسجيل الخروج</span>
