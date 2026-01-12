@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,7 +64,14 @@ export function GlassSidebar() {
                                 exit={{ opacity: 0, x: 20 }}
                                 className="flex items-center gap-3 overflow-hidden"
                             >
-                                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-black font-bold text-lg">B</div>
+                                <div className="relative w-8 h-8">
+                                    <Image
+                                        src="/images/brainy-logo-v2.png"
+                                        alt="Brainy"
+                                        fill
+                                        className="object-contain"
+                                    />
+                                </div>
                                 <span className="font-bold text-xl tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Brainy</span>
                             </motion.div>
                         )}
@@ -87,8 +95,8 @@ export function GlassSidebar() {
                                 key={item.href}
                                 href={item.href}
                                 className={`relative flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group overflow-hidden ${isActive
-                                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                    : "text-gray-400 hover:text-white hover:bg-white/5"
                                     }`}
                             >
                                 {/* Active Glow Line (Left) */}
