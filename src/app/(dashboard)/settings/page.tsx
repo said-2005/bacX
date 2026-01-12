@@ -1,10 +1,12 @@
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { createClient } from "@/utils/supabase/client";
 import { LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SettingsPage() {
+    const { logout } = useAuth();
+
     return (
         <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-3xl font-serif font-bold mb-8">الإعدادات</h1>
@@ -49,17 +51,7 @@ export default function SettingsPage() {
             <GlassCard className="p-6 space-y-6 border-red-500/20">
                 <h3 className="text-xl font-bold border-b border-white/10 pb-4 text-red-400">إجراءات الحساب</h3>
                 <button
-                    onClick={async () => {
-                        try {
-                            const supabase = createClient();
-                            await supabase.auth.signOut();
-                        } catch (e) {
-                            console.error("Logout error:", e);
-                        } finally {
-                            // Force redirect ensuring it happens regardless of supabase status
-                            window.location.href = '/login';
-                        }
-                    }}
+                    onClick={() => logout()}
                     className="w-full py-4 rounded-xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all flex items-center justify-center gap-3 font-bold group cursor-pointer shadow-[0_0_20px_rgba(239,68,68,0.05)] hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] relative z-50"
                 >
                     <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
