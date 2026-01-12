@@ -31,8 +31,8 @@ export default function RightGlassSidebar() {
       </button>
 
       {/* Brand / Logo Area */}
-      <div className={`px-6 mb-8 flex items-center justify-center ${isCollapsed ? "" : ""}`}>
-        <div className={`relative transition-all duration-300 ${isCollapsed ? "w-10 h-10" : "w-32 h-12"}`}>
+      <div className={`px-4 mb-8 mt-4 flex items-center justify-center gap-3 transition-all duration-300`}>
+        <div className={`relative transition-all duration-300 ${isCollapsed ? "w-12 h-12" : "w-16 h-16"}`}>
           <Image
             src="/images/brainy-logo-v2.png"
             alt="Brainy"
@@ -41,6 +41,11 @@ export default function RightGlassSidebar() {
             priority
           />
         </div>
+        {!isCollapsed && (
+          <span className="font-bold text-2xl tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent animate-in fade-in slide-in-from-left-4 duration-500 font-serif">
+            Brainy
+          </span>
+        )}
       </div>
 
       <nav className="flex-1 px-3 space-y-2">

@@ -55,11 +55,11 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
             transition={{ duration: 0.8, ease: "easeOut" }}
         >
             {/* Breathing Logo */}
-            <div className="flex justify-center mb-8">
+            <div className="flex flex-col items-center justify-center mb-8 gap-4">
                 <motion.div
-                    className="w-24 h-24 relative"
+                    className="w-40 h-40 relative"
                     animate={{
-                        filter: ["drop-shadow(0 0 0px rgba(59,130,246,0))", "drop-shadow(0 0 25px rgba(59,130,246,0.4))", "drop-shadow(0 0 0px rgba(59,130,246,0))"]
+                        filter: ["drop-shadow(0 0 0px rgba(59,130,246,0))", "drop-shadow(0 0 35px rgba(59,130,246,0.5))", "drop-shadow(0 0 0px rgba(59,130,246,0))"]
                     }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
@@ -71,6 +71,15 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                         priority
                     />
                 </motion.div>
+                <motion.h1
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-4xl font-bold bg-gradient-to-b from-white via-white/90 to-white/50 bg-clip-text text-transparent tracking-widest uppercase font-serif"
+                    style={{ textShadow: '0 0 20px rgba(255,255,255,0.2)' }}
+                >
+                    Brainy
+                </motion.h1>
             </div>
 
             <GlassCard className="p-8 border-white/10 bg-white/5 backdrop-blur-[40px] shadow-[0_0_50px_rgba(37,99,235,0.1)] rounded-[2rem]">

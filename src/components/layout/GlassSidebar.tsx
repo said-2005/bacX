@@ -64,7 +64,7 @@ export function GlassSidebar() {
                                 exit={{ opacity: 0, x: 20 }}
                                 className="flex items-center gap-3 overflow-hidden"
                             >
-                                <div className="relative w-8 h-8">
+                                <div className="relative w-14 h-14">
                                     <Image
                                         src="/images/brainy-logo-v2.png"
                                         alt="Brainy"
@@ -72,7 +72,7 @@ export function GlassSidebar() {
                                         className="object-contain"
                                     />
                                 </div>
-                                <span className="font-bold text-xl tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Brainy</span>
+                                <span className="font-bold text-2xl tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent font-serif">Brainy</span>
                             </motion.div>
                         )}
                     </AnimatePresence>

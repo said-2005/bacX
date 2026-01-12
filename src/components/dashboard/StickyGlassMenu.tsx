@@ -34,14 +34,17 @@ export default function StickyGlassMenu() {
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-4 duration-700">
             <div className="flex items-center gap-1 p-2 bg-black/60 backdrop-blur-3xl border border-white/10 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
 
-                {/* Logo */}
-                <div className="relative w-10 h-10 ml-2">
-                    <Image
-                        src="/images/brainy-logo-v2.png"
-                        alt="Brainy"
-                        fill
-                        className="object-contain"
-                    />
+                {/* Logo & Brand */}
+                <div className="flex items-center gap-2 ml-4 mr-2">
+                    <div className="relative w-12 h-12">
+                        <Image
+                            src="/images/brainy-logo-v2.png"
+                            alt="Brainy"
+                            fill
+                            className="object-contain"
+                        />
+                    </div>
+                    <span className="hidden md:block font-bold text-xl bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent font-serif">Brainy</span>
                 </div>
 
                 {/* Profile Dropdown Trigger */}
