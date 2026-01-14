@@ -4,23 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { User, CreditCard, Users, Settings, ChevronDown } from "lucide-react";
+import { User, CreditCard, Users, Settings } from "lucide-react";
 
 export default function StickyGlassMenu() {
     const pathname = usePathname();
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Close dropdown on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsProfileOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
 
     const menuItems = [
         { name: "الاشتراك", href: "/subscription", icon: CreditCard },
@@ -47,37 +34,19 @@ export default function StickyGlassMenu() {
                     <span className="hidden md:block font-bold text-xl bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent font-serif">Brainy</span>
                 </div>
 
-                {/* Profile Dropdown Trigger */}
-                <div className="relative" ref={dropdownRef}>
-                    <button
-                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full transition-all duration-300
-                                ${pathname === '/profile' || isProfileOpen
-                                ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10"
-                                : "text-white/50 hover:text-white hover:bg-white/5 border border-transparent"
-                            }
-                            `}
-                    >
-                        <User className="w-4 h-4" />
-                        <span className="text-sm font-medium">الملف الشخصي</span>
-                        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isProfileOpen ? "rotate-180" : ""}`} />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {isProfileOpen && (
-                        <div className="absolute top-full mt-2 left-0 w-48 bg-[#0F0F16]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left flex flex-col p-1.5">
-                            <Link
-                                href="/profile"
-                                onClick={() => setIsProfileOpen(false)}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors text-sm"
-                            >
-                                <User size={16} />
-                                <span>عرض الملف</span>
-                            </Link>
-
-                        </div>
-                    )}
-                </div>
+                {/* Profile Link (Strict Navigation) */}
+                <Link
+                    href="/settings"
+                    className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full transition-all duration-300
+                            ${pathname === '/settings'
+                            ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10"
+                            : "text-white/50 hover:text-white hover:bg-white/5 border border-transparent"
+                        }
+                        `}
+                >
+                    <User className="w-4 h-4" />
+                    <span className="text-sm font-medium">الملف الشخصي</span>
+                </Link>
 
                 {/* Other Items */}
                 {menuItems.map((item) => {

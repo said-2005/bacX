@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, Video, ChevronRight, ChevronLeft, Menu } from "lucide-react";
+import { Home, BookOpen, Video, ChevronRight, ChevronLeft, Settings } from "lucide-react";
 import { useState } from "react";
 
 export default function RightGlassSidebar() {
@@ -14,6 +14,7 @@ export default function RightGlassSidebar() {
     { name: "الصفحة الرئيسية", href: "/dashboard", icon: Home },
     { name: "المواد", href: "/materials", icon: BookOpen },
     { name: "الحصص المباشرة", href: "/live", icon: Video },
+    { name: "الإعدادات", href: "/settings", icon: Settings },
   ];
 
   return (
