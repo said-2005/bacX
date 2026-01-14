@@ -47,9 +47,9 @@ export default function LoginPage() {
             {/* Breathing Logo */}
             <div className="flex flex-col items-center justify-center mb-8 gap-4">
                 <motion.div
-                    className="w-40 h-40 relative"
+                    className="w-[90px] h-[90px] relative"
                     animate={{
-                        filter: ["drop-shadow(0 0 0px rgba(59,130,246,0))", "drop-shadow(0 0 35px rgba(59,130,246,0.5))", "drop-shadow(0 0 0px rgba(59,130,246,0))"]
+                        filter: ["drop-shadow(0 0 10px rgba(59,130,246,0.2))", "drop-shadow(0 0 25px rgba(59,130,246,0.6))", "drop-shadow(0 0 10px rgba(59,130,246,0.2))"]
                     }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
@@ -66,7 +66,7 @@ export default function LoginPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                     className="text-4xl font-bold bg-gradient-to-b from-white via-white/90 to-white/50 bg-clip-text text-transparent tracking-widest uppercase font-serif"
-                    style={{ textShadow: '0 0 20px rgba(255,255,255,0.2)' }}
+                    style={{ textShadow: '0 0 25px rgba(37,99,235,0.5)' }}
                 >
                     Brainy
                 </motion.h1>

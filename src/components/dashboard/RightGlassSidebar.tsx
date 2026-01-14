@@ -33,12 +33,13 @@ export default function RightGlassSidebar() {
 
       {/* Brand / Logo Area */}
       <div className={`px-4 mb-8 mt-4 flex items-center justify-center gap-3 transition-all duration-300`}>
-        <div className={`relative transition-all duration-300 ${isCollapsed ? "w-12 h-12" : "w-16 h-16"}`}>
+        <div className={`relative transition-all duration-300 ${isCollapsed ? "w-14 h-14" : "w-[70px] h-[70px]"}`}>
           <Image
             src="/images/brainy-logo-v2.png"
             alt="Brainy"
             fill
             className="object-contain"
+            style={{ filter: "drop-shadow(0 0 12px rgba(37, 99, 235, 0.4))" }}
             priority
           />
         </div>

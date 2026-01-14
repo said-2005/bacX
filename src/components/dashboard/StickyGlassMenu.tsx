@@ -23,12 +23,13 @@ export default function StickyGlassMenu() {
 
                 {/* Logo & Brand */}
                 <div className="flex items-center gap-2 ml-4 mr-2">
-                    <div className="relative w-12 h-12">
+                    <div className="relative w-[65px] h-[65px]">
                         <Image
                             src="/images/brainy-logo-v2.png"
                             alt="Brainy"
                             fill
                             className="object-contain"
+                            style={{ filter: "drop-shadow(0 0 12px rgba(37, 99, 235, 0.4))" }}
                         />
                     </div>
                     <span className="hidden md:block font-bold text-xl bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent font-serif">Brainy</span>
