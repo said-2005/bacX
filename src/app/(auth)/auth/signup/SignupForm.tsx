@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { BrainyStoneLogoSVG } from "@/components/ui/BrainyStoneLogoSVG";
-import { Mail, Lock, User, MapPin, BookOpen, AlertCircle, ChevronDown, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, MapPin, BookOpen, AlertCircle, ChevronDown, ArrowLeft, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { signupAction } from "./actions";
 import { useEffect } from "react";
@@ -143,6 +143,25 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                     </div>
 
                     <div className="h-px bg-white/5 my-4 mx-4" />
+
+                    {/* STUDY SYSTEM */}
+                    <div className="relative group">
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/30 z-10 transition-colors group-hover:text-blue-400">
+                            <GraduationCap className="h-5 w-5" />
+                        </div>
+                        <select
+                            name="study_system"
+                            defaultValue=""
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white/90 appearance-none focus:outline-none focus:border-blue-400/50 focus:bg-white/10 transition-all text-sm h-14 placeholder:text-white/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] focus:shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+                            required
+                            dir="rtl"
+                        >
+                            <option value="" disabled className="bg-[#0F0F12] text-white/50">نظام الدراسة</option>
+                            <option value="regular" className="bg-[#0F0F12] text-white">طالب نظامي</option>
+                            <option value="private" className="bg-[#0F0F12] text-white">طالب حر (Candidat Libre)</option>
+                        </select>
+                        <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-white/20" />
+                    </div>
 
                     {/* WILAYA & MAJOR */}
                     <div className="space-y-4">

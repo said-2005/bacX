@@ -16,6 +16,7 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
     // We now receive IDs
     const wilayaId = formData.get("wilaya_id") as string;
     const majorId = formData.get("major_id") as string;
+    const studySystem = formData.get("study_system") as string;
 
     const supabase = await createClient();
 
@@ -29,6 +30,7 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
                 full_name: fullName,
                 wilaya_id: wilayaId,
                 major_id: majorId,
+                study_system: studySystem,
                 role: "student", // Default role
             },
         },
