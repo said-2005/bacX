@@ -37,9 +37,9 @@ export default function StickyGlassMenu() {
 
                 {/* Profile Link (Strict Navigation) */}
                 <Link
-                    href="/settings"
+                    href="/profile"
                     className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full transition-all duration-300
-                            ${pathname === '/settings'
+                            ${pathname === '/profile'
                             ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10"
                             : "text-white/50 hover:text-white hover:bg-white/5 border border-transparent"
                         }
