@@ -40,8 +40,8 @@ export default function RightGlassSidebar() {
       <div className="px-4 mb-12 mt-6 flex items-center justify-center gap-4 overflow-visible whitespace-nowrap">
         <motion.div
           animate={{
-            width: isCollapsed ? 48 : 54,
-            height: isCollapsed ? 48 : 54,
+            width: isCollapsed ? 50 : 80,
+            height: isCollapsed ? 50 : 80,
             scale: [1, 1.05, 1], // Breathing Animation
           }}
           transition={{
