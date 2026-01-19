@@ -1,19 +1,32 @@
-"use client";
-
-import { useEffect, useState } from "react";
+// ... imports
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { GlassCard } from "../ui/GlassCard";
 import { ShieldAlert } from "lucide-react";
 
 interface EncodedVideoPlayerProps {
     encodedVideoId: string; // SALT + ID + SALT (Base64)
+    shouldMute?: boolean;   // [NEW] Allow external muting
 }
 
-export default function EncodedVideoPlayer({ encodedVideoId }: EncodedVideoPlayerProps) {
+export default function EncodedVideoPlayer({ encodedVideoId, shouldMute = false }: EncodedVideoPlayerProps) {
     const [decodedId, setDecodedId] = useState<string | null>(null);
     const [securityWarning, setSecurityWarning] = useState(false);
     const { user } = useAuth();
     const [sessionIp] = useState("192.168.x.x");
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // [NEW] Toggle Mute without reload
+    useEffect(() => {
+        if (!iframeRef.current?.contentWindow) return;
+
+        const command = shouldMute ? "mute" : "unMute";
+        // YouTube Player API postMessage protocol
+        iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: command, args: [] }),
+            '*'
+        );
+    }, [shouldMute, decodedId]);
 
     useEffect(() => {
         let mounted = true;
@@ -92,7 +105,8 @@ export default function EncodedVideoPlayer({ encodedVideoId }: EncodedVideoPlaye
     return (
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden group select-none shadow-[0_0_50px_rgba(37,99,235,0.25)] border border-blue-500/20">
             <iframe
-                src={`https://www.youtube-nocookie.com/embed/${decodedId}?rel=0&modestbranding=1&controls=1&showinfo=0&fs=1`}
+                ref={iframeRef}
+                src={`https://www.youtube-nocookie.com/embed/${decodedId}?rel=0&modestbranding=1&controls=1&showinfo=0&fs=1&enablejsapi=1`}
                 className="w-full h-full object-cover"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

@@ -5,6 +5,8 @@ import EncodedVideoPlayer from "@/components/lesson/VideoPlayer";
 import { Lock, MessageCircle, Users, Video } from "lucide-react";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { useLiveInteraction } from "@/hooks/useLiveInteraction";
+import { RaiseHandButton } from "@/components/live/RaiseHandButton";
 
 // Mock Live ID (using a live stream placeholder or the demo one)
 const LIVE_STREAM_ID = "enc_live_jfKfPfyJRdk"; // lofi girl as mock live
@@ -13,6 +15,9 @@ const IS_LIVE = true; // Toggle this manually to Start/Stop the stream in the UI
 export default function LiveSessionsPage() {
     const { profile } = useAuth();
     const isSubscribed = profile?.is_subscribed === true;
+
+    // [NEW] Live Interaction Hook
+    const { status, raiseHand, endCall, currentSpeaker } = useLiveInteraction();
 
     if (!IS_LIVE) {
         return (
@@ -54,7 +59,10 @@ export default function LiveSessionsPage() {
                 <div className="lg:col-span-3 space-y-4">
                     <div className="w-full aspect-video rounded-2xl overflow-hidden glass-panel relative border border-white/10 shadow-2xl">
                         {isSubscribed ? (
-                            <EncodedVideoPlayer encodedVideoId={LIVE_STREAM_ID} />
+                            <EncodedVideoPlayer
+                                encodedVideoId={LIVE_STREAM_ID}
+                                shouldMute={status === 'live'} // Auto-Mute when student is speaking
+                            />
                         ) : (
                             // GATEKEPT
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md text-center p-8 z-20">
@@ -70,6 +78,14 @@ export default function LiveSessionsPage() {
                         )}
 
                         {!isSubscribed && <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1000')] bg-cover bg-center opacity-30 pointer-events-none mix-blend-overlay" />}
+
+                        {/* Notify if someone else is speaking */}
+                        {isSubscribed && currentSpeaker && currentSpeaker.user_id !== profile?.id && (
+                            <div className="absolute top-4 left-4 z-30 bg-black/60 backdrop-blur-md border border-blue-500/30 rounded-full px-4 py-2 flex items-center gap-2 animate-in slide-in-from-top-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+                                <span className="text-xs text-white">يتحدث الآن: {currentSpeaker.user_name}</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="glass-card p-6 flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
@@ -119,7 +135,6 @@ export default function LiveSessionsPage() {
                                             <p className="text-xs text-white">نعم، سيتم رفع التسجيل بعد انتهاء الحصة مباشرة.</p>
                                         </div>
                                     </div>
-                                    {/* Fake streaming chat effect could go here */}
                                 </>
                             )}
                         </div>
@@ -137,6 +152,15 @@ export default function LiveSessionsPage() {
                 </div>
 
             </div>
+
+            {/* RAISE HAND BUTTON */}
+            {isSubscribed && (
+                <RaiseHandButton
+                    status={status}
+                    onClick={status === 'live' || status === 'waiting' ? endCall : raiseHand}
+                    currentSpeakerName={currentSpeaker?.user_name}
+                />
+            )}
         </div>
     );
 }
