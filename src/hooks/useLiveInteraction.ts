@@ -18,7 +18,7 @@ export interface LiveInteraction {
 export const useLiveInteraction = () => {
     const { user, profile } = useAuth();
     const supabase = createClient();
-    
+
     // State
     const [status, setStatus] = useState<InteractionStatus>('idle');
     const [queue, setQueue] = useState<LiveInteraction[]>([]);
@@ -70,23 +70,23 @@ export const useLiveInteraction = () => {
         // HANDLE INCOMING CALLS (Student receiving call from Teacher)
         peer.on('call', async (call) => {
             console.log('Incoming call from:', call.peer);
-            
+
             // If we are the student, we answer with our microphone
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 localStreamRef.current = stream;
                 call.answer(stream); // Answer the call with an A/V stream.
-                
+
                 activeCallRef.current = call;
                 setStatus('live');
 
                 // Receive Teacher's audio (if any)
                 call.on('stream', (remoteStream) => {
-                     // Play teacher's voice if they speak back
-                     if (remoteAudioRef.current) {
+                    // Play teacher's voice if they speak back
+                    if (remoteAudioRef.current) {
                         remoteAudioRef.current.srcObject = remoteStream;
                         remoteAudioRef.current.play().catch(e => console.error("Error playing remote audio", e));
-                     }
+                    }
                 });
 
                 call.on('close', () => {
@@ -117,20 +117,20 @@ export const useLiveInteraction = () => {
                 .select('*')
                 .in('status', ['waiting', 'live'])
                 .order('created_at', { ascending: true });
-            
+
             if (error) console.error(error);
             else {
                 setQueue(data as LiveInteraction[]);
                 // Check if anyone is currently live
-                const liveUser = data.find(i => i.status === 'live');
+                const liveUser = (data as LiveInteraction[]).find(i => i.status === 'live');
                 if (liveUser) setCurrentSpeaker(liveUser);
-                
+
                 // If I am that user, update my local status
                 if (liveUser && liveUser.user_id === user?.id) {
                     setStatus('live');
                 } else {
                     // Check if I am in queue
-                    const myRequest = data.find(i => i.user_id === user?.id && i.status === 'waiting');
+                    const myRequest = (data as LiveInteraction[]).find(i => i.user_id === user?.id && i.status === 'waiting');
                     if (myRequest) setStatus('waiting');
                 }
             }
@@ -140,11 +140,11 @@ export const useLiveInteraction = () => {
 
         const channel = supabase
             .channel('live_interactions_changes')
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'live_interactions' 
-            }, (payload) => {
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'live_interactions'
+            }, (payload: any) => {
                 console.log('Realtime Change:', payload);
                 // Refresh queue on any change (simple strategy)
                 fetchQueue();
@@ -181,15 +181,15 @@ export const useLiveInteraction = () => {
 
     // Teacher calls Student
     const acceptStudent = async (studentInteraction: LiveInteraction) => {
-         if (!peerRef.current) return;
+        if (!peerRef.current) return;
 
-         try {
-             // 1. Update DB to 'live'
-             const { error } = await supabase
+        try {
+            // 1. Update DB to 'live'
+            const { error } = await supabase
                 .from('live_interactions')
                 .update({ status: 'live' })
                 .eq('id', studentInteraction.id);
-            
+
             if (error) throw error;
 
             // 2. Call the student
@@ -207,16 +207,16 @@ export const useLiveInteraction = () => {
             const call = peerRef.current.call(studentInteraction.peer_id, stream!); // stream can be undefined if receive-only? PeerJS might require a stream for call.
             // If PeerJS requires stream, and teacher has none, we might need a dummy stream. 
             // Usually teacher has mic.
-            
+
             activeCallRef.current = call;
             setCurrentSpeaker(studentInteraction);
 
             call.on('stream', (studentStream) => {
-                 // Play student's voice on Teacher's device
-                 if (remoteAudioRef.current) {
+                // Play student's voice on Teacher's device
+                if (remoteAudioRef.current) {
                     remoteAudioRef.current.srcObject = studentStream;
                     remoteAudioRef.current.play();
-                 }
+                }
             });
 
             call.on('close', () => {
@@ -224,9 +224,9 @@ export const useLiveInteraction = () => {
                 setCurrentSpeaker(null);
             });
 
-         } catch (e) {
-             console.error("Error accepting student", e);
-         }
+        } catch (e) {
+            console.error("Error accepting student", e);
+        }
     };
 
     const endCall = async () => {
@@ -240,13 +240,13 @@ export const useLiveInteraction = () => {
 
         // 2. Update DB (if I am the active speaker or admin)
         if (currentSpeaker) {
-             const { error } = await supabase
+            const { error } = await supabase
                 .from('live_interactions')
                 .update({ status: 'ended' })
                 .eq('id', currentSpeaker.id);
         } else if (status === 'waiting' && user) {
-             // Cancel waiting
-             const { error } = await supabase
+            // Cancel waiting
+            const { error } = await supabase
                 .from('live_interactions')
                 .update({ status: 'ended' })
                 .eq('user_id', user.id)
@@ -254,7 +254,7 @@ export const useLiveInteraction = () => {
         }
     };
 
-     const handleEndCallCleanup = () => {
+    const handleEndCallCleanup = () => {
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
