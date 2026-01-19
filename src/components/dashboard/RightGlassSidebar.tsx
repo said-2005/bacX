@@ -36,27 +36,27 @@ export default function RightGlassSidebar() {
         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
 
-      {/* Brand / Logo Area */}
-      <div className="px-4 mb-12 mt-6 flex items-center justify-center gap-4 overflow-visible whitespace-nowrap">
+      {/* Brand / Logo Area - V11.2 Hero Branding */}
+      <div className={`px-5 mb-14 mt-8 flex items-center ${isCollapsed ? "justify-center" : "justify-start"} gap-6 overflow-visible whitespace-nowrap transition-all duration-500`}>
         <motion.div
           animate={{
-            width: isCollapsed ? 50 : 80,
-            height: isCollapsed ? 50 : 80,
-            scale: [1, 1.05, 1], // Breathing Animation
+            width: isCollapsed ? 50 : 110,
+            height: isCollapsed ? 50 : 110,
+            scale: [1, 1.02, 1], // Subtle Breathing
           }}
           transition={{
-            width: { duration: 0.3 },
-            height: { duration: 0.3 },
-            scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            width: { duration: 0.4, ease: "backOut" },
+            height: { duration: 0.4, ease: "backOut" },
+            scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
           }}
-          className="relative flex-shrink-0"
+          className="relative flex-shrink-0 z-10"
         >
           <Image
             src="/images/brainy-logo-v2.png"
             alt="Brainy"
             fill
             className="object-contain"
-            style={{ filter: "drop-shadow(0 0 15px rgba(59, 130, 246, 0.6))" }} // Neon Glow
+            style={{ filter: "drop-shadow(0 0 20px rgba(59, 130, 246, 0.5))" }} // Stronger Neon Glow
             priority
           />
         </motion.div>
@@ -64,11 +64,11 @@ export default function RightGlassSidebar() {
         <AnimatePresence>
           {!isCollapsed && (
             <motion.span
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="font-sans font-extrabold text-3xl tracking-[0.1em] bg-gradient-to-r from-white to-blue-400 bg-clip-text text-transparent drop-shadow-md"
+              initial={{ opacity: 0, x: -30, filter: "blur(10px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, x: -30, filter: "blur(10px)" }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="font-sans font-black text-4xl tracking-widest bg-gradient-to-br from-white via-blue-100 to-blue-500 bg-clip-text text-transparent drop-shadow-2xl pt-2"
             >
               Brainy
             </motion.span>
