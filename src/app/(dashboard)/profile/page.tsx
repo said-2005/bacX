@@ -1,81 +1,233 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { User, Phone, MapPin, Loader2, Save, BookOpen, Shield, GraduationCap } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/utils/supabase/client";
+import { Input } from "@/components/ui/Input";
+import { toast } from "sonner";
 
 export default function ProfilePage() {
+    const { user } = useAuth();
+    const supabase = createClient();
+
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // Form Data State
+    const [formData, setFormData] = useState({
+        full_name: "",
+        phone: "",
+        wilaya: "",
+        major: "",
+        study_system: ""
+    });
+
+    // 1. Fetch Profile Data
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!user) return;
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('full_name, phone, wilaya, major, study_system')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    setFormData({
+                        full_name: data.full_name || "",
+                        phone: data.phone || "",
+                        wilaya: data.wilaya || "",
+                        major: data.major || "",
+                        study_system: data.study_system || ""
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+                toast.error("فشل في تحميل بيانات الملف الشخصي");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [user, supabase]);
+
+    // 2. Handle Save
+    const handleSave = async () => {
+        if (!user) return;
+        setSaving(true);
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: formData.full_name,
+                    phone: formData.phone,
+                    wilaya: formData.wilaya,
+                    major: formData.major,
+                    study_system: formData.study_system,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            toast.success("تم حفظ الملف الشخصي بنجاح");
+
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast.error("حدث خطأ أثناء الحفظ");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handlePasswordReset = async () => {
+        if (!user?.email) return;
+        const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+            redirectTo: `${window.location.origin}/auth/update-password`,
+        });
+        if (error) toast.error(error.message);
+        else toast.success("تم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني");
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+            </div>
+        );
+    }
+
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-8">
+            <h1 className="text-3xl font-serif font-bold text-white mb-2">الملف الشخصي</h1>
 
-            {/* Profile Header */}
-            <GlassCard className="p-8 flex flex-col md:flex-row items-center gap-8 text-center md:text-right">
-                <div className="relative">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 p-[2px]">
-                        <div className="w-full h-full rounded-full bg-[#0A0A0F] border-4 border-[#0A0A0F] flex items-center justify-center overflow-hidden">
-                            <span className="text-4xl">👤</span>
+            <div className="space-y-6">
+                <GlassCard className="p-8 space-y-8">
+                    <h3 className="text-xl font-bold border-b border-white/10 pb-4 flex items-center gap-2 text-blue-300">
+                        <User className="w-5 h-5" />
+                        المعلومات الشخصية
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-white/60 mr-1">الاسم الكامل</label>
+                            <Input
+                                value={formData.full_name}
+                                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                icon={User}
+                                placeholder="الاسم الكامل"
+                                className="bg-white/5 border-white/10 focus:border-blue-500/50"
+                            />
                         </div>
-                    </div>
-                    <div className="absolute bottom-2 right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-[#0A0A0F] hidden md:block" />
-                </div>
 
-                <div className="flex-1 space-y-2">
-                    <h1 className="text-3xl font-bold font-serif">سعيد عدلي</h1>
-                    <p className="text-white/60">طالب علوم رياضية (أ)</p>
-                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                        <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm border border-blue-500/20">مشترك مميز 🌟</span>
-                        <span className="px-3 py-1 rounded-full bg-white/5 text-white/60 text-sm border border-white/10">المستوى: 15</span>
-                    </div>
-                </div>
-
-                <button className="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
-                    تعديل الملف
-                </button>
-            </GlassCard>
-
-            {/* Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <GlassCard className="p-6 space-y-4">
-                    <h3 className="text-lg font-bold border-b border-white/10 pb-2">المعلومات الشخصية</h3>
-                    <div className="space-y-3">
-                        <div className="flex justify-between">
-                            <span className="text-white/40">البريد الإلكتروني</span>
-                            <span>said.adli@example.com</span>
+                        {/* Phone */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-white/60 mr-1">رقم الهاتف</label>
+                            <Input
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                icon={Phone}
+                                placeholder="رقم الهاتف"
+                                type="tel"
+                                className="bg-white/5 border-white/10 focus:border-blue-500/50"
+                            />
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-white/40">رقم الهاتف</span>
-                            <span>06 12 34 56 78</span>
+
+                        {/* Wilaya */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-white/60 mr-1">الولاية</label>
+                            <Input
+                                value={formData.wilaya}
+                                onChange={(e) => setFormData({ ...formData, wilaya: e.target.value })}
+                                icon={MapPin}
+                                placeholder="الولاية"
+                                className="bg-white/5 border-white/10 focus:border-blue-500/50"
+                            />
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-white/40">المدينة</span>
-                            <span>الدار البيضاء</span>
+
+                        {/* Branch / Major */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-white/60 mr-1">الشعبة</label>
+                            <Input
+                                value={formData.major}
+                                onChange={(e) => setFormData({ ...formData, major: e.target.value })}
+                                icon={BookOpen}
+                                placeholder="مثال: علوم تجريبية"
+                                className="bg-white/5 border-white/10 focus:border-blue-500/50"
+                            />
+                        </div>
+
+                        {/* Study System */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-white/60 mr-1">نظام الدراسة</label>
+                            <div className="relative">
+                                <select
+                                    value={formData.study_system}
+                                    onChange={(e) => setFormData({ ...formData, study_system: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-[10px] pl-4 text-white appearance-none focus:border-blue-500/50 focus:outline-none"
+                                    dir="rtl"
+                                >
+                                    <option value="" className="bg-[#0F0F12]">اختر نظام الدراسة</option>
+                                    <option value="regular" className="bg-[#0F0F12]">طالب نظامي</option>
+                                    <option value="private" className="bg-[#0F0F12]">طالب حر</option>
+                                </select>
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/30">
+                                    <GraduationCap className="w-4 h-4" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </GlassCard>
 
-                <GlassCard className="p-6 space-y-4">
-                    <h3 className="text-lg font-bold border-b border-white/10 pb-2">إحصائيات الأداء</h3>
-                    <div className="space-y-4">
+                {/* Security Section */}
+                <GlassCard className="p-8 space-y-6 border-yellow-500/20">
+                    <h3 className="text-xl font-bold border-b border-white/10 pb-4 flex items-center gap-2 text-yellow-300">
+                        <Shield className="w-5 h-5" />
+                        الأمان
+                    </h3>
+                    <div className="flex items-center justify-between">
                         <div>
-                            <div className="flex justify-between text-sm mb-1">
-                                <span>التقدم العام</span>
-                                <span className="text-blue-400">75%</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                                <div className="h-full bg-blue-500 w-3/4" />
-                            </div>
+                            <p className="font-bold text-white">كلمة المرور</p>
+                            <p className="text-sm text-white/40">تغيير كلمة المرور الخاصة بحسابك</p>
                         </div>
-                        <div>
-                            <div className="flex justify-between text-sm mb-1">
-                                <span>الحضور</span>
-                                <span className="text-green-400">92%</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                                <div className="h-full bg-green-500 w-[92%]" />
-                            </div>
-                        </div>
+                        <button
+                            onClick={handlePasswordReset}
+                            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white transition-colors"
+                        >
+                            إرسال رابط التغيير
+                        </button>
                     </div>
                 </GlassCard>
             </div>
 
+            {/* SAVE BUTTON */}
+            <div className="sticky bottom-6 flex justify-end bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-50">
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-white font-bold flex items-center gap-2 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
+                >
+                    {saving ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            جاري الحفظ...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="w-5 h-5" />
+                            حفظ التغييرات
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
     );
 }
