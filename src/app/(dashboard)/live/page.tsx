@@ -7,6 +7,7 @@ import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useLiveInteraction } from "@/hooks/useLiveInteraction";
 import { RaiseHandButton } from "@/components/live/RaiseHandButton";
+import { LiveChat } from "@/components/live/LiveChat";
 
 // Mock Live ID (using a live stream placeholder or the demo one)
 const LIVE_STREAM_ID = "enc_live_jfKfPfyJRdk"; // lofi girl as mock live
@@ -102,53 +103,9 @@ export default function LiveSessionsPage() {
                     </div>
                 </div>
 
-                {/* Chat Placeholder (Glass) */}
+                {/* Real-Time Live Chat */}
                 <div className="lg:col-span-1 h-[600px] flex flex-col">
-                    <GlassCard className="flex-1 flex flex-col w-full h-full p-0 overflow-hidden bg-black/20">
-                        <div className="p-4 border-b border-white/5 bg-white/5">
-                            <h3 className="font-bold flex items-center gap-2">
-                                <MessageCircle size={18} />
-                                المحادثة المباشرة
-                            </h3>
-                        </div>
-
-                        {/* Chat Messages Area */}
-                        <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar">
-                            {!isSubscribed ? (
-                                <div className="h-full flex flex-col items-center justify-center text-center text-white/30 text-sm">
-                                    <Lock size={24} className="mb-2 opacity-50" />
-                                    <p>المحادثة متاحة للمشتركين فقط</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="flex gap-2 items-start opacity-50">
-                                        <div className="w-6 h-6 rounded-full bg-purple-500/20 text-[10px] flex items-center justify-center text-purple-200">A</div>
-                                        <div>
-                                            <span className="text-xs font-bold text-white/40 block">Ahmed</span>
-                                            <p className="text-xs text-white/70">هل الدرس مسجل يا أستاذ؟</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2 items-start">
-                                        <div className="w-6 h-6 rounded-full bg-blue-500/20 text-[10px] flex items-center justify-center text-blue-200">S</div>
-                                        <div>
-                                            <span className="text-xs font-bold text-blue-300 block">Sara (Admin)</span>
-                                            <p className="text-xs text-white">نعم، سيتم رفع التسجيل بعد انتهاء الحصة مباشرة.</p>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Input Area */}
-                        <div className="p-3 border-t border-white/5 bg-white/5">
-                            <input
-                                type="text"
-                                disabled={!isSubscribed}
-                                placeholder={isSubscribed ? "اكتب رسالة..." : "اشترك للمشاركة"}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
-                        </div>
-                    </GlassCard>
+                    <LiveChat />
                 </div>
 
             </div>
