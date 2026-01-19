@@ -36,8 +36,17 @@ export default function RightGlassSidebar() {
         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
 
-      {/* Brand / Logo Area - FIXED & ALIGNED */}
-      <div className={`px-6 mb-2 flex items-center ${isCollapsed ? "justify-center" : "justify-start"} gap-6 text-white transition-all duration-500`}>
+      {/* Brand / Logo Area - FIXED & ALIGNED [LTR ORDER] */}
+      <style jsx global>{`
+        @keyframes textShimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+      `}</style>
+      <div
+        dir="ltr"
+        className={`px-6 mb-2 flex items-center ${isCollapsed ? "justify-center" : "justify-start"} gap-4 text-white transition-all duration-500`}
+      >
         {/* Logo Wrapper - NO CLIPPING */}
         <motion.div
           layout
@@ -57,7 +66,7 @@ export default function RightGlassSidebar() {
           />
         </motion.div>
 
-        {/* Text - PERFECTLY CENTERED */}
+        {/* Text - PERFECTLY CENTERED & SHIMMERING */}
         <AnimatePresence>
           {!isCollapsed && (
             <motion.span
@@ -65,7 +74,12 @@ export default function RightGlassSidebar() {
               animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, x: -20, filter: "blur(5px)" }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="font-black text-3xl tracking-tight text-white drop-shadow-lg whitespace-nowrap pt-2"
+              className="font-black text-3xl tracking-tight bg-clip-text text-transparent pt-2"
+              style={{
+                backgroundImage: "linear-gradient(to right, #ffffff 0%, #ffffff 40%, #00d2ff 50%, #ffffff 60%, #ffffff 100%)",
+                backgroundSize: "200% auto",
+                animation: "textShimmer 3s linear infinite"
+              }}
             >
               Brainy
             </motion.span>
