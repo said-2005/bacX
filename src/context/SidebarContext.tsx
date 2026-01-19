@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useMediaQuery } from "@/hooks/use-media-query"; // We might need to create this or use simple logic
+import { useMediaQuery } from "../hooks/use-media-query"; // Using relative path to fix resolution issue
 
 interface SidebarContextType {
     isCollapsed: boolean;
