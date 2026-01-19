@@ -26,7 +26,7 @@ export default function RightGlassSidebar() {
       initial={false}
       animate={{ width: isCollapsed ? 90 : 288 }} // Slightly wider collapsed state for the logo
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed right-0 top-0 h-full bg-black/20 backdrop-blur-3xl border-l border-white/5 flex flex-col pt-6 pb-4 z-[90] shadow-[-10px_0_40px_rgba(0,0,0,0.5)]"
+      className="fixed right-0 top-0 h-full bg-black/20 backdrop-blur-xl border-l border-white/5 flex flex-col pt-6 pb-4 z-[90] shadow-[-10px_0_40px_rgba(0,0,0,0.5)]"
     >
       {/* Toggle Button - Repositioned to prevent collision */}
       <button

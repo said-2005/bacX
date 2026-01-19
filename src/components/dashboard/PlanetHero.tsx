@@ -11,18 +11,18 @@ export default function PlanetHero() {
             {/* 3D Planet Visual */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 {/* Atmosphere Glow */}
-                <div className="absolute w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] animate-pulse" />
+                <div className="absolute w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] animate-pulse gpu-accelerated" />
 
                 {/* The Planet */}
-                <div className="relative w-64 h-64 rounded-full overflow-hidden shadow-[inset_-20px_-20px_50px_rgba(0,0,0,0.9),0_0_20px_rgba(37,99,235,0.5)] animate-[float_10s_ease-in-out_infinite]">
+                <div className="relative w-64 h-64 rounded-full overflow-hidden shadow-[inset_-20px_-20px_50px_rgba(0,0,0,0.9),0_0_20px_rgba(37,99,235,0.5)] animate-[float_10s_ease-in-out_infinite] gpu-accelerated">
                     {/* Texture / Gradient Map */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,#3b82f6,transparent_60%),radial-gradient(circle_at_70%_70%,#1e3a8a,transparent_60%)] opacity-80" />
-                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,0,0,0)_40%,rgba(255,255,255,0.1)_50%,rgba(0,0,0,0)_60%)] animate-[spin_20s_linear_infinite]" />
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,0,0,0)_40%,rgba(255,255,255,0.1)_50%,rgba(0,0,0,0)_60%)] animate-[spin_20s_linear_infinite] gpu-accelerated" />
                 </div>
 
                 {/* Orbit Rings */}
-                <div className="absolute w-[500px] h-[500px] border border-white/5 rounded-full rotate-x-[75deg] animate-[spin_30s_linear_infinite]" />
-                <div className="absolute w-[700px] h-[700px] border border-white/5 rounded-full rotate-x-[75deg] -rotate-y-12 animate-[spin_40s_linear_infinite_reverse]" />
+                <div className="absolute w-[500px] h-[500px] border border-white/5 rounded-full rotate-x-[75deg] animate-[spin_30s_linear_infinite] gpu-accelerated" />
+                <div className="absolute w-[700px] h-[700px] border border-white/5 rounded-full rotate-x-[75deg] -rotate-y-12 animate-[spin_40s_linear_infinite_reverse] gpu-accelerated" />
             </div>
 
             {/* Floating Content */}
