@@ -13,7 +13,7 @@ export default function DashboardPage() {
     const query = searchParams.get("q")?.toLowerCase() || "";
 
     const filteredSubjects = SUBJECTS.filter(s => {
-        // Base Filter: Math & Physics ONLY
+        // Base Filter: Math & Physics ONLY (V18.0 Restriction)
         if (s.name !== "الرياضيات" && s.name !== "الفيزياء") return false;
 
         // Search Filter

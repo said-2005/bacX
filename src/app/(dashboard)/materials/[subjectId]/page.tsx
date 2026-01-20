@@ -8,6 +8,7 @@ import EncodedVideoPlayer from "@/components/lesson/VideoPlayer";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Lock, PlayCircle, Clock } from "lucide-react";
 import Link from "next/link";
+import { PremiumLockScreen } from "@/components/dashboard/PremiumLockScreen";
 
 export default function SubjectPage() {
     const params = useParams();
@@ -16,9 +17,8 @@ export default function SubjectPage() {
 
     // Auth & Gatekeeping
     const { user, profile } = useAuth();
-    // Assuming 'active' or 'is_subscribed' is the truth. 
-    // Fallback to checking profile boolean if subscription object is missing in mock.
-    const isSubscribed = profile?.is_subscribed === true;  // STRICT CHECK
+    // Allow Admins or Subscribed Users
+    const isSubscribed = profile?.role === 'admin' || profile?.is_subscribed === true;
 
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
 
@@ -53,21 +53,7 @@ export default function SubjectPage() {
                             <EncodedVideoPlayer encodedVideoId={getLessonVideoId(activeLesson.id)} />
                         ) : (
                             // GATEKEPT
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md text-center p-8 z-20">
-                                <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4 text-white/50">
-                                    <Lock size={32} />
-                                </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">محتوى حصري للمشتركين</h3>
-                                <p className="text-white/60 mb-6 max-w-md">للوصول إلى دروس {subject.name} وباقي المواد، يرجى الاشتراك في الباقة المميزة.</p>
-                                <Link href="/subscription" className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]">
-                                    اشترك الآن
-                                </Link>
-                            </div>
-                        )}
-
-                        {/* Fallback visual behind gate */}
-                        {!isSubscribed && (
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20 pointer-events-none" />
+                            <PremiumLockScreen />
                         )}
                     </div>
 
