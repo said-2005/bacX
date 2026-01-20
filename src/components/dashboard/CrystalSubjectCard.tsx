@@ -48,14 +48,8 @@ export function CrystalSubjectCard({ subject }: { subject: Subject }) {
                     </div>
 
                     <div>
-                        <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">{subject.name}</h3>
+                        <h3 className="text-2xl font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">{subject.name}</h3>
                         <p className="text-sm text-white/40 line-clamp-2">{subject.description}</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-white/30 pt-4 border-t border-white/5">
-                        <span>{subject.unitCount} وحدات</span>
-                        <span>•</span>
-                        <span>{subject.lessonCount} درس</span>
                     </div>
                 </div>
             </div>
