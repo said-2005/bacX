@@ -16,19 +16,7 @@ export default function RightGlassSidebar() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const supabase = createClient();
 
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Stop any bubbling
-    console.log("Logout initiated..."); // Debugging
-    try {
-      await supabase.auth.signOut();
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.assign('/login'); // Force hard redirect
-    } catch (err) {
-      console.error("Logout error:", err);
-      window.location.assign('/login'); // Redirect anyway
-    }
-  };
+
 
   const navItems = [
     { name: "الصفحة الرئيسية", href: "/dashboard", icon: Home },
@@ -171,13 +159,7 @@ export default function RightGlassSidebar() {
 
       {/* Footer / User Info */}
       <div className={`p-4 mt-auto border-t border-white/5 transition-opacity duration-300 ${isCollapsed ? "justify-center flex" : ""}`}>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 p-3 text-red-400 hover:bg-white/10 rounded-xl transition-all w-full"
-        >
-          <LogOut size={20} />
-          {!isCollapsed && <span>تسجيل الخروج</span>}
-        </button>
+        {/* Logout button moved to Profile Dropdown */}
       </div>
     </motion.aside>
   );

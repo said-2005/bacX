@@ -240,14 +240,8 @@ export default function SettingsPage() {
             </div>
 
             {/* SAVE BAR */}
-            <div className="sticky bottom-6 flex items-center justify-between bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-50">
-                <button
-                    onClick={() => logout()}
-                    className="flex items-center gap-2 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-bold"
-                >
-                    <LogOut size={18} />
-                    تسجيل الخروج
-                </button>
+            <div className="sticky bottom-6 flex items-center justify-end bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-50">
+
 
                 <button
                     onClick={handleSave}

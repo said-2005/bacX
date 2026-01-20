@@ -127,13 +127,7 @@ export function GlassSidebar() {
 
                 {/* Footer: User & Logout */}
                 <div className="p-4 border-t border-white/5">
-                    <button
-                        onClick={() => logout()}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 text-gray-400 transition-colors group cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
-                    >
-                        <LogOut size={20} />
-                        {!isCollapsed && <span className="font-medium group-hover:text-red-400">تسجيل الخروج</span>}
-                    </button>
+                    {/* Logout button moved to Profile Dropdown */}
                 </div>
             </motion.aside>
         </>
