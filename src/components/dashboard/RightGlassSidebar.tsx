@@ -3,13 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, Video, ChevronRight, ChevronLeft, Settings, User } from "lucide-react";
+import { Home, BookOpen, Video, ChevronRight, ChevronLeft, Settings, User, LogOut } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 export default function RightGlassSidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
   const { isCollapsed, toggleCollapse } = useSidebar();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -133,8 +135,14 @@ export default function RightGlassSidebar() {
       </nav>
 
       {/* Footer / User Info */}
-      <div className={`px-4 py-4 mt-auto border-t border-white/5 transition-opacity duration-300 ${isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-        {!isCollapsed && <p className="text-center text-[10px] text-white/20">© 2026 Brainy Education</p>}
+      <div className={`p-4 mt-auto border-t border-white/5 transition-opacity duration-300 ${isCollapsed ? "justify-center flex" : ""}`}>
+        <button
+          onClick={() => logout()}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 text-gray-400 transition-colors group cursor-pointer w-full ${isCollapsed ? 'justify-center px-2' : ''}`}
+        >
+          <LogOut size={20} />
+          {!isCollapsed && <span className="font-medium group-hover:text-red-400">تسجيل الخروج</span>}
+        </button>
       </div>
     </motion.aside>
   );

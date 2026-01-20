@@ -145,8 +145,13 @@ export default function StickyGlassMenu() {
                                     </div>
                                     <div className="p-2 border-t border-white/5">
                                         <button
-                                            onClick={() => { logout(); setIsProfileOpen(false); }}
-                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                logout();
+                                                setIsProfileOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
                                         >
                                             <LogOut size={16} />
                                             تسجيل الخروج
