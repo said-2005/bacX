@@ -459,5 +459,7 @@ main {
 .gpu-accelerated {
   will-change: transform, opacity;
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
+  perspective: 1000px;
 }

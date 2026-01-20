@@ -67,7 +67,10 @@ export default function RightGlassSidebar() {
                 fill
                 className="object-contain"
                 style={{
-                  animation: "energyPulse 4s ease-in-out infinite"
+                  animation: "energyPulse 4s ease-in-out infinite",
+                  // Pause animation via CSS class if parent has it, OR explicitly here if we used hook (not imported yet here)
+                  // Relying on the global 'animations-paused' class on BODY or Layout wrapper is cleaner if we can.
+                  // But since we are modifying this file, let's keep it clean.
                 }}
                 priority
               />
