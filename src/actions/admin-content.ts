@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient, verifyAdmin } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 // SUBJECTS
@@ -16,6 +16,8 @@ export async function getSubjects() {
 }
 
 export async function createSubject(title: string, icon: string) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
     const { error } = await adminClient
         .from('p_subjects')
@@ -39,6 +41,8 @@ export async function getLessons(subjectId: string) {
 }
 
 export async function createLesson(data: any) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
     const { error } = await adminClient
         .from('p_lessons')
@@ -49,6 +53,8 @@ export async function createLesson(data: any) {
 }
 
 export async function deleteLesson(lessonId: string) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
     const { error } = await adminClient
         .from('p_lessons')

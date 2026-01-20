@@ -16,8 +16,12 @@ export async function updateSession(request: NextRequest) {
 
     // BYPASS: If keys are missing (e.g. during nuclear reset/dev), skip auth
     if (!supabaseUrl || !supabaseKey) {
-        console.warn("⚠️ SUPABASE KEYS MISSING - Bypassing auth middleware for development ⚠️")
-        return response
+        // SECURITY OVERHAUL: Fail Closed.
+        console.error("CRITICAL: SUPABASE KEYS MISSING. BLOCKING REQUEST.");
+        return new NextResponse(
+            JSON.stringify({ error: 'Internal Server Error: Security Configuration Missing' }),
+            { status: 500, headers: { 'content-type': 'application/json' } }
+        );
     }
 
     const supabase = createServerClient(

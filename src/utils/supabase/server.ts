@@ -27,3 +27,30 @@ export async function createClient() {
         }
     )
 }
+
+export async function verifyAdmin() {
+    const supabase = await createClient();
+
+    // 1. Check Auth (Session)
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        throw new Error("Unauthorized: No active session");
+    }
+
+    // 2. Check Role (DB)
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (profileError || !profile) {
+        throw new Error("Unauthorized: Profile not found");
+    }
+
+    if (profile.role !== 'admin') {
+        throw new Error("Forbidden: Admin access required");
+    }
+
+    return { user, supabase };
+}

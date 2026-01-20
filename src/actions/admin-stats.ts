@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient, verifyAdmin } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface DashboardStats {
@@ -16,7 +16,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const adminClient = createAdminClient();
 
     // 1. Verify Admin (Basic check, middleware handles the rest mostly)
-    const { data: { user } } = await supabase.auth.getUser();
+    // 1. Verify Admin Role (STRICT)
+    await verifyAdmin();
+
+    const { data: { user } } = await supabase.auth.getUser(); // Re-fetch or ignore, verifyAdmin handles it.
     if (!user) throw new Error("Unauthorized");
 
     // 2. Fetch Students Stats

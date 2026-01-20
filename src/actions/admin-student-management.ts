@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from "@/utils/supabase/admin";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, verifyAdmin } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 // TYPES
@@ -23,6 +23,8 @@ export interface AdminStudentProp {
 
 // FETCHERS
 export async function getAllStudents(query: string = "") {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
 
     // 1. Fetch Profiles
@@ -81,6 +83,8 @@ export async function getAllStudents(query: string = "") {
 // ACTIONS
 
 export async function updateStudentProfile(id: string, data: { full_name?: string; wilaya?: string }) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
     const { error } = await adminClient
         .from('profiles')
@@ -93,6 +97,8 @@ export async function updateStudentProfile(id: string, data: { full_name?: strin
 }
 
 export async function extendSubscription(id: string, daysToAdd: number) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
 
     // 1. Get current subscription end
@@ -124,6 +130,8 @@ export async function extendSubscription(id: string, daysToAdd: number) {
 }
 
 export async function toggleStudentBan(id: string, currentStatus: boolean) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
     const { error } = await adminClient
         .from('profiles')
@@ -142,6 +150,8 @@ export async function toggleStudentBan(id: string, currentStatus: boolean) {
 }
 
 export async function logoutStudent(id: string) {
+    // SECURITY: Verify Admin Role
+    await verifyAdmin();
     const adminClient = createAdminClient();
     // Invalidate all tokens
     const { error } = await adminClient.auth.admin.signOut(id);
