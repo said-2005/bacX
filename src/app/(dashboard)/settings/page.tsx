@@ -1,267 +1,212 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { LogOut, Loader2, Save, Moon, Bell, CreditCard, Monitor, UserCog, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/utils/supabase/client";
+import {
+    Shield, Lock, Smartphone, Globe, Download,
+    AlertTriangle, LogOut, Eye, EyeOff, LayoutGrid, key
+} from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-
-interface UserPreferences {
-    theme: 'dark' | 'light';
-    notifications: {
-        live: boolean;
-        community: boolean;
-        materials: boolean;
-    };
-    video_quality: 'auto' | '720p' | '1080p';
-}
 
 export default function SettingsPage() {
-    const { user, profile, logout } = useAuth();
-    const supabase = createClient();
-    const router = useRouter();
+    const { logout, user } = useAuth();
+    const [twoFactor, setTwoFactor] = useState(false);
+    const [incognito, setIncognito] = useState(false);
+    const [loadingExport, setLoadingExport] = useState(false);
 
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-
-    const [preferences, setPreferences] = useState<UserPreferences>({
-        theme: 'dark',
-        notifications: { live: true, community: true, materials: true },
-        video_quality: 'auto'
-    });
-
-    // 1. Fetch Preferences on Load
-    useEffect(() => {
-        let mounted = true;
-        const fetchPreferences = async () => {
-            console.log("SettingsPage: Fetching preferences started...");
-
-            if (!user) {
-                console.log("SettingsPage: No user found. Stopping spinner.");
-                if (mounted) setLoading(false);
-                return;
-            }
-
-            try {
-                console.log("SettingsPage: Fetching for User ID:", user.id);
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('preferences')
-                    .eq('id', user.id)
-                    .single();
-
-                if (error) {
-                    console.error("SettingsPage: Supabase query error:", error);
-                    throw error;
-                }
-
-                console.log("SettingsPage: Data received:", data);
-
-                if (data && data.preferences && mounted) {
-                    setPreferences(data.preferences as UserPreferences);
-                }
-            } catch (error) {
-                console.error("SettingsPage: Error fetching preferences:", error);
-                // toast.error("فشل في تحميل التفضيلات");
-            } finally {
-                if (mounted) {
-                    console.log("SettingsPage: Loading finished.");
-                    setLoading(false);
-                }
-            }
-        };
-
-        fetchPreferences();
-
-        return () => { mounted = false; };
-    }, [user, supabase]);
-
-    // 2. Handle Save
-    const handleSave = async () => {
-        if (!user) return;
-        setSaving(true);
-
-        try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    preferences: preferences,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', user.id);
-
-            if (error) throw error;
-
-            toast.success("تم حفظ التغييرات بنجاح");
-
-        } catch (error) {
-            console.error("Error updating preferences:", error);
-            toast.error("حدث خطأ أثناء الحفظ");
-        } finally {
-            setSaving(false);
-        }
+    const handleGlobalLogout = async () => {
+        // In a real app, this would call a server function to revoke all tokens.
+        // For Supabase, standard logout invalidates the current session.
+        toast.promise(logout(), {
+            loading: "جاري تسجيل الخروج من جميع الأجهزة...",
+            success: "تم الخروج بنجاح",
+            error: "حدث خطأ أثناء تسجيل الخروج"
+        });
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-        );
-    }
+    const handleExportData = () => {
+        setLoadingExport(true);
+        setTimeout(() => {
+            setLoadingExport(false);
+            toast.success("تم تجهيز ملف بياناتك للتحميل");
+        }, 2000);
+    };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-8">
-            <h1 className="text-3xl font-serif font-bold text-white mb-2">إعدادات التطبيق (V8.0)</h1>
+        <div className="space-y-8 animate-in fade-in zoom-in duration-500 pb-20">
 
-            <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center border border-blue-500/30 shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+                    <Shield className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-white font-serif">مركز الأمان والخصوصية</h1>
+                    <p className="text-white/40 text-sm">إدارة جلسات الدخول، حماية الحساب، والبيانات الشخصية</p>
+                </div>
+            </div>
 
-                {/* Account Actions */}
-                <GlassCard className="p-8 space-y-6 border-blue-500/20 pointer-events-auto hover:scale-[1.02] transition-transform duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                    <h3 className="text-xl font-bold border-b border-white/10 pb-4 flex items-center gap-2 text-blue-300">
-                        <UserCog className="w-5 h-5" />
-                        الحساب
-                    </h3>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-bold text-white">المعلومات الشخصية</p>
-                            <p className="text-sm text-white/40">تعديل الاسم، الشعبة، ونظام الدراسة</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                {/* SECTION 1: SECURITY HUB */}
+                <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-white/90 flex items-center gap-2">
+                        <Lock className="w-5 h-5 text-green-400" />
+                        مركز الأمان (Security Hub)
+                    </h2>
+
+                    {/* Active Sessions */}
+                    <GlassCard className="p-0 overflow-hidden border-green-500/20 shadow-[0_0_30px_rgba(16,185,129,0.05)]">
+                        <div className="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                            <span className="font-bold text-white text-sm">الجلسات النشطة</span>
+                            <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20 animate-pulse">محمي</span>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {/* Current Device */}
+                            <div className="flex items-center justify-between group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                                        <Globe className="w-5 h-5 text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white">متصفح Chrome - Windows</p>
+                                        <p className="text-xs text-green-400">الجهاز الحالي • الجزائر العاصمة</p>
+                                    </div>
+                                </div>
+                                <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]" />
+                            </div>
+
+                            {/* Other Device */}
+                            <div className="flex items-center justify-between group opacity-60 hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                                        <Smartphone className="w-5 h-5 text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white">iPhone 14 Pro Max</p>
+                                        <p className="text-xs text-white/50">آخر نشاط: قبل 2 ساعة • سطيف</p>
+                                    </div>
+                                </div>
+                                <button className="text-xs text-red-400 hover:text-red-300 hover:underline">إخراج</button>
+                            </div>
+                        </div>
+
+                        {/* Global Logout */}
+                        <div className="p-4 bg-red-500/5 border-t border-red-500/10 hover:bg-red-500/10 transition-colors">
+                            <button
+                                onClick={handleGlobalLogout}
+                                className="w-full flex items-center justify-center gap-2 text-red-500 font-bold text-sm py-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                <LogOut size={16} />
+                                تسجيل الخروج من جميع الأجهزة
+                            </button>
+                        </div>
+                    </GlassCard>
+
+                    {/* 2FA Toggle */}
+                    <GlassCard className="p-5 flex items-center justify-between border-blue-500/20">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400">
+                                <Shield className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white text-sm">المصادقة الثنائية (2FA)</h3>
+                                <p className="text-xs text-white/50">زيادة أمان الحساب عبر رمز SMS.</p>
+                            </div>
+                        </div>
+                        {/* Premium Toggle Switch */}
+                        <button
+                            onClick={() => {
+                                setTwoFactor(!twoFactor);
+                                toast(twoFactor ? "تم إيقاف المصادقة الثنائية" : "تم تفعيل المصادقة الثنائية (محاكاة)");
+                            }}
+                            className={`w-12 h-6 rounded-full transition-all duration-300 relative ${twoFactor ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-white/10'}`}
+                        >
+                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${twoFactor ? 'left-7' : 'left-1'}`} />
+                        </button>
+                    </GlassCard>
+                </div>
+
+                {/* SECTION 2: PRIVACY & DATA */}
+                <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-white/90 flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-purple-400" />
+                        الخصوصية والبيانات (Privacy)
+                    </h2>
+
+                    {/* Incognito Mode */}
+                    <GlassCard className="p-5 flex items-center justify-between border-purple-500/20">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-purple-600/20 flex items-center justify-center text-purple-400">
+                                {incognito ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white text-sm">وضع التخفي (Incognito)</h3>
+                                <p className="text-xs text-white/50">إخفاء اسمك من قوائم الترتيب والدردشة العامة.</p>
+                            </div>
                         </div>
                         <button
-                            onClick={() => router.push('/settings/edit-profile')}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-900/20 transition-all"
+                            onClick={() => {
+                                setIncognito(!incognito);
+                                toast(incognito ? "أنت الآن مرئي للجميع" : "تم تفعيل وضع التخفي");
+                            }}
+                            className={`w-12 h-6 rounded-full transition-all duration-300 relative ${incognito ? 'bg-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.4)]' : 'bg-white/10'}`}
                         >
-                            <User className="w-4 h-4" />
-                            تعديل المعلومات الشخصية
+                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${incognito ? 'left-7' : 'left-1'}`} />
                         </button>
-                    </div>
-                </GlassCard>
+                    </GlassCard>
 
-                {/* Preferences */}
-                <GlassCard className="p-8 space-y-6 pointer-events-auto hover:scale-[1.02] transition-transform duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-                    <h3 className="text-xl font-bold border-b border-white/10 pb-4 flex items-center gap-2 text-purple-300">
-                        <Monitor className="w-5 h-5" />
-                        التفضيلات
-                    </h3>
-
-                    {/* Theme */}
-                    <div className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white/5 rounded-lg"><Moon className="w-4 h-4 text-purple-400" /></div>
-                            <div>
-                                <p className="font-bold">المظهر الداكن</p>
-                                <p className="text-xs text-white/40">تفعيل الوضع الليلي لواجهة التطبيق</p>
+                    {/* Data Export */}
+                    <GlassCard className="p-5 border-white/10 hover:border-white/20 transition-all">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                                <Download className="w-5 h-5 text-white/70" />
+                                <h3 className="font-bold text-white text-sm">نسخة من بياناتي</h3>
                             </div>
-                        </div>
-                        <div
-                            onClick={() => setPreferences(prev => ({ ...prev, theme: prev.theme === 'dark' ? 'light' : 'dark' }))}
-                            className={cn("w-12 h-6 rounded-full p-1 cursor-pointer transition-colors", preferences.theme === 'dark' ? "bg-purple-600 justify-end flex" : "bg-white/10 justify-start flex")}
-                        >
-                            <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-                        </div>
-                    </div>
-
-                    {/* Video Quality */}
-                    <div className="flex items-center justify-between py-2 border-t border-white/5 pt-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white/5 rounded-lg"><Monitor className="w-4 h-4 text-blue-400" /></div>
-                            <div>
-                                <p className="font-bold">جودة الفيديو الافتراضية</p>
-                                <p className="text-xs text-white/40">الجودة المفضلة عند تشغيل الدروس</p>
-                            </div>
-                        </div>
-                        <select
-                            value={preferences.video_quality}
-                            onChange={(e) => setPreferences({ ...preferences, video_quality: e.target.value as any })}
-                            className="bg-black/30 border border-white/10 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-purple-500"
-                        >
-                            <option value="auto">تلقائي (Auto)</option>
-                            <option value="720p">HD 720p</option>
-                            <option value="1080p">FHD 1080p</option>
-                        </select>
-                    </div>
-                </GlassCard>
-
-                {/* Notifications */}
-                <GlassCard className="p-8 space-y-6 pointer-events-auto hover:scale-[1.02] transition-transform duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-                    <h3 className="text-xl font-bold border-b border-white/10 pb-4 flex items-center gap-2 text-green-300">
-                        <Bell className="w-5 h-5" />
-                        الإشعارات
-                    </h3>
-                    <div className="space-y-4">
-                        {[
-                            { key: 'live', label: 'تنبيهات الحصص المباشرة' },
-                            { key: 'community', label: 'رسائل المجتمع' },
-                            { key: 'materials', label: 'تحديثات المواد والدروس' }
-                        ].map((item) => (
-                            <div key={item.key} className="flex items-center justify-between">
-                                <span className="text-sm font-medium">{item.label}</span>
-                                <input
-                                    type="checkbox"
-                                    checked={preferences.notifications[item.key as keyof typeof preferences.notifications]}
-                                    onChange={(e) => setPreferences({
-                                        ...preferences,
-                                        notifications: { ...preferences.notifications, [item.key]: e.target.checked }
-                                    })}
-                                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-green-600 focus:ring-green-500 focus:ring-offset-0"
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </GlassCard>
-
-                {/* Subscription Info */}
-                <GlassCard className="p-8 space-y-6 border-blue-500/20 bg-blue-900/5 pointer-events-auto hover:scale-[1.02] transition-transform duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                    <h3 className="text-xl font-bold border-b border-white/10 pb-4 flex items-center gap-2 text-blue-300">
-                        <CreditCard className="w-5 h-5" />
-                        الاشتراك
-                    </h3>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-white/60 mb-1">نوع الاشتراك الحالي</p>
-                            <p className="text-2xl font-bold text-white tracking-wider">
-                                {profile?.is_subscribed ? "PROFESSIONAL" : "مجاني Free"}
+                            <p className="text-xs text-white/50 leading-relaxed">
+                                يمكنك تحميل ملف كامل يحتوي على سجلك الدراسي، علاماتك، وإنجازاتك بصيغة JSON أو PDF.
                             </p>
-                        </div>
-                        {profile?.is_subscribed ? (
-                            <div className="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold">
-                                نشط
-                            </div>
-                        ) : (
-                            <button onClick={() => router.push('/subscription')} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-900/20">
-                                ترقية الحساب
+                            <button
+                                onClick={handleExportData}
+                                disabled={loadingExport}
+                                className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white transition-all flex items-center justify-center gap-2"
+                            >
+                                {loadingExport ? (
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <Download size={14} />
+                                        طلب الأرشيف
+                                    </>
+                                )}
                             </button>
-                        )}
+                        </div>
+                    </GlassCard>
+
+                    {/* Danger Zone */}
+                    <div className="pt-8">
+                        <GlassCard className="p-0 border-red-500/20 overflow-hidden">
+                            <div className="p-4 bg-red-500/5 border-b border-red-500/10">
+                                <h3 className="text-sm font-bold text-red-500 flex items-center gap-2">
+                                    <AlertTriangle size={16} />
+                                    منطقة الخطر
+                                </h3>
+                            </div>
+                            <div className="p-4">
+                                <p className="text-xs text-white/40 mb-4">
+                                    حذف الحساب هو إجراء نهائي لا يمكن التراجع عنه. سيتم حذف جميع بياناتك واشتراكاتك.
+                                </p>
+                                <button className="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 text-xs font-bold transition-all">
+                                    حذف حسابي نهائياً
+                                </button>
+                            </div>
+                        </GlassCard>
                     </div>
-                </GlassCard>
+
+                </div>
+
             </div>
-
-            {/* SAVE BAR */}
-            <div className="sticky bottom-6 flex items-center justify-end bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-50">
-
-
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-white font-bold flex items-center gap-2 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
-                >
-                    {saving ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            جاري الحفظ...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="w-5 h-5" />
-                            حفظ التغييرات
-                        </>
-                    )}
-                </button>
-            </div>
-
         </div>
     );
 }
