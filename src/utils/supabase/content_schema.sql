@@ -88,7 +88,7 @@ insert into public.lessons (id, subject_id, title, duration) values
 -- 6. User Progress Table
 create table public.user_progress (
   user_id uuid references auth.users(id) on delete cascade not null,
-  lesson_id text references public.lessons(id) on delete cascade not null,
+  lesson_id uuid references public.lessons(id) on delete cascade not null,
   is_completed boolean default false,
   completed_at timestamp with time zone,
   last_watched_position integer default 0,

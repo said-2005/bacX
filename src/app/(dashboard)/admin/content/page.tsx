@@ -122,7 +122,7 @@ export default function ContentManagerPage() {
                 const { error } = await supabase
                     .from('lessons')
                     .insert([{
-                        id: `cus-${Date.now()}`, // Simple ID gen
+                        id: crypto.randomUUID(), // Use standard UUID
                         subject_id: activeSubjectId,
                         title,
                         duration,
