@@ -31,7 +31,12 @@ export function LandingNavbar() {
             <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
                 {/* Right Side: Brand */}
                 <div className="relative group select-none flex items-center gap-6 z-20">
-                    <BrainyLogo variant="full" className="h-[35px] md:h-[48px] w-auto aspect-square transition-all duration-300 ease-in-out drop-shadow-xl" />
+                    <img
+                        src="/images/brainy-logo-black.png"
+                        alt="Brainy"
+                        className="h-[35px] md:h-[50px] w-auto object-contain transition-all duration-300 ease-in-out drop-shadow-xl"
+                        style={{ filter: 'invert(1) brightness(2)' }}
+                    />
                 </div>
 
                 {/* Center: Navigation Pill */}
