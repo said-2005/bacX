@@ -29,6 +29,11 @@ export default function StudentsPage() {
                     page,
                     statusFilter: filter
                 });
+
+                if (res.error) {
+                    throw new Error(res.error);
+                }
+
                 setStudents(res.students);
                 setTotalCount(res.totalCount);
             } catch (err: any) {

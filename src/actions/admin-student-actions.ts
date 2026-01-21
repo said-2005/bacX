@@ -79,9 +79,14 @@ export async function getStudents({
             totalPages: Math.ceil((count || 0) / pageSize)
         };
 
-    } catch (err) {
+    } catch (err: any) {
         console.error("DEBUG: Error fetching students:", err);
-        throw err;
+        return {
+            students: [],
+            totalCount: 0,
+            totalPages: 0,
+            error: err.message || String(err)
+        };
     }
 }
 
