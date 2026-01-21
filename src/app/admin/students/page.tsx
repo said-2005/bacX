@@ -1,33 +1,48 @@
-import { getStudents } from "@/actions/admin-student-actions";
+"use client";
+
+import { useState, useEffect } from "react";
+import { getStudents, Student } from "@/actions/admin-student-actions";
 import { StudentsTable } from "@/components/admin/students/StudentsTable";
 import { AdminEmptyState } from "@/components/admin/ui/AdminEmptyState";
+import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-export const metadata = {
-    title: "Admin - Student Management",
-};
+export default function StudentsPage() {
+    const searchParams = useSearchParams();
+    const query = searchParams.get("q") || "";
+    const page = Number(searchParams.get("page")) || 1;
+    const filter = (searchParams.get("filter") as 'all' | 'active' | 'banned' | 'vip') || "all";
 
-interface SearchParams {
-    q?: string;
-    page?: string;
-    filter?: 'all' | 'active' | 'banned' | 'vip';
-}
+    const [students, setStudents] = useState<Student[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
-export default async function StudentsPage(props: { searchParams: Promise<SearchParams> }) {
-    const params = await props.searchParams;
+    useEffect(() => {
+        async function fetchData() {
+            setLoading(true);
+            setError(false);
+            try {
+                // Mimic the student app's non-blocking fetch
+                const res = await getStudents({
+                    query,
+                    page,
+                    statusFilter: filter
+                });
+                setStudents(res.students);
+                setTotalCount(res.totalCount);
+            } catch (err) {
+                console.error("Failed to fetch students", err);
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
+        }
 
-    const query = params.q || "";
-    const page = Number(params.page) || 1;
-    const filter = params.filter || "all";
+        fetchData();
+    }, [query, page, filter]);
 
-    // Data Fetching
-    let data;
-    try {
-        data = await getStudents({
-            query,
-            page,
-            statusFilter: filter
-        });
-    } catch (error) {
+    if (error) {
         return (
             <AdminEmptyState
                 title="Error Fetching Data"
@@ -38,20 +53,25 @@ export default async function StudentsPage(props: { searchParams: Promise<Search
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Students</h1>
-                    <p className="text-gray-400">Manage user accounts and subscriptions</p>
+                    <h1 className="text-3xl font-bold text-white font-tajawal">الطلاب (Students)</h1>
+                    <p className="text-gray-400 font-tajawal">إدارة حسابات واشتراكات الطلاب</p>
                 </div>
-
-                {/* We can put filter controls here later which update URL params */}
             </div>
 
-            <StudentsTable
-                initialStudents={data.students}
-                totalCount={data.totalCount}
-            />
+            {loading ? (
+                <div className="flex flex-col items-center justify-center p-20 space-y-4">
+                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                    <p className="text-white/50 animate-pulse font-tajawal">جاري تحميل داتا الطلاب...</p>
+                </div>
+            ) : (
+                <StudentsTable
+                    initialStudents={students}
+                    totalCount={totalCount}
+                />
+            )}
         </div>
     );
 }
