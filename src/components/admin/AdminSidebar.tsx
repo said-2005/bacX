@@ -76,8 +76,8 @@ export function AdminSidebar() {
                             AD
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white">Administrator</span>
-                            <span className="text-xs text-gray-500">Super User</span>
+                            <span className="text-sm font-bold text-white">المسؤول</span>
+                            <span className="text-xs text-gray-500">مشرف النظام</span>
                         </div>
                     </div>
                 </div>

@@ -31,17 +31,17 @@ export function AdminHeader() {
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                         </span>
-                        System Operational
+                        النظام يعمل (Operational)
                     </div>
                 </div>
 
                 {/* Center: Global Search */}
                 <div className="relative hidden w-96 md:block">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                     <input
                         type="text"
-                        placeholder="Search students, courses..."
-                        className="h-10 w-full rounded-full border border-white/10 bg-white/5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:border-blue-500/50 focus:bg-white/10 focus:outline-none focus:ring-0"
+                        placeholder="البحث عن الطلاب، الدروس..."
+                        className="h-10 w-full rounded-full border border-white/10 bg-white/5 pr-10 pl-4 text-sm text-white placeholder-gray-500 focus:border-blue-500/50 focus:bg-white/10 focus:outline-none focus:ring-0 text-right"
                     />
                 </div>
 
@@ -54,25 +54,25 @@ export function AdminHeader() {
                             className="flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-2 text-xs font-bold text-pink-400 hover:bg-pink-500/20 transition-colors"
                         >
                             <LinkIcon className="h-4 w-4" />
-                            Live Link
+                            رابط البث (Live Link)
                         </button>
 
                         {liveLinkOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-white/10 bg-black/90 p-4 shadow-2xl backdrop-blur-xl">
-                                <h4 className="mb-2 text-sm font-bold text-white">Update Global Live Link</h4>
+                            <div className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-white/10 bg-black/90 p-4 shadow-2xl backdrop-blur-xl">
+                                <h4 className="mb-2 text-sm font-bold text-white text-right">تحديث رابط البث العام</h4>
                                 <div className="flex gap-2">
-                                    <input
-                                        value={liveLink}
-                                        onChange={(e) => setLiveLink(e.target.value)}
-                                        className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none"
-                                        placeholder="https://zoom.us/..."
-                                    />
                                     <button
                                         onClick={handleUpdateLiveLink}
                                         className="rounded-lg bg-pink-600 px-3 py-2 text-white hover:bg-pink-700"
                                     >
                                         <Save className="h-4 w-4" />
                                     </button>
+                                    <input
+                                        value={liveLink}
+                                        onChange={(e) => setLiveLink(e.target.value)}
+                                        className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none text-right"
+                                        placeholder="https://zoom.us/..."
+                                    />
                                 </div>
                             </div>
                         )}
@@ -89,7 +89,7 @@ export function AdminHeader() {
                         onClick={logout}
                         className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
                     >
-                        Sign Out
+                        تسجيل الخروج (Sign Out)
                     </button>
                 </div>
             </div>
