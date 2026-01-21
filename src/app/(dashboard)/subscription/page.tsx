@@ -12,7 +12,18 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
 // ... imports
+
 import { getActivePlans, SubscriptionPlan } from "@/actions/admin-plans";
+
+interface BillingTransaction {
+    id: string;
+    user_id: string;
+    plan_type: string;
+    amount: number;
+    status: 'completed' | 'pending' | 'failed';
+    date: string;
+}
+
 
 export default function SubscriptionPage() {
     const isVisible = usePageVisibility();
