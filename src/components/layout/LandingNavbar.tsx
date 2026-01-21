@@ -31,7 +31,7 @@ export function LandingNavbar() {
             <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
                 {/* Right Side: Brand */}
                 <div className="relative group select-none flex items-center gap-6 z-20">
-                    <BrainyLogo variant="full" className="h-[4rem] w-auto drop-shadow-xl" />
+                    <BrainyLogo variant="full" className="h-[4rem] w-40 drop-shadow-xl" />
                 </div>
 
                 {/* Center: Navigation Pill */}
