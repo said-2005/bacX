@@ -4,16 +4,14 @@ import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import {
     Crown, Clock, Check, Zap, Star,
-    Download, ArrowUpRight, Gift, ScrollText, UploadCloud
+    Download, ArrowUpRight, Gift, ScrollText
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePageVisibility } from "@/hooks/usePageVisibility";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-
-// ... imports
-
 import { getActivePlans, SubscriptionPlan } from "@/actions/admin-plans";
+import Link from "next/link";
 
 interface BillingTransaction {
     id: string;
@@ -23,7 +21,6 @@ interface BillingTransaction {
     status: 'completed' | 'pending' | 'failed';
     date: string;
 }
-
 
 export default function SubscriptionPage() {
     const isVisible = usePageVisibility();
@@ -36,7 +33,7 @@ export default function SubscriptionPage() {
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [history, setHistory] = useState<BillingTransaction[]>([]);
 
-    // NEW: Dynamic Plans State
+    // Dynamic Plans State
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [loadingPlans, setLoadingPlans] = useState(true);
 
@@ -74,13 +71,13 @@ export default function SubscriptionPage() {
         fetchData();
     }, [user, supabase]);
 
-    // Computed Real Plan State (Keep existing logic)
+    // Computed Real Plan State
     const currentPlan = profile?.is_subscribed
         ? {
             name: "باقة VIP المميزة",
             type: "Premium Member",
-            expiry: "30 جوان 2026",
-            progress: 45
+            expiry: profile.subscription_end_date ? new Date(profile.subscription_end_date).toLocaleDateString('ar-DZ') : "غير محدود",
+            progress: 45 // TODO: Calculate dynamically based on dates
         }
         : {
             name: "الباقة المجانية",
@@ -89,12 +86,25 @@ export default function SubscriptionPage() {
             progress: 100
         };
 
-    const handleApplyPromo = async () => { /* ... existing ... */ };
+    const handleApplyPromo = async () => {
+        if (!promoCode) return;
+        setIsApplying(true);
+        // Mock promo implementation
+        setTimeout(() => {
+            if (promoCode === "BAC2025") {
+                toast.success("تم تفعيل كود الخصم بنجاح! استمتع بخصم 20%");
+            } else {
+                toast.error("كود الخصم غير صالح");
+            }
+            setIsApplying(false);
+            setPromoCode("");
+        }, 1500);
+    };
 
     return (
         <div className={`space-y-12 animate-in fade-in zoom-in duration-500 pb-20 ${!isVisible ? "animations-paused" : ""}`}>
 
-            {/* Header ... (Keep existing) */}
+            {/* Header */}
             <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/30 shadow-[0_0_30px_rgba(234,179,8,0.3)] gpu-accelerated">
                     <Crown className="w-6 h-6 text-yellow-400" />
@@ -105,10 +115,7 @@ export default function SubscriptionPage() {
                 </div>
             </div>
 
-            {/* SECTION 1: CURRENT STATUS ... (Keep existing layout) */}
-            {/* ... keeping the logic for Section 1 identical to original code's "SECTION 1" ... */}
-            {/* Since replace_file_content replaces a block, I need to match the previous content exactly via Context or just replace the WHOLE SECTION 1 & 2 */}
-
+            {/* SECTION 1: Current Status & Promo */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Current Plan Card */}
                 <GlassCard className="lg:col-span-2 p-8 relative overflow-hidden flex flex-col justify-between min-h-[220px] border-yellow-500/20 backdrop-blur-3xl">
@@ -173,47 +180,6 @@ export default function SubscriptionPage() {
                         )}
                     </button>
                 </GlassCard>
-
-                {/* Upload Receipt Section */}
-                <GlassCard className="p-6 flex flex-col justify-center gap-4 lg:col-span-1">
-                    <div className="flex items-center gap-3 mb-2">
-                        <ScrollText className="text-blue-400" size={20} />
-                        <h3 className="font-bold text-white">تأكيد الدفع اليدوي</h3>
-                    </div>
-                    <p className="text-xs text-white/50 mb-2">
-                        إذا قمت بالدفع عبر بريدي موب، قم برفع صورة الوصل هنا ليتم تفعيل حسابك.
-                    </p>
-                    <div className="relative group cursor-pointer">
-                        <input
-                            type="file"
-                            accept="image/png, image/jpeg"
-                            onChange={async (e) => {
-                                // ... existing logic ...
-                                const file = e.target.files?.[0];
-                                if (!file || !user) return;
-                                const toastId = toast.loading("جاري رفع الوصل...");
-                                try {
-                                    const fileName = `${user.id}-${Date.now()}`;
-                                    const { error: uploadError } = await supabase.storage.from('receipts').upload(fileName, file);
-                                    if (uploadError) throw uploadError;
-                                    const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(fileName);
-                                    const { error: dbError } = await supabase.from('payment_requests').insert({ user_id: user.id, receipt_url: publicUrl, status: 'pending' });
-                                    if (dbError) throw dbError;
-                                    toast.success("تم رفع الوصل بنجاح! سيتم مراجعته قريباً", { id: toastId });
-                                } catch (err) {
-                                    console.error(err);
-                                    toast.error("فشل في رفع الوصل", { id: toastId });
-                                }
-                            }}
-                            className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
-                        />
-                        <div className="border md:border-2 border-dashed border-white/20 rounded-xl p-6 flex flex-col items-center justify-center text-center group-hover:bg-white/5 transition-colors">
-                            <UploadCloud className="text-white/40 mb-2 group-hover:text-blue-400 transition-colors" size={32} />
-                            <span className="text-sm text-white/60 font-medium">اضغط لرفع الصورة</span>
-                            <span className="text-sm text-white/30 mt-1">JPG, PNG only</span>
-                        </div>
-                    </div>
-                </GlassCard>
             </div>
 
             {/* SECTION 2: AVAILABLE UPGRADES - DYNAMIC */}
@@ -234,7 +200,7 @@ export default function SubscriptionPage() {
                         </div>
                     ) : (
                         plans.map((plan) => (
-                            <GlassCard key={plan.id} className="p-6 relative group border-white/10 hover:border-primary/40 transition-all duration-300">
+                            <GlassCard key={plan.id} className="p-6 relative group border-white/10 hover:border-primary/40 transition-all duration-300 flex flex-col">
                                 <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors gpu-accelerated" />
                                 <div className="relative z-10 flex flex-col h-full">
                                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 cursor-pointer hover:scale-105 transition-transform">
@@ -258,10 +224,14 @@ export default function SubscriptionPage() {
                                         ))}
                                     </div>
 
-                                    <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold transition-all flex items-center justify-center gap-2 group-hover:bg-primary group-hover:border-primary gpu-accelerated">
-                                        ترقية الآن
+                                    {/* Link to New Checkout Page */}
+                                    <Link
+                                        href={`/checkout/${plan.id}`}
+                                        className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold transition-all flex items-center justify-center gap-2 group-hover:bg-primary group-hover:border-primary gpu-accelerated mt-auto"
+                                    >
+                                        اشترك الآن
                                         <ArrowUpRight size={16} />
-                                    </button>
+                                    </Link>
                                 </div>
                             </GlassCard>
                         ))
@@ -330,7 +300,6 @@ export default function SubscriptionPage() {
                     </div>
                 </GlassCard>
             </div>
-
         </div>
     );
 }
