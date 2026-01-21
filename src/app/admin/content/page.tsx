@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import {
     LayoutGrid, BookOpen, Plus, Trash2, Edit2,
-    Video, FileText, ChevronDown, ChevronRight, File
+    Video, FileText, ChevronDown, ChevronRight, File, Loader2, UploadCloud
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePageVisibility } from "@/hooks/usePageVisibility";
@@ -40,6 +40,7 @@ export default function ContentManagerPage() {
     const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false); // [NEW] Upload Progress State
 
     useEffect(() => {
         // Relaxed role check for demo/dev if needed, but keeping admin for safety
@@ -101,13 +102,53 @@ export default function ContentManagerPage() {
         }
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            const fileName = `pdfs/${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+            const { data, error } = await supabase.storage
+                .from('lesson-materials')
+                .upload(fileName, file);
+
+            if (error) throw error;
+
+            // Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('lesson-materials')
+                .getPublicUrl(fileName);
+
+            // Update form (we need to manually manage this field or just use hidden input)
+            // Ideally we update a state or simply putting it in the hidden input is tricky without controlled component.
+            // Let's use a ref or state for the PDF URL. 
+            // Better: Update editingLesson or a temp state.
+            // Since we use native form submission, let's just populate a hidden input's value or 
+            // update a visual state.
+
+            // Hack for native form: set value of a hidden input
+            const hiddenInput = document.getElementById('pdf-url-hidden') as HTMLInputElement;
+            if (hiddenInput) {
+                hiddenInput.value = publicUrl;
+                toast.success("تم رفع الملف بنجاح");
+            }
+
+        } catch (error) {
+            console.error("Upload failed", error);
+            toast.error("فشل رفع الملف");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSaveLesson = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const title = formData.get("title") as string;
         const duration = formData.get("duration") as string;
         const video_url = formData.get("video_url") as string;
-        const pdf_url = formData.get("pdf_url") as string;
+        const pdf_url = formData.get("pdf_url") as string; // Will get from hidden input
 
         try {
             if (editingLesson) {
@@ -265,13 +306,35 @@ export default function ContentManagerPage() {
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm text-white/60 mb-1">رابط ملف PDF (اختياري)</label>
-                                    <input
-                                        name="pdf_url"
-                                        defaultValue={editingLesson?.pdf_url}
-                                        placeholder="https://example.com/file.pdf"
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500"
-                                    />
+                                    <label className="block text-sm text-white/60 mb-1">ملف الدرس (PDF)</label>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="hidden"
+                                            id="pdf-url-hidden"
+                                            name="pdf_url"
+                                            defaultValue={editingLesson?.pdf_url}
+                                        />
+                                        <label className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-dashed border-white/20 bg-white/5 hover:bg-white/10 cursor-pointer transition-all ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {uploading ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                                                    <span className="text-sm text-white/60">جاري الرفع...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UploadCloud className="w-5 h-5 text-blue-400" />
+                                                    <span className="text-sm text-white/60">اضغط لرفع ملف</span>
+                                                </>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="application/pdf"
+                                                className="hidden"
+                                                onChange={handleFileUpload}
+                                            />
+                                        </label>
+                                    </div>
+                                    <p className="text-[10px] text-white/30 mt-1">سيتم حفظ الرابط تلقائياً بعد اكتمال الرفع.</p>
                                 </div>
                             </div>
                             <div className="pt-4 flex gap-3">
