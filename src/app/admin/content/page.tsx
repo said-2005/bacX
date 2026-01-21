@@ -17,6 +17,7 @@ interface Lesson {
     duration: string;
     video_url?: string;
     pdf_url?: string;
+    type: 'lesson' | 'exercise'; // [NEW] Content Type
 }
 
 interface Subject {
@@ -148,14 +149,15 @@ export default function ContentManagerPage() {
         const title = formData.get("title") as string;
         const duration = formData.get("duration") as string;
         const video_url = formData.get("video_url") as string;
-        const pdf_url = formData.get("pdf_url") as string; // Will get from hidden input
+        const pdf_url = formData.get("pdf_url") as string;
+        const type = formData.get("type") as 'lesson' | 'exercise'; // [NEW] Get Type
 
         try {
             if (editingLesson) {
                 // Update
                 const { error } = await supabase
                     .from('lessons')
-                    .update({ title, duration, video_url, pdf_url })
+                    .update({ title, duration, video_url, pdf_url, type })
                     .eq('id', editingLesson.id);
                 if (error) throw error;
                 toast.success("تم التحديث بنجاح");
@@ -169,7 +171,8 @@ export default function ContentManagerPage() {
                         title,
                         duration,
                         video_url,
-                        pdf_url
+                        pdf_url,
+                        type: type || 'lesson'
                     }]);
                 if (error) throw error;
                 toast.success("تمت الإضافة بنجاح");
@@ -296,6 +299,31 @@ export default function ContentManagerPage() {
                                         defaultValue={editingLesson?.duration || "00:00:00"}
                                         className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500"
                                     />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm text-white/60 mb-2">نوع المحتوى</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="type"
+                                                value="lesson"
+                                                defaultChecked={editingLesson?.type === 'lesson' || !editingLesson}
+                                                className="w-4 h-4 text-blue-600 focus:ring-blue-600 bg-gray-700 border-gray-600"
+                                            />
+                                            <span className="text-white">درس (Lesson)</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="type"
+                                                value="exercise"
+                                                defaultChecked={editingLesson?.type === 'exercise'}
+                                                className="w-4 h-4 text-blue-600 focus:ring-blue-600 bg-gray-700 border-gray-600"
+                                            />
+                                            <span className="text-white">تمرين (Exercise)</span>
+                                        </label>
+                                    </div>
                                 </div>
                                 <div className="md:col-span-2">
                                     <label className="block text-sm text-white/60 mb-1">رابط الفيديو (ID or URL)</label>

@@ -31,6 +31,8 @@ export default function AdminLiveDashboard() {
     const [title, setTitle] = useState("");
     const [youtubeId, setYoutubeId] = useState("");
     const [subject, setSubject] = useState("Physics");
+    const [showArchiveModal, setShowArchiveModal] = useState(false); // [NEW]
+    const [archiveType, setArchiveType] = useState<'lesson' | 'exercise'>('lesson'); // [NEW]
 
     const handleGoLive = async () => {
         if (!title || !youtubeId) {
@@ -59,12 +61,14 @@ export default function AdminLiveDashboard() {
         setLoading(true);
         try {
             const idToArchive = currentId || youtubeId;
-            await archiveStream(idToArchive);
+            const titleToArchive = currentTitle || title || "Recorded Session";
+            await archiveStream(idToArchive, titleToArchive, subject, archiveType);
 
-            toast.success("✅ الحصة تم حفظها بنجاح في مكتبة الدروس", { position: "top-center" });
+            toast.success("✅ الحصة تم حفظها بنجاح", { position: "top-center" });
 
             setTitle("");
             setYoutubeId("");
+            setShowArchiveModal(false);
         } catch (e) {
             toast.error("حدث خطأ أثناء الأرشفة");
             console.error(e);
@@ -189,20 +193,50 @@ export default function AdminLiveDashboard() {
                                     </div>
 
                                     <Button
-                                        onClick={handleEndAndArchive}
+                                        onClick={() => setShowArchiveModal(true)}
                                         disabled={loading}
                                         variant="secondary"
                                         className="w-full max-w-md h-12 bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10"
                                     >
-                                        {loading ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            <span className="flex items-center gap-2">
-                                                <Archive className="w-4 h-4" />
-                                                إنهاء وأرشفة (End & Archive)
-                                            </span>
-                                        )}
+                                        <span className="flex items-center gap-2">
+                                            <Archive className="w-4 h-4" />
+                                            إنهاء وأرشفة (End & Archive)
+                                        </span>
                                     </Button>
+
+                                    {/* Archive Modal Overlay */}
+                                    {showArchiveModal && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                                            <GlassCard className="w-full max-w-md p-6 space-y-6 border-red-500/20">
+                                                <h3 className="text-xl font-bold text-white text-center">أرشفة البث (Save Stream)</h3>
+                                                <p className="text-center text-zinc-400">كيف تريد حفظ هذا البث في المكتبة؟</p>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <button
+                                                        onClick={() => setArchiveType('lesson')}
+                                                        className={`p-4 rounded-xl border transition-all ${archiveType === 'lesson' ? 'bg-blue-600/20 border-blue-500 text-white' : 'bg-black/20 border-white/10 text-zinc-400'}`}
+                                                    >
+                                                        <span className="block font-bold mb-1">درس (Lesson)</span>
+                                                        <span className="text-xs opacity-60">شرح نظري</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setArchiveType('exercise')}
+                                                        className={`p-4 rounded-xl border transition-all ${archiveType === 'exercise' ? 'bg-purple-600/20 border-purple-500 text-white' : 'bg-black/20 border-white/10 text-zinc-400'}`}
+                                                    >
+                                                        <span className="block font-bold mb-1">تمرين (Exercise)</span>
+                                                        <span className="text-xs opacity-60">حل تمارين</span>
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex gap-3">
+                                                    <Button variant="secondary" onClick={() => setShowArchiveModal(false)} className="flex-1">إلغاء</Button>
+                                                    <Button onClick={handleEndAndArchive} disabled={loading} className="flex-1 bg-red-600 hover:bg-red-500">
+                                                        {loading ? <Loader2 className="animate-spin" /> : "تأكيد وإنهاء"}
+                                                    </Button>
+                                                </div>
+                                            </GlassCard>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
                         </AnimatePresence>

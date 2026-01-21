@@ -21,6 +21,9 @@ interface SubjectViewProps {
 export default function SubjectView({ subject, lessons, isSubscribed }: SubjectViewProps) {
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
     const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
+    const [activeTab, setActiveTab] = useState<'all' | 'lesson' | 'exercise'>('lesson'); // Initial tab logic? Or just sectioned lists. User asked for sections.
+    // "Divide the content area into two clear sections" -> Sidebar list with headers.
+
 
     // Set initial lesson
     useEffect(() => {
@@ -80,62 +83,133 @@ export default function SubjectView({ subject, lessons, isSubscribed }: SubjectV
                         )}
                     </div>
 
-                    {/* Active Lesson Info */}
-                    <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-1">{activeLesson.title}</h2>
-                            <p className="text-white/50 text-sm">مدة الدرس: {activeLesson.duration}</p>
-                        </div>
-                        {activeLesson.pdf_url && (
+                    {/* PDF Download Button - Moved Here directly under player */}
+                    {activeLesson.pdf_url && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                             <a
                                 href={activeLesson.pdf_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors font-bold border border-white/5"
+                                className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
                             >
-                                <FileText size={20} className="text-blue-400" />
-                                تحميل الملف (PDF)
+                                <div className="p-2 bg-blue-500/20 rounded-lg group-hover:scale-110 transition-transform">
+                                    <FileText size={20} className="text-blue-400" />
+                                </div>
+                                <div className="text-right">
+                                    <span className="block text-white font-bold">ملف الدرس (PDF)</span>
+                                    <span className="text-xs text-white/50">اضغط للتحميل والمتابعة</span>
+                                </div>
                             </a>
-                        )}
+                        </div>
+                    )}
+
+                    {/* Active Lesson Info */}
+                    <div className="p-4 flex flex-col justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white mb-2">{activeLesson.title}</h2>
+                            <p className="text-white/50 text-sm flex items-center gap-2">
+                                <Clock size={14} />
+                                مدة الدرس: {activeLesson.duration}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Column: Lesson List */}
-                <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-white px-2">قائمة الدروس</h3>
-                    <div className="space-y-2 h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                        {lessons.map((lesson) => (
-                            <button
-                                key={lesson.id}
-                                onClick={() => setActiveLessonId(lesson.id)}
-                                disabled={!isSubscribed && !lesson.is_free} // Allow free lessons if we had them
-                                className={`w-full flex items-center gap-4 p-4 rounded-xl text-right transition-all border
-                                    ${activeLessonId === lesson.id
-                                        ? "bg-blue-600/20 border-blue-500/50 text-white"
-                                        : "bg-white/5 border-transparent hover:bg-white/10 text-white/70"
-                                    }
-                                    ${!isSubscribed ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-                                `}
-                            >
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
-                                    ${activeLessonId === lesson.id ? "bg-blue-500 text-white" : "bg-white/10 text-white/50"}
-                                `}>
-                                    {isSubscribed ? <PlayCircle size={20} /> : <Lock size={16} />}
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-sm line-clamp-1">{lesson.title}</h4>
-                                    <span className="text-xs text-white/30 flex items-center gap-1 mt-1">
-                                        <Clock size={10} /> {lesson.duration}
-                                        {completedLessonIds.has(lesson.id) && (
-                                            <span className="mr-2 text-green-400 flex items-center gap-1 font-bold">
-                                                <CheckCircle size={10} /> مكتمل
+                {/* Right Column: Lesson List (Split into Sections) */}
+                <div className="space-y-6 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+
+                    {/* Section 1: Lessons */}
+                    <div className="space-y-3">
+                        <h3 className="text-lg font-bold text-blue-400 px-2 flex items-center gap-2">
+                            <PlayCircle size={18} />
+                            الدروس (Lessons)
+                        </h3>
+                        <div className="space-y-2">
+                            {lessons.filter((l: any) => !l.type || l.type === 'lesson').map((lesson) => (
+                                <button
+                                    key={lesson.id}
+                                    onClick={() => setActiveLessonId(lesson.id)}
+                                    disabled={!isSubscribed && !lesson.is_free}
+                                    className={`w-full flex items-center gap-4 p-3 rounded-xl text-right transition-all border
+                                        ${activeLessonId === lesson.id
+                                            ? "bg-blue-600/20 border-blue-500/50 text-white"
+                                            : "bg-white/5 border-transparent hover:bg-white/10 text-white/70"
+                                        }
+                                        ${!isSubscribed ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                                    `}
+                                >
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0
+                                        ${activeLessonId === lesson.id ? "bg-blue-500 text-white" : "bg-white/10 text-white/50"}
+                                    `}>
+                                        {isSubscribed ? <PlayCircle size={16} /> : <Lock size={14} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-bold text-sm truncate">{lesson.title}</h4>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-[10px] text-white/30 flex items-center gap-1">
+                                                <Clock size={10} /> {lesson.duration}
                                             </span>
-                                        )}
-                                    </span>
-                                </div>
-                            </button>
-                        ))}
+                                            {completedLessonIds.has(lesson.id) && (
+                                                <span className="text-green-400 text-[10px] flex items-center gap-1 font-bold">
+                                                    <CheckCircle size={10} />
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                            {lessons.filter((l: any) => !l.type || l.type === 'lesson').length === 0 && (
+                                <p className="text-white/30 text-xs px-4">لا توجد دروس مضافة.</p>
+                            )}
+                        </div>
                     </div>
+
+                    {/* Section 2: Exercises */}
+                    <div className="space-y-3 pt-6 border-t border-white/5">
+                        <h3 className="text-lg font-bold text-purple-400 px-2 flex items-center gap-2">
+                            <FileText size={18} />
+                            التمارين (Exercises)
+                        </h3>
+                        <div className="space-y-2">
+                            {lessons.filter((l: any) => l.type === 'exercise').map((lesson) => (
+                                <button
+                                    key={lesson.id}
+                                    onClick={() => setActiveLessonId(lesson.id)}
+                                    disabled={!isSubscribed && !lesson.is_free}
+                                    className={`w-full flex items-center gap-4 p-3 rounded-xl text-right transition-all border
+                                        ${activeLessonId === lesson.id
+                                            ? "bg-purple-600/20 border-purple-500/50 text-white"
+                                            : "bg-white/5 border-transparent hover:bg-white/10 text-white/70"
+                                        }
+                                        ${!isSubscribed ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                                    `}
+                                >
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0
+                                        ${activeLessonId === lesson.id ? "bg-purple-500 text-white" : "bg-white/10 text-white/50"}
+                                    `}>
+                                        {isSubscribed ? <PlayCircle size={16} /> : <Lock size={14} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-bold text-sm truncate">{lesson.title}</h4>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-[10px] text-white/30 flex items-center gap-1">
+                                                <Clock size={10} /> {lesson.duration}
+                                            </span>
+                                            {completedLessonIds.has(lesson.id) && (
+                                                <span className="text-green-400 text-[10px] flex items-center gap-1 font-bold">
+                                                    <CheckCircle size={10} />
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                            {lessons.filter((l: any) => l.type === 'exercise').length === 0 && (
+                                <p className="text-white/30 text-xs px-4">لا توجد تمارين مضافة.</p>
+                            )}
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

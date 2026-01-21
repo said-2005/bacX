@@ -43,7 +43,7 @@ export async function toggleLiveStream(data: { isLive: boolean; youtubeId: strin
     }
 }
 
-export async function archiveStream(youtubeId: string) {
+export async function archiveStream(youtubeId: string, title: string, subject: string, type: 'lesson' | 'exercise') {
     try {
         const admin = await requireAdmin();
 
@@ -51,18 +51,27 @@ export async function archiveStream(youtubeId: string) {
         await admin.from('live_sessions')
             .update({ status: 'ended', ended_at: new Date().toISOString() })
             .eq('youtube_id', youtubeId);
-        // Better to use ID if we had it, but youtubeId is unique enough for active stream context usually.
 
-        // 2. Add to lessons library (if archiving means adding to lessons)
-        // Or maybe there is an 'archives' table?
-        // Based on AdminLiveDashboard "Archive in lessons library", we should add to `lessons` table.
-        // But lessons need unit_id...
-        // For now, let's just mark it ended.
-        // If we need to add to lessons, we might need a "Live Archive" unit or similar.
-        // I will just return success for now as "Archived" state might just mean "Ended" in live_sessions.
+        // 2. Add to Lessons Library
+        // We need the subject_id. Since we pass 'Physics', 'Math' strings from dashboard, we should lookup ID.
+        // For now, let's assume the passed subject matches the ID or handle mapping.
+        // In database seed, subject IDs are 'math', 'physics', etc (lowercase).
+        const subjectId = subject.toLowerCase();
+
+        const { error } = await admin.from('lessons').insert({
+            id: crypto.randomUUID(),
+            subject_id: subjectId,
+            title: title || "Live Session Archive",
+            duration: "Recorded Live", // Placeholder
+            video_url: youtubeId,
+            type: type
+        });
+
+        if (error) throw error;
 
         return { success: true };
     } catch (e) {
+        console.error(e);
         return { success: false, message: String(e) };
     }
 }
