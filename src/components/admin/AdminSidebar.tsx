@@ -20,6 +20,7 @@ const navItems = [
     { name: 'Students', href: '/admin/students', icon: Users },
     { name: 'Finance', href: '/admin/payments', icon: CreditCard },
     { name: 'Content', href: '/admin/content', icon: BookOpen },
+    { name: 'Go Live', href: '/admin/live', icon: Radio },
     { name: 'Broadcast', href: '/admin/broadcast', icon: Radio },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
