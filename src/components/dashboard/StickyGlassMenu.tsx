@@ -54,7 +54,7 @@ export default function StickyGlassMenu() {
                     <div className="flex items-center gap-2">
                         {/* Logo / Home Link */}
                         <Link href="/dashboard" className="flex items-center gap-3 group">
-                            <div className="relative w-10 h-10 transition-transform duration-300 group-hover:scale-110">
+                            <div className="relative h-[35px] md:h-[48px] w-auto aspect-square transition-all duration-300 ease-in-out group-hover:scale-110">
                                 <img
                                     src="/images/brainy-logo-black.png"
                                     alt="Brainy"

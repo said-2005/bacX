@@ -60,10 +60,10 @@ export default function RightGlassSidebar() {
             layout
             className="relative z-10 flex items-center justify-center gpu-accelerated"
             animate={{
-              width: isCollapsed ? 50 : 176, // Reduced from 220 to 176 (w-44)
-              height: isCollapsed ? 50 : 176
+              width: 40,
+              height: 40
             }}
-            transition={{ duration: 0.5, ease: "backOut" }}
+            transition={{ duration: 0.3 }}
           >
             <Link
               href="/dashboard"
