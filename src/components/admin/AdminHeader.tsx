@@ -1,3 +1,5 @@
+"use client";
+
 import { Bell, Search, Link as LinkIcon, Save, Circle, LogOut, User, ChevronDown } from "lucide-react";
 import { AdminGlassCard } from "./ui/AdminGlassCard";
 import { useState, useRef, useEffect } from "react";
