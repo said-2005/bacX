@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CreditCard, FileVideo, LogOut, Shield, BookOpen, Tag } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, FileVideo, Shield, BookOpen, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -17,7 +17,8 @@ const adminNavItems = [
 
 export function AdminSidebar() {
     const pathname = usePathname();
-    const { logout } = useAuth();
+    // const { logout } = useAuth(); // Unused here now
+
 
     return (
         <aside className="fixed right-0 top-0 h-screen w-64 bg-white/90 backdrop-blur-xl border-l border-blue-100/50 flex flex-col z-50 transition-transform duration-300 shadow-xl shadow-blue-900/5">

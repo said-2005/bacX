@@ -1,9 +1,7 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, Video, ChevronRight, ChevronLeft, Settings, User, LogOut, Sparkles } from "lucide-react";
+import { Home, BookOpen, Video, ChevronRight, ChevronLeft, Settings, User, Sparkles } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -15,7 +13,7 @@ export default function RightGlassSidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleCollapse } = useSidebar();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const { user, profile, logout } = useAuth();
+  const { user, profile } = useAuth();
 
   const navItems = [
     { name: "الصفحة الرئيسية", href: "/dashboard", icon: Home },
@@ -24,15 +22,6 @@ export default function RightGlassSidebar() {
     { name: "الملف الشخصي", href: "/profile", icon: User },
     { name: "الإعدادات", href: "/settings", icon: Settings },
   ];
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("تم تسجيل الخروج");
-    } catch (e) {
-      toast.error("خطأ في تسجيل الخروج");
-    }
-  };
 
   return (
     <motion.aside
@@ -160,14 +149,13 @@ export default function RightGlassSidebar() {
                   </span>
                 </div>
               </div>
-              <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-red-400 transition-colors">
-                <LogOut size={18} />
-              </button>
             </div>
           ) : (
-            <button onClick={handleLogout} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
-              <LogOut size={18} />
-            </button>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[1px]">
+              <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-[10px] text-white font-bold">
+                {profile?.full_name?.charAt(0).toUpperCase() || "U"}
+              </div>
+            </div>
           )}
         </div>
       </div>
