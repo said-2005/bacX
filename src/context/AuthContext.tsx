@@ -159,7 +159,7 @@ export function AuthProvider({
                     // Update DB with this new device ID
                     supabase.from('profiles').update({
                         last_session_id: newDeviceId
-                    }).eq('id', session.user.id).then(({ error }) => {
+                    }).eq('id', session.user.id).then(({ error }: { error: any }) => {
                         if (error) console.error("Failed to update session tracking:", error);
                     });
                 } else if (event === 'INITIAL_SESSION') {
