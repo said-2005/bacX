@@ -49,40 +49,64 @@ export default async function SubjectPage({ params }: PageProps) {
     // For V22 Code Red: We assume RLS is applied.
     // We will use admin client to fetch TITLES ONLY if not subscribed (to keep UI looking good but secure).
 
-    let lessons = [];
+    // 4. Fetch Units & Lessons (Hierarchy)
+    let unitsWithLessons = [];
+
+    // Fetch Units (Publicly visible due to RLS)
+    const { data: units } = await supabase
+        .from('units')
+        .select('*')
+        .eq('subject_id', subjectId)
+        .order('created_at');
+
+    if (!units) {
+        // Fallback or empty
+    }
+
     if (isSubscribed) {
-        // Fetch EVERYTHING
-        const { data } = await supabase
+        // Fetch ALL Lessons directly linked to these units
+        const { data: allLessons } = await supabase
             .from('lessons')
             .select('*')
-            .eq('subject_id', subjectId)
-            .order('created_at'); // or order index
-        lessons = data || [];
-    } else {
-        // Not Subscribed: Fetch sanitized list (Titles, Duration, ID - NO VIDEO URL)
-        // Since RLS blocks 'supabase' client, we must use 'admin' client to fetch SAFE fields.
-        const { createAdminClient } = await import("@/utils/supabase/admin"); // Dynamic import to avoid cycle if any
-        const admin = createAdminClient();
-        const { data } = await admin
-            .from('lessons')
-            .select('id, subject_id, title, duration, is_free, pdf_url') // EXCLUDE video_url
-            .eq('subject_id', subjectId)
+            .in('unit_id', units?.map(u => u.id) || [])
             .order('created_at');
 
-        lessons = data || [];
+        // Merge
+        unitsWithLessons = units?.map(unit => ({
+            ...unit,
+            lessons: allLessons?.filter(l => l.unit_id === unit.id) || []
+        })) || [];
 
-        // Paranoid Sanitization (just in case)
-        lessons = lessons.map(l => ({
-            ...l,
-            video_url: null, // Wipe it
-            youtube_id: null
-        }));
+    } else {
+        // Not Subscribed: Fetch sanitized lessons via Admin
+        const { createAdminClient } = await import("@/utils/supabase/admin");
+        const admin = createAdminClient();
+
+        const { data: allLessons } = await admin
+            .from('lessons')
+            .select('id, unit_id, subject_id, title, duration, is_free, pdf_url') // Exclude video_url
+            .in('unit_id', units?.map(u => u.id) || [])
+            .order('created_at');
+
+        // Merge & Sanitize
+        unitsWithLessons = units?.map(unit => ({
+            ...unit,
+            lessons: allLessons?.filter(l => l.unit_id === unit.id).map(l => ({
+                ...l,
+                video_url: null,
+                youtube_id: null
+            })) || []
+        })) || [];
     }
+
+    // Also fetch legacy lessons (direct subject_id, no unit) for backward compatibility?
+    // User requested "Subject -> Unit -> Content". We can assume legacy is deprecated or handle it as "General Unit".
+    // For now, let's stick to Units.
 
     return (
         <SubjectView
             subject={subject}
-            lessons={lessons}
+            units={unitsWithLessons}
             isSubscribed={isSubscribed}
         />
     );

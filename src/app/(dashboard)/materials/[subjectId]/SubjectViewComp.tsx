@@ -14,23 +14,30 @@ import { CheckCircle } from "lucide-react";
 
 interface SubjectViewProps {
     subject: any;
-    lessons: any[];
+    units: any[];
     isSubscribed: boolean;
 }
 
-export default function SubjectView({ subject, lessons, isSubscribed }: SubjectViewProps) {
+export default function SubjectView({ subject, units, isSubscribed }: SubjectViewProps) {
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
     const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
-    const [activeTab, setActiveTab] = useState<'all' | 'lesson' | 'exercise'>('lesson'); // Initial tab logic? Or just sectioned lists. User asked for sections.
-    // "Divide the content area into two clear sections" -> Sidebar list with headers.
+    const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
 
+    // Flatten all lessons for easy access
+    const allLessons = units?.flatMap(u => u.lessons || []) || [];
 
-    // Set initial lesson
+    // Set initial lesson and expand first unit
     useEffect(() => {
-        if (lessons?.length > 0 && !activeLessonId) {
-            setActiveLessonId(lessons[0].id);
+        if (units?.length > 0) {
+            // Expand first unit by default
+            setExpandedUnits(new Set([units[0].id]));
+
+            // Set active lesson to first lesson of first unit
+            if (units[0].lessons?.length > 0 && !activeLessonId) {
+                setActiveLessonId(units[0].lessons[0].id);
+            }
         }
-    }, [lessons, activeLessonId]);
+    }, [units]);
 
     // Fetch Progress
     useEffect(() => {
@@ -51,7 +58,16 @@ export default function SubjectView({ subject, lessons, isSubscribed }: SubjectV
         await markLessonComplete(activeLessonId);
     };
 
-    const activeLesson = lessons.find((l: any) => l.id === activeLessonId) || lessons[0];
+    const toggleUnit = (unitId: string) => {
+        setExpandedUnits(prev => {
+            const next = new Set(prev);
+            if (next.has(unitId)) next.delete(unitId);
+            else next.add(unitId);
+            return next;
+        });
+    };
+
+    const activeLesson = allLessons.find((l: any) => l.id === activeLessonId) || allLessons[0];
 
     // Safety: If no lesson found (empty list?), handle it
     if (!activeLesson) {
@@ -116,100 +132,70 @@ export default function SubjectView({ subject, lessons, isSubscribed }: SubjectV
                 </div>
 
                 {/* Right Column: Lesson List (Split into Sections) */}
-                <div className="space-y-6 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                {/* Right Column: Units List */}
+                <div className="space-y-4 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {units.map((unit) => (
+                        <div key={unit.id} className="border border-white/5 rounded-xl overflow-hidden bg-white/5">
+                            {/* Unit Header */}
+                            <button
+                                onClick={() => toggleUnit(unit.id)}
+                                className="w-full px-4 py-3 flex items-center justify-between text-right hover:bg-white/5 transition-colors"
+                            >
+                                <h3 className="font-bold text-white">{unit.title}</h3>
+                                <span className="text-xs text-white/30 bg-white/10 px-2 py-0.5 rounded-full">
+                                    {unit.lessons?.length || 0} درس
+                                </span>
+                            </button>
 
-                    {/* Section 1: Lessons */}
-                    <div className="space-y-3">
-                        <h3 className="text-lg font-bold text-blue-400 px-2 flex items-center gap-2">
-                            <PlayCircle size={18} />
-                            الدروس (Lessons)
-                        </h3>
-                        <div className="space-y-2">
-                            {lessons.filter((l: any) => !l.type || l.type === 'lesson').map((lesson) => (
-                                <button
-                                    key={lesson.id}
-                                    onClick={() => setActiveLessonId(lesson.id)}
-                                    disabled={!isSubscribed && !lesson.is_free}
-                                    className={`w-full flex items-center gap-4 p-3 rounded-xl text-right transition-all border
-                                        ${activeLessonId === lesson.id
-                                            ? "bg-blue-600/20 border-blue-500/50 text-white"
-                                            : "bg-white/5 border-transparent hover:bg-white/10 text-white/70"
-                                        }
-                                        ${!isSubscribed ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-                                    `}
-                                >
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0
-                                        ${activeLessonId === lesson.id ? "bg-blue-500 text-white" : "bg-white/10 text-white/50"}
-                                    `}>
-                                        {isSubscribed ? <PlayCircle size={16} /> : <Lock size={14} />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm truncate">{lesson.title}</h4>
-                                        <div className="flex items-center justify-between mt-1">
-                                            <span className="text-[10px] text-white/30 flex items-center gap-1">
-                                                <Clock size={10} /> {lesson.duration}
-                                            </span>
-                                            {completedLessonIds.has(lesson.id) && (
-                                                <span className="text-green-400 text-[10px] flex items-center gap-1 font-bold">
-                                                    <CheckCircle size={10} />
-                                                </span>
-                                            )}
+                            {/* Unit Lessons */}
+                            {expandedUnits.has(unit.id) && (
+                                <div className="border-t border-white/5 p-2 space-y-1 bg-black/20">
+                                    {unit.lessons?.map((lesson: any) => (
+                                        <button
+                                            key={lesson.id}
+                                            onClick={() => setActiveLessonId(lesson.id)}
+                                            disabled={!isSubscribed && !lesson.is_free}
+                                            className={`w-full flex items-center gap-3 p-2 rounded-lg text-right transition-all
+                                                ${activeLessonId === lesson.id
+                                                    ? "bg-blue-600/20 text-blue-200"
+                                                    : "hover:bg-white/5 text-white/70"
+                                                }
+                                                ${!isSubscribed ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}
+                                            `}
+                                        >
+                                            <div className="shrink-0">
+                                                {completedLessonIds.has(lesson.id) ? (
+                                                    <CheckCircle size={16} className="text-green-400" />
+                                                ) : activeLessonId === lesson.id ? (
+                                                    <PlayCircle size={16} className="text-blue-400" />
+                                                ) : (
+                                                    isSubscribed || lesson.is_free ? <PlayCircle size={16} /> : <Lock size={14} />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium truncate">{lesson.title}</p>
+                                                <div className="flex items-center gap-2 text-[10px] text-white/30">
+                                                    <span>{lesson.duration}</span>
+                                                    {lesson.type === 'exercise' && <span className="text-purple-400">تمرين</span>}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                    {(!unit.lessons || unit.lessons.length === 0) && (
+                                        <div className="p-4 text-center text-xs text-white/20">
+                                            لا توجد دروس في هذه الوحدة
                                         </div>
-                                    </div>
-                                </button>
-                            ))}
-                            {lessons.filter((l: any) => !l.type || l.type === 'lesson').length === 0 && (
-                                <p className="text-white/30 text-xs px-4">لا توجد دروس مضافة.</p>
+                                    )}
+                                </div>
                             )}
                         </div>
-                    </div>
+                    ))}
 
-                    {/* Section 2: Exercises */}
-                    <div className="space-y-3 pt-6 border-t border-white/5">
-                        <h3 className="text-lg font-bold text-purple-400 px-2 flex items-center gap-2">
-                            <FileText size={18} />
-                            التمارين (Exercises)
-                        </h3>
-                        <div className="space-y-2">
-                            {lessons.filter((l: any) => l.type === 'exercise').map((lesson) => (
-                                <button
-                                    key={lesson.id}
-                                    onClick={() => setActiveLessonId(lesson.id)}
-                                    disabled={!isSubscribed && !lesson.is_free}
-                                    className={`w-full flex items-center gap-4 p-3 rounded-xl text-right transition-all border
-                                        ${activeLessonId === lesson.id
-                                            ? "bg-purple-600/20 border-purple-500/50 text-white"
-                                            : "bg-white/5 border-transparent hover:bg-white/10 text-white/70"
-                                        }
-                                        ${!isSubscribed ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-                                    `}
-                                >
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0
-                                        ${activeLessonId === lesson.id ? "bg-purple-500 text-white" : "bg-white/10 text-white/50"}
-                                    `}>
-                                        {isSubscribed ? <PlayCircle size={16} /> : <Lock size={14} />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm truncate">{lesson.title}</h4>
-                                        <div className="flex items-center justify-between mt-1">
-                                            <span className="text-[10px] text-white/30 flex items-center gap-1">
-                                                <Clock size={10} /> {lesson.duration}
-                                            </span>
-                                            {completedLessonIds.has(lesson.id) && (
-                                                <span className="text-green-400 text-[10px] flex items-center gap-1 font-bold">
-                                                    <CheckCircle size={10} />
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                            {lessons.filter((l: any) => l.type === 'exercise').length === 0 && (
-                                <p className="text-white/30 text-xs px-4">لا توجد تمارين مضافة.</p>
-                            )}
+                    {units.length === 0 && (
+                        <div className="p-8 text-center text-white/30 border border-dashed border-white/10 rounded-xl">
+                            لا توجد وحدات دراسية مضافة حتى الآن.
                         </div>
-                    </div>
-
+                    )}
                 </div>
             </div>
         </div>

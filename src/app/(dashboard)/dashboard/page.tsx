@@ -67,12 +67,10 @@ export default function DashboardPage() {
     }, []);
 
     const filteredSubjects = subjects.filter(s => {
-        // Base Filter: Math & Physics ONLY (V18.0 Restriction)
-        if (s.name !== "الرياضيات" && s.name !== "الفيزياء") return false;
-
         // Search Filter
         if (!query) return true;
         const matchesSubject = s.name.toLowerCase().includes(query);
+        // Note: This search only checks direct lessons. If we move to units, we need deep search.
         const matchesLesson = s.lessons?.some((l: any) => l.title.toLowerCase().includes(query));
         return matchesSubject || matchesLesson;
     });

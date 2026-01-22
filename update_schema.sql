@@ -1,3 +1,19 @@
+-- 0. Fix Subjects Visibility (RLS)
+alter table public.subjects enable row level security;
+
+drop policy if exists "Enable read access for all users" on public.subjects;
+create policy "Enable read access for all users" on public.subjects for select using (true);
+
+drop policy if exists "Enable insert for admins" on public.subjects;
+create policy "Enable insert for admins" on public.subjects for insert with check (
+  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
+);
+
+drop policy if exists "Enable delete for admins" on public.subjects;
+create policy "Enable delete for admins" on public.subjects for delete using (
+  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
+);
+
 -- 1. Create Units Table (Idempotent)
 create table if not exists public.units (
   id uuid default gen_random_uuid() primary key,
