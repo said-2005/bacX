@@ -5,10 +5,10 @@ export async function POST() {
     const response = NextResponse.json({ success: true });
 
     // Clear the cookie immediately
-    response.cookies.delete("bacx_session");
+    response.cookies.delete("brainy_session");
 
     // Attempt to clear other potential legacy cookies just in case
-    response.cookies.set("bacx_session", "", { maxAge: 0, path: '/' });
+    response.cookies.set("brainy_session", "", { maxAge: 0, path: '/' });
 
     return response;
 }

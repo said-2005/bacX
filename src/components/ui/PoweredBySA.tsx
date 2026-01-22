@@ -10,7 +10,7 @@ interface PoweredBySAProps {
 
 /**
  * Powered by SA Signature Component
- * A professional, minimalist signature for the bacX platform
+ * A professional, minimalist signature for the Brainy platform
  */
 export function PoweredBySA({ variant = "footer", className }: PoweredBySAProps) {
     const [isHovered, setIsHovered] = useState(false);

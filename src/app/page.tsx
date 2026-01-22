@@ -6,7 +6,7 @@ import { PricingSection } from "@/components/home/PricingSection";
 import { getActivePlans } from "@/actions/admin-plans";
 
 export const metadata: Metadata = {
-  title: "BACX - منصة التفوق الأكاديمي",
+  title: "BRAINY - منصة التفوق الأكاديمي",
   description: "رحلة سينمائية نحو النجاح في البكالوريا. تعلم من أفضل الأساتذة في الجزائر بجودة 4K.",
 };
 
