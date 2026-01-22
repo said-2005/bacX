@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from "react";
 import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 // --- TYPES ---
 
@@ -136,12 +136,111 @@ export function AuthProvider({
                     profile: null
                 }));
             }
+
+            // ANTI-SHARING: Update last_session_id on login/restore
+            if (session?.user?.id && session?.access_token) {
+                // We do this optimistically, errors here shouldn't block app usage but might affect strict security
+                // Ideally this is done via RPC or ensuring the user can update this column
+                // For now, client-side update:
+                /* 
+                 * Note: The middleware will start rejecting requests if this isn't set, 
+                 * so we must ensure it's set.
+                 */
+                // Only update if it's a new session or we haven't tracked it yet
+                // But simply running it every time we get a session event is safer to ensure consistency
+                // although it generates traffic.
+                // Let's do it only if event is SIGN_IN or INITIAL_SESSION
+                if (event === 'SIGNED_IN') {
+                    const newDeviceId = crypto.randomUUID();
+                    if (typeof window !== 'undefined') {
+                        window.sessionStorage.setItem('brainy_device_id', newDeviceId);
+                    }
+
+                    // Update DB with this new device ID
+                    supabase.from('profiles').update({
+                        last_session_id: newDeviceId
+                    }).eq('id', session.user.id).then(({ error }) => {
+                        if (error) console.error("Failed to update session tracking:", error);
+                    });
+                } else if (event === 'INITIAL_SESSION') {
+                    // Recovering session (F5)
+                    // We trust the existing session storage if present, or if missing (cleared?), we might be in trouble.
+                    // But typically sessionStorage persists on F5.
+                    // If tabs are closed, sessionStorage is gone -> User has to login again (Single Session Policy).
+                    // So we don't need to do anything special here unless we want to validate validity immediately.
+                }
+            }
         });
+
+
 
         return () => {
             subscription.unsubscribe();
         };
     }, [supabase, fetchProfile]);
+
+    // --- IDLE TIMEOUT (30 Minutes) ---
+    useEffect(() => {
+        if (!state.session) return;
+
+        let timeoutId: NodeJS.Timeout;
+        const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes
+
+        const resetTimer = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                console.log("Creation Idle Timeout Triggered. Logging out...");
+                logout();
+            }, TIMEOUT_DURATION);
+        };
+
+        // Events to monitor
+        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+
+        // Attach listeners
+        const setupListeners = () => events.forEach(event => window.addEventListener(event, resetTimer));
+        const cleanupListeners = () => events.forEach(event => window.removeEventListener(event, resetTimer));
+
+        setupListeners();
+        resetTimer(); // Start timer
+
+        return () => {
+            cleanupListeners();
+            clearTimeout(timeoutId);
+        };
+    }, [state.session]); // Re-bind when session changes
+
+    // --- HEARTBEAT CHECK (Anti-Sharing) ---
+    useEffect(() => {
+        if (!state.session || !state.user) return;
+
+        const checkSessionValidity = async () => {
+            const storedDeviceId = typeof window !== 'undefined' ? window.sessionStorage.getItem('brainy_device_id') : null;
+            if (!storedDeviceId) return; // Should be set on login
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('last_session_id')
+                .eq('id', state.user!.id) // Non-null assertion safe due to check above
+                .single();
+
+            if (error || !data) return;
+
+            // Strict check
+            if (data.last_session_id && data.last_session_id !== storedDeviceId) {
+                console.warn("Session invalidated by newer login on another device.");
+                logout();
+            }
+        };
+
+        // Check every 30 seconds
+        const heartbeatInterval = setInterval(checkSessionValidity, 30000);
+
+        // Initial check
+        checkSessionValidity();
+
+        return () => clearInterval(heartbeatInterval);
+    }, [state.session, state.user, supabase]);
     const loginWithEmail = async (email: string, password: string) => {
         setState(prev => ({ ...prev, loading: true, error: null }));
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -186,7 +285,11 @@ export function AuthProvider({
         } finally {
             // ALWAYS Redirect, even if error occurs
             console.log("Redirecting to login...");
-            router.push("/login"); // Client-side nav
+            if (typeof window !== 'undefined') {
+                window.localStorage.clear(); // Clear all local storage
+                window.sessionStorage.clear(); // Clear session storage
+            }
+            router.push("/"); // Client-side nav to LANDING (Rule 1)
             router.refresh();      // Clear server cache
         }
     };

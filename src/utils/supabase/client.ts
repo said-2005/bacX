@@ -34,5 +34,12 @@ export function createClient() {
         } as any
     }
 
-    return createBrowserClient(supabaseUrl, supabaseKey)
+    return createBrowserClient(supabaseUrl, supabaseKey, {
+        auth: {
+            storage: typeof window !== "undefined" ? window.sessionStorage : undefined,
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+        }
+    })
 }
