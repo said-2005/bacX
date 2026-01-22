@@ -17,7 +17,7 @@ export default async function AdminLayout({
     } catch (error) {
         // If verification fails, strict redirect to home or login
         // We could also show a 403 page, but redirect is safer to get them out
-        console.error("Admin Access Denied:", error);
+        console.error("DEBUG: Admin Access Denied. Reason:", error); // [DEBUG LOG]
         redirect("/");
     }
 
