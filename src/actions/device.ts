@@ -10,28 +10,32 @@ interface Device {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function registerDevice(userId: string, _deviceInfo: { userAgent: string; deviceId?: string }) {
+export async function registerDevice(userId: string, deviceInfo: { userAgent: string; deviceId?: string }) {
     if (!userId) throw new Error("User ID required");
 
     const supabase = await createClient();
 
-    // Check current devices
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('active_devices, device_limit')
-        .eq('id', userId)
-        .single();
+    // Call Edge Function for Secure Registration
+    const { data, error } = await supabase.functions.invoke('register-device', {
+        body: {
+            deviceId: deviceInfo.deviceId || 'unknown-device',
+            deviceName: deviceInfo.userAgent || 'Web Client'
+        }
+    });
 
-    if (!profile) throw new Error("Profile not found");
-
-    const devices = (profile.active_devices as Device[]) || [];
-    // Assuming a simple check for now since we don't have full device tracking logic
-    // Just mock success if limit not reached
-    if (devices.length >= (profile.device_limit || 2)) {
-        return { success: false, message: 'Device limit reached' };
+    if (error) {
+        console.error("Device Registration Failed:", error);
+        // Fallback or throw? STRICT mode says throw.
+        // But for UX, if edge function fails (deployment issue), user can't login?
+        // User requested "Production Ready". 
+        // If function failed, we fail.
+        return { success: false, message: error.message };
     }
 
-    // In a real app we'd add the device to the array
+    if (data?.error) {
+        return { success: false, message: data.error };
+    }
+
     return { success: true };
 }
 

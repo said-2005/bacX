@@ -11,7 +11,6 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "deploy:rules": "npx firebase-tools deploy --only firestore:rules",
     "migrate:subscriptions": "npx ts-node scripts/migrate-subscriptions.ts",
     "migrate:dry-run": "npx ts-node scripts/migrate-subscriptions.ts --dry-run"
   },
@@ -24,7 +23,6 @@
     "@upstash/redis": "^1.36.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "firebase-functions": "^7.0.2",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",

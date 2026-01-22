@@ -139,21 +139,13 @@ export function AuthProvider({
 
             // ANTI-SHARING: Update last_session_id on login/restore
             if (session?.user?.id && session?.access_token) {
-                // We do this optimistically, errors here shouldn't block app usage but might affect strict security
-                // Ideally this is done via RPC or ensuring the user can update this column
-                // For now, client-side update:
-                /* 
-                 * Note: The middleware will start rejecting requests if this isn't set, 
-                 * so we must ensure it's set.
-                 */
-                // Only update if it's a new session or we haven't tracked it yet
-                // But simply running it every time we get a session event is safer to ensure consistency
-                // although it generates traffic.
-                // Let's do it only if event is SIGN_IN or INITIAL_SESSION
                 if (event === 'SIGNED_IN') {
                     const newDeviceId = crypto.randomUUID();
                     if (typeof window !== 'undefined') {
+                        // Store in Session Storage (Client side checks)
                         window.sessionStorage.setItem('brainy_device_id', newDeviceId);
+                        // Store in Cookie (Server side/Middleware checks) - Valid for session only
+                        document.cookie = `x-device-id=${newDeviceId}; path=/; Secure; SameSite=Strict`;
                     }
 
                     // Update DB with this new device ID
@@ -163,11 +155,11 @@ export function AuthProvider({
                         if (error) console.error("Failed to update session tracking:", error);
                     });
                 } else if (event === 'INITIAL_SESSION') {
-                    // Recovering session (F5)
-                    // We trust the existing session storage if present, or if missing (cleared?), we might be in trouble.
-                    // But typically sessionStorage persists on F5.
-                    // If tabs are closed, sessionStorage is gone -> User has to login again (Single Session Policy).
-                    // So we don't need to do anything special here unless we want to validate validity immediately.
+                    // Ensure cookie sync if missing?
+                    const storedDeviceId = window.sessionStorage.getItem('brainy_device_id');
+                    if (storedDeviceId) {
+                        document.cookie = `x-device-id=${storedDeviceId}; path=/; Secure; SameSite=Strict`;
+                    }
                 }
             }
         });

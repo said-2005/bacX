@@ -62,32 +62,31 @@ export async function approvePayment(paymentId: string, userId: string) {
         const { user: admin } = await verifyAdmin();
         const supabase = createAdminClient();
 
-        // 1. Update Payment Status
-        const { error: paymentError } = await supabase
-            .from('payments')
-            .update({ status: 'approved' })
-            .eq('id', paymentId);
+        // Call Edge Function for consistent business logic (subscription end dates, etc.)
+        const { data, error } = await supabase.functions.invoke('approve-payment', {
+            body: {
+                paymentId,
+                userId,
+                durationDays: 30 // Default or fetch from plan logic
+            }
+        });
 
-        if (paymentError) throw paymentError;
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
 
-        // 2. Activate Student Subscription (Business Logic: Payment Approved = Access Granted)
-        await supabase
-            .from('profiles')
-            .update({ is_subscribed: true })
-            .eq('id', userId);
-
-        // 3. Log
+        // 3. Log (Edge Function does not log to admin-logger yet, so we keep this here for Admin Panel Audit)
         await logAdminAction({
             adminId: admin.id,
             action: "APPROVE_PAYMENT",
             targetId: paymentId,
-            details: { userId }
+            details: { userId, via: "edge-function" }
         });
 
         revalidatePath('/admin/payments');
         return { success: true };
 
     } catch (err) {
+        console.error("Approve Payment Failed:", err);
         return { success: false, error: String(err) };
     }
 }

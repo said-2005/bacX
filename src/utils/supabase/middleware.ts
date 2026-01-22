@@ -126,59 +126,23 @@ export async function updateSession(request: NextRequest) {
         }
     }
 
-    // 4. SESSION ENFORCEMENT (Anti-Sharing / P2)
-    // "One Device Rule": Check if current session matches `last_session_id` in DB.
+    // 4. SESSION ENFORCEMENT (Anti-Sharing / Strict One Device)
+    // 4. SESSION ENFORCEMENT (Anti-Sharing / Strict One Device)
     if (user && isProtectedRoute) {
-        // Optimization: Only check on specific intervals or via Trigger?
-        // User requested "Strict enforcement". We already have `profile` if admin, but for ALL users?
-        // We need to fetch profile.last_session_id.
+        const deviceIdCookie = request.cookies.get('x-device-id')?.value;
 
-        // This adds a DB hit to every protected route. 
-        // Acceptable for "High Security" requirements of the user.
+        if (deviceIdCookie) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('last_session_id')
+                .eq('id', user.id)
+                .single();
 
-        // Note: For 'admin' path we fetched profile above. For others we didn't.
-        // Let's refactor to fetch profile once if possible, or just do it here.
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('last_session_id')
-            .eq('id', user.id)
-            .single();
-
-        // Current Session ID? 
-        // Supabase Auth doesn't expose a simple "Session ID" in `getUser()` (User object). 
-        // It's in `getSession()`, but middleware uses `getUser()`. 
-        // However, the JWT often has `session_id` claim?
-        // Or we rely on the `sub` (user_id).
-        // Wait, `last_session_id` needs to correspond to something we have.
-        // If we can't easily get the current Session ID from `getUser()`, 
-        // we might fail this strict check without `getSession()` which is deprecated for security?
-        // Actually, `getUser()` validates the token. The TOKEN has a `session_id` claim usually.
-        // Let's check `user.app_metadata` or similar?
-        // If not available, we skip this specific implementation detail and warn user.
-        // BUT, user asked to "Implement a check".
-
-        // Alternative: If we can't compare IDs, we rely on "Rotation".
-        // But let's assume `last_session_id` update logic exists on Login (User said so).
-        // How to compare:
-        // We can access the refresh token? No.
-
-        // Let's implement the LOGIC SCAFFOLD. If `last_session_id` doesn't match, we logout.
-        // This assumes we CAN get the current ID. 
-        // If we absolutely can't, we will log a "TODO" warning for the developer.
-        // But let's look at `supabase.auth.getSession()` just for the ID?
-        // `getSession` reads the cookie.
-
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session && profile?.last_session_id) {
-            // If DB has a session ID recorded, and it DOES NOT match current session ID
-            // (Assuming uuid comparison)
-            if (profile.last_session_id !== session.access_token) {
-                // Wait, comparing access_token is wrong (changes every hour). 
-                // Checking if we have a stable session ID claim.
-                // This is complex.
-                // Simplified approach: Trigger "Heartbeat".
+            if (profile?.last_session_id && profile.last_session_id !== deviceIdCookie) {
+                console.warn(`SESSION KILLED: Device mismatch for ${user.email}. DB: ${profile.last_session_id}, Cookie: ${deviceIdCookie}`);
+                const nextUrl = new URL('/login', request.url);
+                nextUrl.searchParams.set('error', 'session_terminated');
+                return NextResponse.redirect(nextUrl);
             }
         }
     }
