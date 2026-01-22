@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Mail, Lock, User, MapPin, BookOpen, AlertCircle, ChevronDown, ArrowLeft, GraduationCap } from "lucide-react";
-import { motion } from "framer-motion";
+// Zero JS Animations utilized via globals.css
 import { signupAction } from "./actions";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -65,39 +65,27 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                 {/* LEFT COLUMN - Brand Experience (Desktop Only) */}
                 <div className="hidden lg:flex w-1/2 relative flex-col justify-center items-center p-12 overflow-hidden">
                     {/* Floating Abstract Element */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    >
-                        <div className="w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ animationDuration: '8s' }} />
-                        <div className="w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
-                    </motion.div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
+                        <div className="w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse-glow" />
+                        <div className="w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse-glow delay-1000" />
+                    </div>
 
                     {/* Logo & Tagline */}
                     <div className="relative z-10 text-center space-y-8">
-                        <motion.div
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.2, duration: 0.8 }}
-                            className="relative w-64 h-64 mx-auto"
-                        >
-                            <Image
-                                src="/images/brainy-logo-black.png"
-                                alt="Brainy Large Logo"
-                                fill
-                                className="object-contain"
-                                style={{ filter: 'invert(1) brightness(1.5) drop-shadow(0 0 20px rgba(59,130,246,0.5))' }}
-                                priority
-                            />
-                        </motion.div>
+                        <div className="relative w-64 h-64 mx-auto animate-fade-in-up delay-200">
+                            <div className="relative w-full h-full animate-float-slow">
+                                <Image
+                                    src="/images/brainy-logo-black.png"
+                                    alt="Brainy Large Logo"
+                                    fill
+                                    className="object-contain"
+                                    style={{ filter: 'invert(1) brightness(1.5) drop-shadow(0 0 20px rgba(59,130,246,0.5))', transform: 'translateZ(0)' }}
+                                    priority
+                                />
+                            </div>
+                        </div>
 
-                        <motion.div
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.4, duration: 0.8 }}
-                        >
+                        <div className="animate-fade-in-up delay-300">
                             <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white/80 font-serif tracking-tight drop-shadow-lg">
                                 Brainy
                             </h1>
@@ -106,32 +94,20 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                                 <br />
                                 <span className="text-lg text-white/50 block mt-2">مستقبلك يبدأ بخطوة</span>
                             </p>
-                        </motion.div>
+                        </div>
                     </div>
                 </div>
 
                 {/* RIGHT COLUMN - Form */}
                 <div className="w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-0">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full max-w-lg lg:max-w-[480px] relative z-10"
-                    >
+                    <div className="w-full max-w-lg lg:max-w-[480px] relative z-10 animate-fade-in-up">
                         <div className="glass-login rounded-[2.5rem] p-8 md:p-10 border border-white/10 relative overflow-hidden">
                             {/* Inner Shine Effect */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
 
                             {/* Logo Section (Mobile Only) */}
                             <div className="flex flex-col items-center justify-center mb-8 gap-5 relative z-10 lg:hidden">
-                                <motion.div
-                                    className="w-20 h-20 relative"
-                                    animate={{
-                                        y: [0, -5, 0],
-                                        filter: ["drop-shadow(0 0 15px rgba(59,130,246,0.3))", "drop-shadow(0 0 30px rgba(59,130,246,0.6))", "drop-shadow(0 0 15px rgba(59,130,246,0.3))"]
-                                    }}
-                                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                                >
+                                <div className="w-20 h-20 relative animate-float-slow">
                                     <Image
                                         src="/images/brainy-logo-black.png"
                                         alt="Brainy Logo"
@@ -140,12 +116,10 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                                         style={{ filter: 'invert(1) brightness(2) drop-shadow(0 0 2px white)' }}
                                         priority
                                     />
-                                </motion.div>
-                                <motion.h1
-                                    className="text-4xl font-bold text-metallic tracking-wider uppercase font-serif"
-                                >
+                                </div>
+                                <h1 className="text-4xl font-bold text-metallic tracking-wider uppercase font-serif">
                                     Brainy
-                                </motion.h1>
+                                </h1>
                             </div>
 
                             {/* Desktop Heading (Simple) */}
@@ -161,14 +135,10 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
                             </div>
 
                             {state?.error && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, height: "auto", scale: 1 }}
-                                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-300 text-sm backdrop-blur-sm relative z-10"
-                                >
+                                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-300 text-sm backdrop-blur-sm relative z-10 animate-fade-in">
                                     <AlertCircle className="h-5 w-5 shrink-0" />
                                     <span>{state.error}</span>
-                                </motion.div>
+                                </div>
                             )}
 
                             <form action={formAction} className="space-y-4 relative z-10">
@@ -297,7 +267,7 @@ export default function SignupForm({ wilayas, majors }: SignupFormProps) {
 
                         {/* Bottom Shadow for grounding */}
                         <div className="absolute -bottom-10 left-10 right-10 h-10 bg-black/50 blur-[30px] rounded-[50%]" />
-                    </motion.div>
+                    </div>
                 </div>
             </div>
         </main>

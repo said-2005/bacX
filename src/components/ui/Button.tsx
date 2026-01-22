@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { motion, type HTMLMotionProps } from "framer-motion";
+// Zero JS Animations utilized via Tailwind
 import { Loader2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ const variants = {
     primary: [
         "bg-primary text-white",
         "hover:shadow-[0_0_20px_rgba(41,151,255,0.3)]",
-        "transition-shadow duration-300",
+        "transition-all duration-300",
     ],
     secondary: [
         "bg-transparent border border-border text-text-main",
@@ -29,7 +29,7 @@ const sizes = {
     lg: "px-10 py-5 text-lg rounded-full",
 };
 
-interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: keyof typeof variants;
     size?: keyof typeof sizes;
     isLoading?: boolean;
@@ -52,14 +52,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref
     ) => {
         return (
-            <motion.button
+            <button
                 ref={ref}
-                whileTap={{ scale: 0.95 }}
                 disabled={disabled || isLoading}
                 className={cn(
                     "inline-flex items-center justify-center gap-2 font-medium",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    "active:scale-95", // Replaces whileTap={{ scale: 0.95 }}
                     variants[variant],
                     sizes[size],
                     className
@@ -72,9 +72,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     <Icon className="h-4 w-4" />
                 ) : null}
                 {children}
-            </motion.button>
+            </button>
         );
     }
 );
 
 Button.displayName = "Button";
+
