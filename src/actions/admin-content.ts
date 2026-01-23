@@ -86,12 +86,15 @@ export async function deleteUnit(id: string) {
 // createLesson
 export async function createLesson(data: Partial<Lesson>) {
     const supabase = await createClient();
-    const { error } = await supabase
+    const { data: newLesson, error } = await supabase
         .from('lessons')
-        .insert([data]);
+        .insert([data])
+        .select()
+        .single();
 
     if (error) throw error;
     revalidatePath('/admin/content');
+    return newLesson;
 }
 
 // updateLesson

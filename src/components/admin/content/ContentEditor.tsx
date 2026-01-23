@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lesson, createLesson, updateLesson, deleteLesson } from "@/actions/admin-content";
 import { SubscriptionPlan } from "@/actions/admin-plans";
 import { toast } from "sonner";
-import { Video, Radio, FileText, ArrowLeft, Trash2, Save, Lock as LockIcon } from "lucide-react";
+import { Video, Radio, FileText, ArrowLeft, Trash2, Save, Lock as LockIcon, X, Loader2, Download } from "lucide-react";
+import { ResourceUploader, ResourceFile } from "@/components/admin/ResourceUploader";
+import { createClient } from "@/utils/supabase/client";
+import { GlassCard } from "@/components/ui/GlassCard";
 
 interface ContentEditorProps {
     unitId: string;
     initialData?: Lesson;
     activePlans: SubscriptionPlan[];
     onClose: () => void;
+}
+
+interface AttachedResource extends ResourceFile {
+    id?: string; // Optional because new uploads won't have DB ID immediately
 }
 
 export default function ContentEditor({ unitId, initialData, activePlans, onClose }: ContentEditorProps) {
@@ -23,6 +30,50 @@ export default function ContentEditor({ unitId, initialData, activePlans, onClos
         is_public: initialData?.is_public || false
     });
     const [isSaving, setIsSaving] = useState(false);
+
+    // [NEW] Resource State
+    const [resources, setResources] = useState<AttachedResource[]>([]);
+    const [isLoadingResources, setIsLoadingResources] = useState(false);
+
+    // [NEW] Supabase Client for Resource Operations
+    const supabase = createClient();
+
+    // [NEW] Fetch Existing Resources
+    useEffect(() => {
+        if (isEditing && initialData?.id) {
+            fetchResources(initialData.id);
+        }
+    }, [initialData, isEditing]);
+
+    async function fetchResources(lessonId: string) {
+        setIsLoadingResources(true);
+        const { data, error } = await supabase
+            .from('lesson_resources')
+            .select('*')
+            .eq('lesson_id', lessonId);
+
+        if (data) {
+            setResources(data as AttachedResource[]);
+        }
+        setIsLoadingResources(false);
+    }
+
+    const handleResourceUpload = (file: ResourceFile) => {
+        setResources(prev => [...prev, file]);
+    };
+
+    const handleRemoveResource = async (index: number, resourceId?: string) => {
+        if (resourceId) {
+            // Delete from DB immediately if it exists
+            const { error } = await supabase.from('lesson_resources').delete().eq('id', resourceId);
+            if (error) {
+                toast.error("Failed to delete resource");
+                return;
+            }
+        }
+        // Update UI
+        setResources(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async () => {
         if (!formData.title) return toast.error("Title is required");
@@ -38,15 +89,38 @@ export default function ContentEditor({ unitId, initialData, activePlans, onClos
                 is_public: formData.is_public
             };
 
+            let lessonId = initialData?.id;
+
             if (isEditing && initialData) {
                 await updateLesson(initialData.id, payload);
                 toast.success("Changes saved");
             } else {
-                await createLesson(payload);
+                // Modified createLesson now returns the new record
+                const newLesson = await createLesson(payload);
+                lessonId = newLesson?.id;
                 toast.success("Lesson created");
-                onClose();
             }
+
+            // [NEW] Persist Resources
+            if (lessonId && resources.length > 0) {
+                // Filter out resources that are already saved (have an ID)
+                const newResources = resources.filter(r => !r.id).map(r => ({
+                    lesson_id: lessonId,
+                    title: r.title,
+                    file_url: r.file_url,
+                    file_type: r.file_type,
+                    file_size: r.file_size
+                }));
+
+                if (newResources.length > 0) {
+                    const { error } = await supabase.from('lesson_resources').insert(newResources);
+                    if (error) console.error("Resource Save Error", error);
+                }
+            }
+
+            onClose();
         } catch (e) {
+            console.error(e);
             toast.error("Failed to save Content");
         } finally {
             setIsSaving(false);
@@ -167,9 +241,48 @@ export default function ContentEditor({ unitId, initialData, activePlans, onClos
                     </div>
                 </div>
 
-                {/* Attachments Placeholder */}
-                <div className="p-4 border border-white/10 border-dashed rounded-xl flex items-center justify-center text-zinc-500 text-sm">
-                    Drag and drop files to attach (PDF, Images)
+                {/* Attachments Section */}
+                <div className="space-y-4">
+                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">
+                        Attached Resources (PDFs, Images)
+                    </label>
+
+                    {/* Uploder */}
+                    <ResourceUploader onUploadComplete={handleResourceUpload} />
+
+                    {/* List */}
+                    {isLoadingResources ? (
+                        <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Loading resources...
+                        </div>
+                    ) : (
+                        <div className="grid gap-2">
+                            {resources.map((res, i) => (
+                                <GlassCard key={i} className="p-3 flex items-center justify-between hover:bg-white/5 border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                            <FileText size={16} />
+                                        </div>
+                                        <div className="text-sm">
+                                            <div className="text-white font-medium line-clamp-1">{res.title}</div>
+                                            <div className="text-xs text-zinc-500">{(res.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <a href={res.file_url} target="_blank" className="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors">
+                                            <Download size={14} />
+                                        </a>
+                                        <button
+                                            onClick={() => handleRemoveResource(i, res.id)}
+                                            className="p-2 hover:bg-red-500/10 rounded-full text-zinc-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                </GlassCard>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
             </div>
