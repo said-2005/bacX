@@ -51,49 +51,22 @@ export async function getPendingPayments() {
     return data;
 }
 
-// Approve Payment
+// Approve Payment (ATOMIC TRANSACTION)
 export async function approvePayment(receiptId: string, userId: string, planId: string) {
     const supabase = await createClient();
 
-    // 1. Get Plan Duration
-    const { data: plan } = await supabase
-        .from('subscription_plans')
-        .select('duration_days, type')
-        .eq('id', planId)
-        .single();
+    // Call the custom Postgres function (RPC) for atomicity
+    // verify the migration 20260124160000_atomic_payment.sql is applied
+    const { error } = await supabase.rpc('approve_user_payment', {
+        p_receipt_id: receiptId,
+        p_user_id: userId,
+        p_plan_id: planId
+    });
 
-    if (!plan) throw new Error("Plan not found");
-
-    // 2. Calculate Expiry
-    // If type='course', duration might be irrelevant (user said "Manual Expiry"). 
-    // However, DB needs a date. We can set it to very far future OR handled by logic 'type=course' checks.
-    // But existing system relies on 'days_remaining' often.
-    // Let's set a standard date, and logic elsewhere checks type.
-    const duration = plan.duration_days || 30;
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + duration);
-
-    // 3. Update Profile Subscription
-    const updates = {
-        is_subscribed: true,
-        subscription_end_date: endDate.toISOString(),
-        active_plan_id: planId // Optional: helps track which plan they have
-    };
-
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', userId);
-
-    if (profileError) throw profileError;
-
-    // 4. Update Receipt Status
-    const { error: receiptError } = await supabase
-        .from('payment_receipts')
-        .update({ status: 'approved' })
-        .eq('id', receiptId);
-
-    if (receiptError) throw receiptError;
+    if (error) {
+        console.error("Atomic Approval Failed:", error);
+        throw new Error(`Transaction Failed: ${error.message}`);
+    }
 
     revalidatePath('/admin/payments');
 }
