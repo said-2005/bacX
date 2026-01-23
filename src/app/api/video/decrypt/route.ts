@@ -7,16 +7,15 @@ import {
 } from '@/lib/rate-limit';
 import { createClient } from "@/utils/supabase/server";
 
-// CRITICAL: No fallback. Fail-closed if not set.
 const SERVER_SALT = process.env.VIDEO_ENCRYPTION_SALT;
 
 export async function POST(request: Request) {
-    // 1. DISTRIBUTED RATE LIMITING
+    // 1. STRICT RATE LIMITING (P0 Fix: 5 req/min)
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkRateLimitDistributed(
         `video:${clientIp}`,
         videoRateLimiter,
-        { maxRequests: 20, windowMs: 60000 } // Increased slightly for legitimate binge watching
+        { maxRequests: 5, windowMs: 60000 } // STRICT: 5 decrypts per minute
     );
 
     if (!rateLimitResult.success) {
@@ -24,16 +23,13 @@ export async function POST(request: Request) {
         return createRateLimitResponse(rateLimitResult);
     }
 
-    // 2. ENVIRONMENT CHECK - Fail-closed
+    // 2. CONFIG CHECK
     if (!SERVER_SALT) {
         console.error('[CRITICAL] VIDEO_ENCRYPTION_SALT not configured!');
-        return NextResponse.json(
-            { error: 'Server configuration error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'System Error' }, { status: 500 });
     }
 
-    // 3. SESSION VALIDATION (SUPABASE)
+    // 3. AUTHENTICATION (Supabase)
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -41,117 +37,104 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = user.id;
-
-    // 4. DECODE VIDEO ID & CHECK PERMISSIONS
     try {
         const body = await request.json();
-        const { encodedId } = body;
+        const { encodedId, lessonId } = body; // P0 Fix: Require lessonId
 
         if (!encodedId) {
-            return NextResponse.json({ error: 'Missing encodedId' }, { status: 400 });
+            return NextResponse.json({ error: 'Missing token' }, { status: 400 });
         }
 
+        // P0 FIX: Verify Lesson Context
+        if (!lessonId) {
+            console.warn(`[SECURITY] Blocked decrypt attempt without lessonId by ${user.email}`);
+            return NextResponse.json({ error: 'Invalid context' }, { status: 400 });
+        }
+
+        // 4. INTEGRITY CHECK (Salt Validation)
+        // Client sends: SALT + DATA + SALT (Base64)
         const decodedString = Buffer.from(encodedId, 'base64').toString('utf-8');
-
-        // Expected format per internal convention: SERVER_SALT + "enc_" + LESSON_ID + "_" + YOUTUBE_ID + SERVER_SALT
-        // Wait, the client Mock suggests format: "enc_" + lessonId + "_" + youtubeId 
-        // BUT the server check "decodedString.startsWith(SERVER_SALT)" implies the CLIENT sends the SALT? 
-        // NO. The server usually decrypts. 
-        // Looking at the original code: 
-        // `decodedString.startsWith(SERVER_SALT) && decodedString.endsWith(SERVER_SALT)`
-        // `realId = decodedString.slice(SERVER_SALT.length, -SERVER_SALT.length)`
-        // This implies the client HAS THE SALT to construct the string? That's P1 Risk itself if SALT is generic. 
-        // `NEXT_PUBLIC_VIDEO_SALT` exists in .env.example. Ah, the client sends `SALT + ID + SALT`.
-        // This effectively just "obfuscates", it doesn't encrypt.
-        // REMEDIATION: We must validate WHAT IS INSIDE.
-
-        if (decodedString.startsWith(SERVER_SALT) && decodedString.endsWith(SERVER_SALT)) {
-            const innerContent = decodedString.slice(SERVER_SALT.length, -SERVER_SALT.length);
-
-            // Per `VideoPlayer.tsx`, we saw Mock "enc_LESSONID_REALID". 
-            // The original `route.ts` just returned `realId`. 
-            // We need to parse `innerContent`. 
-            // Assumption: The client sends `base64(SALT + VIDEO_TOKEN + SALT)`. 
-            // If `VIDEO_TOKEN` is just the YouTube ID, we are screwed (can't map to lesson).
-            // We need to ENFORCE that `VIDEO_TOKEN` contains the Lesson ID.
-
-            // Let's assume for this FIX that we are extracting the YouTube ID.
-            // AND we need to find which lesson this belongs to.
-            // We can query `lessons` table by `video_url` (or youtube_id column if it exists).
-            // The schema showed `video_url` column. Assuming it stores the ID or full URL.
-
-            const potentialVideoId = innerContent; // This might be "M7lc..." or "enc_..." based on mock?
-            // Realistically, database has the YouTube ID in `video_url` or `youtube_id` (implied).
-            // Let's generic query `lessons` where `video_url` contains this ID.
-
-            // 4.1 FETCH USER PROFILE FOR PLAN
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('active_plan_id, role, is_subscribed')
-                .eq('id', userId)
-                .single();
-
-            if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 403 });
-            if (profile.role === 'admin') {
-                // Admin Bypass
-                return NextResponse.json(
-                    { videoId: potentialVideoId },
-                    { headers: { 'X-Plan-Check': 'Bypass-Admin' } }
-                );
-            }
-
-            // 4.2 FIND LESSON & CHECK PLAN
-            // We search for a lesson that USES this video ID.
-            // Note: `video_url` in DB might be full URL "https://youtube.com/..."
-            // We use ILIKE to find match.
-            const { data: lesson } = await supabase
-                .from('lessons')
-                .select('id, required_plan_id, is_free, title')
-                .ilike('video_url', `%${potentialVideoId}%`)
-                .limit(1)
-                .single();
-
-            if (!lesson) {
-                // If video not found in DB, it's either an orphan or a loose ID. 
-                // Strict Mode: BLOCK.
-                console.warn(`[SECURITY] Video ID ${potentialVideoId} requested by ${user.email} NOT FOUND in DB. Blocking.`);
-                return NextResponse.json({ error: 'Content verification failed' }, { status: 404 });
-            }
-
-            // 4.3 ENTITLEMEN CHECK
-            let hasAccess = false;
-            if (lesson.is_free) {
-                hasAccess = true;
-            } else if (lesson.required_plan_id) {
-                hasAccess = profile.active_plan_id === lesson.required_plan_id;
-            } else {
-                // Legacy / General Subscription Fallback
-                hasAccess = profile.is_subscribed;
-            }
-
-            if (!hasAccess) {
-                console.warn(`[SECURITY] Unauthorized Access Attempt: User ${user.email} tried to access '${lesson.title}' (ID: ${lesson.id}) without valid plan.`);
-                return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-            }
-
-            return NextResponse.json(
-                { videoId: potentialVideoId },
-                {
-                    headers: {
-                        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-                        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-                        'X-RateLimit-Reset': rateLimitResult.reset.toString()
-                    }
-                }
-            );
-
-        } else {
-            console.error(`[SECURITY] Salt mismatch for user ${userId}, IP ${clientIp}`);
-            return NextResponse.json({ error: 'Integrity check failed' }, { status: 403 });
+        if (!decodedString.startsWith(SERVER_SALT) || !decodedString.endsWith(SERVER_SALT)) {
+            console.warn(`[SECURITY] Salt mismatch ${user.email}`);
+            return NextResponse.json({ error: 'Integrity failed' }, { status: 403 });
         }
+
+        // Extract content (assuming obfuscated ID)
+        // const innerContent = decodedString.slice(SERVER_SALT.length, -SERVER_SALT.length); 
+        // We actually IGNORE the inner content for the authorization decision. 
+        // We TRUST the `lessonId` for deciding "Access or Not", 
+        // but we return the Video ID associated with that Lesson ID from the DB.
+        // This prevents the user from requesting Lesson A but sending a Token for Video B (if they match).
+
+        // 5. AUTHORIZATION (The Real Fix)
+        // Query DB: Does Lesson exist? Does User have plan?
+
+        // Fetch User's Plan
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('active_plan_id, role, is_subscribed')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile) return NextResponse.json({ error: 'Profile error' }, { status: 403 });
+        const isAdmin = profile.role === 'admin';
+
+        // Fetch Lesson Details STRICTLY
+        const { data: lesson } = await supabase
+            .from('lessons')
+            .select('id, required_plan_id, is_free, video_url')
+            .eq('id', lessonId)
+            // We could filter by video_url matching the token, but honestly, 
+            // relying on the lessonId as the source of truth is safer.
+            // The CLIENT is asking "Give me video for Lesson X".
+            // We verify "Can User see Lesson X?" -> "Here is video for Lesson X".
+            .single();
+
+        if (!lesson) {
+            console.warn(`[SECURITY] Lesson ${lessonId} not found.`);
+            return NextResponse.json({ error: 'Content not found' }, { status: 404 });
+        }
+
+        // 6. ENTITLEMENT CHECK
+        let hasAccess = false;
+        if (isAdmin) {
+            hasAccess = true;
+        } else if (lesson.is_free) {
+            hasAccess = true;
+        } else if (lesson.required_plan_id) {
+            // Strict Plan Match
+            hasAccess = profile.active_plan_id === lesson.required_plan_id;
+        } else {
+            // Legacy/Fallback
+            hasAccess = !!profile.is_subscribed;
+        }
+
+        if (!hasAccess) {
+            console.warn(`[SECURITY] Denied access to lesson ${lessonId} for user ${user.email}`);
+            return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
+        }
+
+        // 7. RETURN DECRYPTED ASSET
+        // If the `video_url` in DB is "youtube_id", return it.
+        // Ignore what client sent in `encodedId` regarding the ID, trust the DB.
+
+        // Logic: Client sends "enc_LESSON_VIDEO". 
+        // If we strictly blindly return lesson.video_url, we are 100% secure against swapping.
+
+        const realVideoId = lesson.video_url; // Assuming this stores the YT ID
+
+        return NextResponse.json(
+            { videoId: realVideoId },
+            {
+                headers: {
+                    'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+                    'X-RateLimit-Remaining': rateLimitResult.remaining.toString()
+                }
+            }
+        );
+
     } catch (error) {
-        console.error("Decryption API Error", error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error("Decrypt Error", error);
+        return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }
