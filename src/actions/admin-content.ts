@@ -110,6 +110,8 @@ export async function createLesson(data: Partial<Lesson>) {
 
     if (error) throw error;
     revalidatePath('/admin/content');
+    revalidatePath('/dashboard'); // Update Student Dashboard
+    revalidatePath('/materials', 'layout'); // Update all material pages
     return newLesson;
 }
 
@@ -140,6 +142,8 @@ export async function deleteLessonResource(id: string) {
     if (error) throw error;
     // No revalidatePath needed usually as this is fetched in client logic, but good practice if rendered server side elsewhere
     revalidatePath('/admin/content');
+    revalidatePath('/dashboard');
+    revalidatePath('/materials', 'layout');
 }
 
 // Helper to fetch single lesson for editing
