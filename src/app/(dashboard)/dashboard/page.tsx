@@ -198,18 +198,15 @@ export default function DashboardPage() {
             )}
 
             {/* If Subscribed, show Progress maybe? (Future enhancement) */}
-        </div>
-            </div >
-
-        {/* 4. CONTENT SECTIONS */ }
-        < div className = "grid grid-cols-1 gap-8" >
-            {/* Empty State / Coming Soon for News */ }
-            < div className = "p-8 border border-white/5 rounded-2xl bg-white/5 flex flex-col items-center justify-center text-center" >
+            {/* 4. CONTENT SECTIONS */}
+            <div className="grid grid-cols-1 gap-8">
+                {/* Empty State / Coming Soon for News */}
+                <div className="p-8 border border-white/5 rounded-2xl bg-white/5 flex flex-col items-center justify-center text-center">
                     <Clock className="w-12 h-12 text-blue-400 mb-4 opacity-50" />
                     <h3 className="text-xl font-bold text-white mb-2">المستجدات والمواعيد</h3>
                     <p className="text-white/40">سيتم نشر جداول الحصص المباشرة والاختبارات قريباً.</p>
-                </div >
-            </div >
-        </div >
+                </div>
+            </div>
+        </div>
     );
 }
