@@ -32,7 +32,7 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
     loginWithEmail: (email: string, password: string) => Promise<void>;
-    signupWithEmail: (data: { email: string, password: string, fullName: string, wilaya: string, major: string }) => Promise<void>;
+    signupWithEmail: (data: { email: string, password: string, fullName: string, wilaya: string, major: string, studySystem?: string }) => Promise<void>;
     logout: () => Promise<void>;
     refreshProfile: () => Promise<void>;
     hydrateProfile: (profile: UserProfile | null) => Promise<void>;
@@ -282,7 +282,7 @@ export function AuthProvider({
         }
     };
 
-    const signupWithEmail = async ({ email, password, fullName, wilaya, major }: { email: string, password: string, fullName: string, wilaya: string, major: string }) => {
+    const signupWithEmail = async ({ email, password, fullName, wilaya, major, studySystem }: { email: string, password: string, fullName: string, wilaya: string, major: string, studySystem?: string }) => {
         setState(prev => ({ ...prev, loading: true, error: null }));
         const { error } = await supabase.auth.signUp({
             email,
@@ -292,6 +292,8 @@ export function AuthProvider({
                     full_name: fullName,
                     wilaya: wilaya,
                     major: major,
+                    study_system: studySystem || "",
+                    role: "student",
                     is_profile_complete: true
                 }
             }

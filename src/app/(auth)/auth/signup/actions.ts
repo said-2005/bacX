@@ -13,25 +13,53 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
     const password = formData.get("password") as string;
     const fullName = formData.get("fullName") as string;
 
-    // We now receive IDs
+    // Extract all fields from form
     const wilayaId = formData.get("wilaya_id") as string;
     const majorId = formData.get("major_id") as string;
     const studySystem = formData.get("study_system") as string;
+    const phone = formData.get("phone") as string | null; // Optional field
 
     const supabase = await createClient();
 
-    // 1. Sign Up User + Pass Metadata for Trigger
-    // IMPORTANT: The trigger now expects `wilaya_id` and `major_id`
+    // Fetch the labels for IDs to store human-readable values
+    // This is important because the trigger stores these as text, not foreign keys
+    let wilayaLabel = "";
+    let majorLabel = "";
+
+    if (wilayaId) {
+        const { data: wilayaData } = await supabase
+            .from("wilayas")
+            .select("full_label")
+            .eq("id", parseInt(wilayaId))
+            .single();
+        wilayaLabel = wilayaData?.full_label || wilayaId;
+    }
+
+    if (majorId) {
+        const { data: majorData } = await supabase
+            .from("majors")
+            .select("label")
+            .eq("id", majorId)
+            .single();
+        majorLabel = majorData?.label || majorId;
+    }
+
+    // Sign Up User + Pass ALL Metadata for Trigger
+    // CRITICAL: The trigger expects 'wilaya', 'major', 'study_system', 'phone'
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
                 full_name: fullName,
-                wilaya_id: wilayaId,
-                major_id: majorId,
-                study_system: studySystem,
-                role: "student", // Default role
+                wilaya: wilayaLabel,        // Human-readable label, not ID
+                wilaya_id: wilayaId,        // Also store ID for relational queries
+                major: majorLabel,          // Human-readable label, not ID
+                major_id: majorId,          // Also store ID for relational queries
+                study_system: studySystem,  // 'regular' or 'private'
+                phone: phone || "",         // Phone number (optional)
+                role: "student",            // Default role
+                is_profile_complete: true,  // Mark as complete since all required fields provided
             },
         },
     });
@@ -40,6 +68,7 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
         return { error: error.message };
     }
 
-    // 2. Success logic
+    // Success
     return { success: true };
 }
+
