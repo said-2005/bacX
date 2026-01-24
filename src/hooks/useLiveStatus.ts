@@ -75,7 +75,7 @@ export function useLiveStatus() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase]);
+    }, []); // Removed supabase from deps - it's recreated each render
 
     const isLive = liveSession?.status === "live";
     const title = liveSession?.title || "";

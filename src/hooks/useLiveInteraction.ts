@@ -111,34 +111,41 @@ export const useLiveInteraction = () => {
 
     // 2. Load Initial Queue & Subscribe to Realtime Changes
     useEffect(() => {
+        const client = createClient(); // Create fresh client inside effect
+
         const fetchQueue = async () => {
-            const { data, error } = await supabase
-                .from('live_interactions')
-                .select('*')
-                .in('status', ['waiting', 'live'])
-                .order('created_at', { ascending: true });
+            try {
+                const { data, error } = await client
+                    .from('live_interactions')
+                    .select('*')
+                    .in('status', ['waiting', 'live'])
+                    .order('created_at', { ascending: true });
 
-            if (error) console.error(error);
-            else {
-                setQueue(data as LiveInteraction[]);
-                // Check if anyone is currently live
-                const liveUser = (data as LiveInteraction[]).find(i => i.status === 'live');
-                if (liveUser) setCurrentSpeaker(liveUser);
+                if (error) throw error;
 
-                // If I am that user, update my local status
-                if (liveUser && liveUser.user_id === user?.id) {
-                    setStatus('live');
-                } else {
-                    // Check if I am in queue
-                    const myRequest = (data as LiveInteraction[]).find(i => i.user_id === user?.id && i.status === 'waiting');
-                    if (myRequest) setStatus('waiting');
+                if (data) {
+                    setQueue(data as LiveInteraction[]);
+                    // Check if anyone is currently live
+                    const liveUser = (data as LiveInteraction[]).find(i => i.status === 'live');
+                    if (liveUser) setCurrentSpeaker(liveUser);
+
+                    // If I am that user, update my local status
+                    if (liveUser && liveUser.user_id === user?.id) {
+                        setStatus('live');
+                    } else {
+                        // Check if I am in queue
+                        const myRequest = (data as LiveInteraction[]).find(i => i.user_id === user?.id && i.status === 'waiting');
+                        if (myRequest) setStatus('waiting');
+                    }
                 }
+            } catch (error) {
+                console.error("[LiveInteraction] Fetch error:", error);
             }
         };
 
         fetchQueue();
 
-        const channel = supabase
+        const channel = client
             .channel('live_interactions_changes')
             .on('postgres_changes', {
                 event: '*',
@@ -152,9 +159,9 @@ export const useLiveInteraction = () => {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            client.removeChannel(channel);
         };
-    }, [supabase, user]);
+    }, [user]); // Removed supabase from deps
 
 
     // ACTIONS
