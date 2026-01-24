@@ -18,6 +18,7 @@ export interface UserProfile {
     is_profile_complete: boolean;
     is_subscribed?: boolean;
     subscription_end_date?: string;
+    avatar_url?: string;
     created_at: string;
 }
 
