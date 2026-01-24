@@ -19,22 +19,33 @@ export function useLiveStatus() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
+
         // 1. Initial Fetch
         const fetchLive = async () => {
-            const { data } = await supabase
-                .from("live_sessions")
-                .select("*")
-                .or("status.eq.live,status.eq.scheduled")
-                .order("started_at", { ascending: false })
-                .limit(1)
-                .single();
+            try {
+                const { data, error } = await supabase
+                    .from("live_sessions")
+                    .select("*")
+                    .or("status.eq.live,status.eq.scheduled")
+                    .order("started_at", { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
 
-            if (data) {
-                setLiveSession(data as LiveSession);
-            } else {
-                setLiveSession(null);
+                if (error) throw error; // Now we catch it
+
+                if (isMounted) {
+                    if (data) {
+                        setLiveSession(data as LiveSession);
+                    } else {
+                        setLiveSession(null);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching live session:", err);
+            } finally {
+                if (isMounted) setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchLive();

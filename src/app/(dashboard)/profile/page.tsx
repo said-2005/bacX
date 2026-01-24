@@ -16,16 +16,39 @@ export default function ProfilePage() {
     const [fetchedProfile, setFetchedProfile] = useState<any>(null);
 
     useEffect(() => {
+        let isMounted = true;
+
         const fetchRealProfile = async () => {
-            if (!user) return;
-            const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (data) {
-                setFetchedProfile(data);
+            // 1. Handle No User Case
+            if (!user) {
+                if (isMounted) setLoading(false);
+                return;
             }
-            setLoading(false);
+
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) throw error;
+
+                if (data && isMounted) {
+                    setFetchedProfile(data);
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
         };
 
-        if (user) fetchRealProfile();
+        fetchRealProfile();
+
+        return () => {
+            isMounted = false;
+        };
     }, [user]);
 
     if (loading) {

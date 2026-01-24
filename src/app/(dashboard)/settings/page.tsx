@@ -59,23 +59,48 @@ export default function SettingsPage() {
 
     // Fetch latest fresh data on mount
     useEffect(() => {
+        let isMounted = true;
+
         const fetchLatest = async () => {
-            if (!user) return;
-            const supabase = createClient();
-            const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (data) {
-                reset({
-                    full_name: data.full_name || "",
-                    wilaya: data.wilaya || "",
-                    major: data.major || "",
-                    study_system: data.study_system || "",
-                    phone: data.phone_number || "",
-                    bio: data.bio || ""
-                });
+            // 1. Handle the "No User" case explicitly so we don't spin forever
+            if (!user) {
+                if (isMounted) setIsLoading(false);
+                return;
             }
-            setIsLoading(false);
+
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) throw error;
+
+                if (data && isMounted) {
+                    reset({
+                        full_name: data.full_name || "",
+                        wilaya: data.wilaya || "",
+                        major: data.major || "",
+                        study_system: data.study_system || "",
+                        phone: data.phone_number || "",
+                        bio: data.bio || ""
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+                // Optional: toast.error("Failed to load profile data");
+            } finally {
+                // 2. The Golden Rule: Always stop loading in finally
+                if (isMounted) setIsLoading(false);
+            }
         };
         fetchLatest();
+
+        return () => {
+            isMounted = false;
+        };
     }, [user, reset]);
 
     const onSubmit = async (values: ProfileFormValues) => {
