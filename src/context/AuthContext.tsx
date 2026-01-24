@@ -273,7 +273,7 @@ export function AuthProvider({
                     user: null,
                     session: null,
                     loading: false,
-                    error: result.error
+                    error: result.error ?? null
                 }));
 
                 // Throw error to stop UI redirect
