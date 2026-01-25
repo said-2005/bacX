@@ -11,15 +11,18 @@ export interface UserProfile {
     id: string;
     email: string;
     full_name?: string;
-    wilaya?: string; // e.g., "16 - Algiers"
-    major?: string;  // e.g., "science"
-    study_system?: string; // e.g., "regular" or "private"
+    wilaya_id?: string;
+    wilaya?: string; // Derived or mapped
+    major_id?: string;
+    major?: string;  // Derived or mapped
+    study_system?: string;
     role: "admin" | "student";
     is_profile_complete: boolean;
     is_subscribed?: boolean;
     subscription_end_date?: string;
     avatar_url?: string;
     created_at: string;
+    last_session_id?: string;
 }
 
 export interface AuthState {
@@ -67,29 +70,33 @@ export function AuthProvider({
     // --- HELPERS ---
 
     const fetchProfile = useCallback(async (userId: string) => {
+        // FIX: Removed JOINs (wilayas, majors) to prevent 404/500 if relations are broken
+        // We fetch raw IDs first to ensure data loads.
         const { data, error } = await supabase
             .from("profiles")
-            .select(`
-                *,
-                wilayas ( full_label ),
-                majors ( label )
-            `)
+            .select('*')
             .eq("id", userId)
             .single();
 
         if (error) {
             console.error("Error fetching profile:", error);
+            // Don't kill the app, return null but log it
             return null;
         }
 
-        // Map relational data to flat strings
-        const profile = {
+        // Manual Mapping (Temporary fix until Relations are solid)
+        // ideally we would fetch labels here if needed, but for now we unblock the UI
+        const profile: UserProfile = {
             ...data,
-            wilaya: data.wilayas?.full_label,
-            major: data.majors?.label
+            // Fallback: If joined data missing, use IDs or empty strings
+            // If you have a lookup function/object, use it here.
+            wilaya: data.wilaya_id || "Unknown Wilaya",
+            major: data.major_id || "Unknown Major",
+            // Helper checking
+            is_profile_complete: !!(data.major_id && data.wilaya_id)
         };
 
-        return profile as unknown as UserProfile;
+        return profile;
     }, [supabase]);
 
     // Track if we've completed initial auth check
@@ -385,11 +392,13 @@ export function AuthProvider({
     const checkProfileStatus = async () => {
         if (!state.user) return false;
         // If we have local profile, check it
-        if (state.profile) return state.profile.is_profile_complete;
+        if (state.profile) {
+            return !!(state.profile.major_id && state.profile.wilaya_id);
+        }
 
         // Otherwise fetch
         const profile = await fetchProfile(state.user.id);
-        return profile?.is_profile_complete || false;
+        return !!(profile?.major_id && profile?.wilaya_id);
     };
 
     const completeOnboarding = async (data: { fullName: string; wilaya: string; major: string }) => {
@@ -399,8 +408,8 @@ export function AuthProvider({
             .from('profiles')
             .update({
                 full_name: data.fullName,
-                wilaya: data.wilaya,
-                // major: data.major, // DB might expect IDs. Keeping metadata sync for checks.
+                wilaya_id: data.wilaya, // Assuming the input 'wilaya' is actually the ID from the form
+                major_id: data.major,   // Assuming the input 'major' is actually the ID from the form
                 is_profile_complete: true,
                 updated_at: new Date().toISOString(),
             })
@@ -411,6 +420,7 @@ export function AuthProvider({
         await supabase.auth.updateUser({
             data: {
                 full_name: data.fullName,
+                // We keep metadata for backup/display if needed
                 wilaya: data.wilaya,
                 major: data.major,
                 is_profile_complete: true
@@ -421,22 +431,37 @@ export function AuthProvider({
         router.replace('/dashboard');
     };
 
-    // --- RENDER ---
+    if (profileError) throw profileError;
 
-    const value: AuthContextType = {
-        ...state,
-        loginWithEmail,
-        signupWithEmail,
-        logout,
-        refreshProfile,
-        hydrateProfile,
-        checkProfileStatus,
-        completeOnboarding,
-        role: state.profile?.role || null
-    };
+    await supabase.auth.updateUser({
+        data: {
+            full_name: data.fullName,
+            wilaya: data.wilaya,
+            major: data.major,
+            is_profile_complete: true
+        }
+    });
+
+    await refreshProfile();
+    router.replace('/dashboard');
+};
+
+// --- RENDER ---
+
+const value: AuthContextType = {
+    ...state,
+    loginWithEmail,
+    signupWithEmail,
+    logout,
+    refreshProfile,
+    hydrateProfile,
+    checkProfileStatus,
+    completeOnboarding,
+    role: state.profile?.role || null
+};
 
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

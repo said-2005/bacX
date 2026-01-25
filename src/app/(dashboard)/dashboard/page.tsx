@@ -40,24 +40,47 @@ export default function DashboardPage() {
             try {
                 // 0. User & Auth Status
                 const { data: { user } } = await supabase.auth.getUser();
+
+                if (!user) {
+                    console.warn("No user found in Dashboard fetchData");
+                    // Optionally redirect here or let Middleware handle it. 
+                    // For now, stop loading to avoid infinite spinner.
+                    setLoading(false);
+                    return;
+                }
+
                 if (user) {
-                    const { data: profile } = await supabase.from('profiles').select('is_subscribed').eq('id', user.id).single();
+                    // Safe Check for subscription
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('is_subscribed')
+                        .eq('id', user.id)
+                        .maybeSingle(); // Use maybeSingle to avoid 406/404 errors if row missing
+
                     if (profile) setIsSubscribed(profile.is_subscribed);
                 }
 
                 // 1. Fetch Subjects
-                const { data: subjectData } = await supabase
+                const { data: subjectData, error: subjectError } = await supabase
                     .from('subjects')
                     .select('*, lessons(id, title)');
+
+                if (subjectError) {
+                    console.error("Error fetching subjects:", subjectError);
+                    // Don't throw, just log. 
+                }
 
                 if (subjectData) setSubjects(subjectData);
 
                 // 2. Fetch Stats (Real Counts)
-                const { count: subjectCount } = await supabase.from('subjects').select('*', { count: 'exact', head: true });
+                const { count: subjectCount, error: countError } = await supabase
+                    .from('subjects')
+                    .select('*', { count: 'exact', head: true });
+
+                if (countError) console.error("Error fetching stats:", countError);
+
                 // For "Hours", we'd sum durations. For now, zero or random placeholder if no real data.
-                // Let's assume 0 if empty.
                 const hours = 0;
-                // Rank is user specific. Placeholder for now.
 
                 setStats({
                     courses: subjectCount || 0,
@@ -66,7 +89,7 @@ export default function DashboardPage() {
                 });
 
             } catch (error) {
-                console.error("Error fetching content", error);
+                console.error("Critical Error in Dashboard fetching:", error);
             } finally {
                 setLoading(false);
             }

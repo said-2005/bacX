@@ -97,8 +97,10 @@ export function useProfileData(
                 id: authUser.id,
                 email: authUser.email || null,
                 full_name: profileData?.full_name || metadata.full_name || "",
-                wilaya: profileData?.wilaya || metadata.wilaya || "",
-                major: profileData?.major || metadata.major || "",
+                // Manual Mapping for robustness
+                wilaya: profileData?.wilaya_id || metadata.wilaya || "",
+                major: profileData?.major_id || metadata.major || "",
+
                 study_system: profileData?.study_system || metadata.study_system || "",
                 bio: profileData?.bio || "",
                 phone_number: profileData?.phone_number || metadata.phone || "",
