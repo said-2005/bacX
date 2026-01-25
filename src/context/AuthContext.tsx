@@ -431,37 +431,24 @@ export function AuthProvider({
         router.replace('/dashboard');
     };
 
-    if (profileError) throw profileError;
-
-    await supabase.auth.updateUser({
-        data: {
-            full_name: data.fullName,
-            wilaya: data.wilaya,
-            major: data.major,
-            is_profile_complete: true
-        }
-    });
-
-    await refreshProfile();
-    router.replace('/dashboard');
-};
-
-// --- RENDER ---
-
-const value: AuthContextType = {
-    ...state,
-    loginWithEmail,
-    signupWithEmail,
-    logout,
-    refreshProfile,
-    hydrateProfile,
-    checkProfileStatus,
-    completeOnboarding,
-    role: state.profile?.role || null
-};
 
 
-return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    // --- RENDER ---
+
+    const value: AuthContextType = {
+        ...state,
+        loginWithEmail,
+        signupWithEmail,
+        logout,
+        refreshProfile,
+        hydrateProfile,
+        checkProfileStatus,
+        completeOnboarding,
+        role: state.profile?.role || null
+    };
+
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
