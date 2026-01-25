@@ -46,7 +46,7 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
 
     // Sign Up User + Pass ALL Metadata for Trigger
     // CRITICAL: The trigger expects 'wilaya', 'major', 'study_system', 'phone'
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -66,6 +66,29 @@ export async function signupAction(prevState: SignupState, formData: FormData): 
 
     if (error) {
         return { error: error.message };
+    }
+
+    // MANUAL INGESTION: Guarantee Profile Creation
+    // We manually insert/upsert the profile to ensure it exists even if the SQL trigger fails.
+    if (data.user) {
+        // Redundant Upsert
+        const { error: profileError } = await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            wilaya: wilayaLabel,
+            major: majorLabel,
+            study_system: studySystem,
+            phone_number: phone || "",
+            role: 'student',
+            is_profile_complete: true,
+            updated_at: new Date().toISOString(),
+        });
+
+        if (profileError) {
+            console.error("Manual Profile Creation Failed:", profileError);
+            // We do not stop the flow, as the trigger might have succeeded.
+        }
     }
 
     // Success
