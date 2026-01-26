@@ -55,14 +55,10 @@ export function useProfileData(): UseProfileDataResult {
 
             console.log('[useProfileData] Fetching profile for:', user.id);
 
-            // Step 2: Simple, clean profile fetch with FK joins
+            // Step 2: Simple, clean profile fetch with explicit FK joins
             const { data, error: profileError } = await supabase
                 .from('profiles')
-                .select(`
-                    *,
-                    majors (name),
-                    wilayas (name)
-                `)
+                .select('*, majors:major_id(name), wilayas:wilaya_id(name)')
                 .eq('id', user.id)
                 .single();
 

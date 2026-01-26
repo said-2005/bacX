@@ -74,11 +74,7 @@ export function AuthProvider({
         try {
             const { data, error } = await supabase
                 .from("profiles")
-                .select(`
-                    *,
-                    majors (name),
-                    wilayas (name)
-                `)
+                .select('*, majors:major_id(name), wilayas:wilaya_id(name)')
                 .eq("id", userId)
                 .single();
 
