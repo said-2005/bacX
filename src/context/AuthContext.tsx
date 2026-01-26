@@ -19,6 +19,7 @@ export interface UserProfile {
     role: "admin" | "student";
     is_profile_complete: boolean;
     is_subscribed?: boolean;
+    subscription_end_date?: string;
     avatar_url?: string;
     created_at: string;
     last_session_id?: string;
