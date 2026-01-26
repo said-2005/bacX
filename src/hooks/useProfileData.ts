@@ -55,10 +55,10 @@ export function useProfileData(): UseProfileDataResult {
 
             console.log('[useProfileData] Fetching profile for:', user.id);
 
-            // Step 2: Simple, clean profile fetch with explicit FK joins
+            // Step 2: Simple profile fetch (no FK joins for now)
             const { data, error: profileError } = await supabase
                 .from('profiles')
-                .select('*, majors:major_id(name), wilayas:wilaya_id(name)')
+                .select('*')
                 .eq('id', user.id)
                 .single();
 
@@ -69,17 +69,18 @@ export function useProfileData(): UseProfileDataResult {
 
             console.log('[useProfileData] Raw data:', data);
 
-            // Step 3: Build profile object
+            // Step 3: Build profile object (using raw data, no FK joins)
             const profileData: ProfileData = {
                 id: user.id,
                 email: user.email || null,
                 full_name: data?.full_name || "",
                 wilaya_id: data?.wilaya_id || "",
                 major_id: data?.major_id || "",
-                majors: data?.majors || null,
-                wilayas: data?.wilayas || null,
-                major_name: data?.majors?.name || "",
-                wilaya_name: data?.wilayas?.name || "",
+                majors: null,
+                wilayas: null,
+                // Use IDs for now until we add proper FK joins
+                major_name: data?.major_id || "",
+                wilaya_name: data?.wilaya_id || "",
                 study_system: data?.study_system || "",
                 bio: data?.bio || "",
                 role: data?.role || "student",

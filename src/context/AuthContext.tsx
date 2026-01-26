@@ -74,7 +74,7 @@ export function AuthProvider({
         try {
             const { data, error } = await supabase
                 .from("profiles")
-                .select('*, majors:major_id(name), wilayas:wilaya_id(name)')
+                .select('*')
                 .eq("id", userId)
                 .single();
 
@@ -85,8 +85,9 @@ export function AuthProvider({
 
             const profile = {
                 ...data,
-                wilaya: data.wilayas?.name || data.wilaya_id || "",
-                major: data.majors?.name || data.major_id || "",
+                // Use raw IDs for now (no FK joins)
+                wilaya: data.wilaya_id || "",
+                major: data.major_id || "",
                 is_profile_complete: !!(data.major_id && data.wilaya_id)
             };
 
