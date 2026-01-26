@@ -107,36 +107,62 @@ export function AuthProvider({
 
         const initAuth = async () => {
             console.log('🔄 AuthContext: initAuth() starting...');
-            // 1. Get Session directly first (faster than waiting for event)
-            const { data: { session }, error } = await supabase.auth.getSession();
-            console.log('🔄 AuthContext: getSession result - Session exists:', !!session, 'Error:', error?.message || 'none');
 
-            if (error) {
-                console.error('❌ AuthContext: Session Init Error:', error);
-                if (isMounted.current) {
-                    console.log('⏳ AuthContext: Loading State -> FALSE (session error)');
-                    setState(prev => ({ ...prev, loading: false }));
-                }
-                return;
-            }
+            try {
+                // 1. Get Session directly first (faster than waiting for event)
+                const { data: { session }, error } = await supabase.auth.getSession();
+                console.log('🔄 AuthContext: getSession result - Session exists:', !!session, 'Error:', error?.message || 'none');
 
-            if (session?.user) {
-                console.log('🔄 AuthContext: Session found, fetching profile for:', session.user.id);
-                const profile = await fetchProfile(session.user.id);
-                if (isMounted.current) {
-                    console.log('⏳ AuthContext: Loading State -> FALSE (profile loaded)');
-                    setState(prev => ({
-                        ...prev,
-                        session,
-                        user: session.user,
-                        profile: { ...profile!, email: session.user.email! }, // Merge email
-                        loading: false
-                    }));
+                if (error) {
+                    console.error('❌ AuthContext: Session Init Error:', error);
+                    // We don't return here, we let the finally block handle loading state
+                    // But we should stop processing if session error
+                    return;
                 }
-            } else {
-                console.log('🔄 AuthContext: No session found');
+
+                if (session?.user) {
+                    console.log('🔄 AuthContext: Session found, fetching profile for:', session.user.id);
+                    const profile = await fetchProfile(session.user.id);
+
+                    if (isMounted.current) {
+                        if (profile) {
+                            console.log('⏳ AuthContext: Loading State -> FALSE (profile loaded)');
+                            setState(prev => ({
+                                ...prev,
+                                session,
+                                user: session.user,
+                                profile: { ...profile, email: session.user.email || profile.email }, // Safe merge
+                                loading: false
+                            }));
+                        } else {
+                            // Profile fetch failed but we have a user. 
+                            // We should still allow them in (perhaps in a limited state) or just show user without profile
+                            console.warn('⚠️ AuthContext: Profile missing for logged in user.');
+                            setState(prev => ({
+                                ...prev,
+                                session,
+                                user: session.user,
+                                profile: null, // Allow null profile, app should handle it
+                                loading: false,
+                                connectionError: true // Flag this as a partial load
+                            }));
+                        }
+                    }
+                } else {
+                    console.log('🔄 AuthContext: No session found');
+                    // No session is a valid state, just stop loading
+                }
+
+            } catch (err) {
+                console.error('💥 AuthContext: Critical Crash in initAuth:', err);
                 if (isMounted.current) {
-                    console.log('⏳ AuthContext: Loading State -> FALSE (no session)');
+                    setState(prev => ({ ...prev, error: "Failed to initialize session.", connectionError: true }));
+                }
+            } finally {
+                if (isMounted.current) {
+                    console.log('🏁 AuthContext: initAuth finished. Force stopping loading.');
+                    // use functional update to ensure we don't overwrite other parallel state changes if any (though unlikely here)
+                    // But simpler: just force loading false if it's still true
                     setState(prev => ({ ...prev, loading: false }));
                 }
             }
@@ -156,10 +182,19 @@ export function AuthProvider({
                     if (!state.user || state.user.id !== session.user.id) {
                         const profile = await fetchProfile(session.user.id);
                         if (isMounted.current) {
-                            setState(prev => ({
-                                ...prev,
-                                profile: { ...profile!, email: session.user.email! }
-                            }));
+                            if (profile) {
+                                setState(prev => ({
+                                    ...prev,
+                                    profile: { ...profile, email: session.user.email || profile.email }
+                                }));
+                            } else {
+                                // Handle missing profile on auth change
+                                console.warn('⚠️ AuthContext: Profile missing after auth change.');
+                                setState(prev => ({
+                                    ...prev,
+                                    profile: null
+                                }));
+                            }
                         }
                     }
                 }
