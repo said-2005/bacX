@@ -196,8 +196,18 @@ export function AuthProvider({
             const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
         } catch (error: any) {
-            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            setState(prev => ({ ...prev, error: error.message }));
             throw error;
+        } finally {
+            // Always stop loading, even if auth state change handles the session update
+            // We use a small timeout to allow redirect/state update to process if needed, 
+            // but strictly speaking, we just need to ensure we don't hang.
+            // However, strictly, if we succeed, onAuthStateChanged will handle it.
+            // But if we fail, we MUST stop loading. 
+            // The user requested: "ensure setLoading(false) is inside a finally block"
+            // But for login success, we might want to stay loading until redirect? 
+            // Actually, sticking to the request: stop spinner.
+            setState(prev => ({ ...prev, loading: false }));
         }
     };
 
@@ -218,8 +228,10 @@ export function AuthProvider({
             });
             if (error) throw error;
         } catch (error: any) {
-            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            setState(prev => ({ ...prev, error: error.message }));
             throw error;
+        } finally {
+            setState(prev => ({ ...prev, loading: false }));
         }
     };
 
