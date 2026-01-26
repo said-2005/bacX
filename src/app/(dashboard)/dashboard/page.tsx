@@ -22,10 +22,13 @@ export default async function DashboardPage({
 }: {
     searchParams: { [key: string]: string | string[] | undefined };
 }) {
+    console.log('🖥️ SERVER: Dashboard Page Rendering...');
     const query = (typeof searchParams.q === 'string' ? searchParams.q : "")?.toLowerCase();
 
     // Fetch Data on Server
+    console.log('🔎 SERVER: Fetching Dashboard Data...');
     const data = await getDashboardData();
+    console.log('📊 SERVER: Dashboard Data Result:', 'error' in data ? `ERROR: ${data.error}` : `Subjects: ${data.subjects?.length}, Stats: ${JSON.stringify(data.stats)}`);
 
     if ('error' in data) {
         return (

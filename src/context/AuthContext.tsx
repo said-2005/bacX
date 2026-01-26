@@ -69,6 +69,7 @@ export function AuthProvider({
 
     // --- HELPER: ROBUST PROFILE FETCH ---
     const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+        console.log('👤 AuthContext: Fetching Profile for user:', userId);
         try {
             const { data, error } = await supabase
                 .from("profiles")
@@ -77,7 +78,7 @@ export function AuthProvider({
                 .single();
 
             if (error) {
-                console.error("[Auth] Profile Fetch Error:", error);
+                console.error('❌ AuthContext: Profile Fetch FAILED:', error.message, error.code);
 
                 // CRITICAL: If fetch fails (RLS/Network), return a Safe Fallback instead of null
                 // This allows the user to access the app (maybe in read-only mode)
@@ -98,15 +99,17 @@ export function AuthProvider({
                 };
             }
 
-            return {
+            const profile = {
                 ...data,
                 wilaya: data.wilaya_id || "Unknown",
                 major: data.major_id || "Unknown",
                 is_profile_complete: !!(data.major_id && data.wilaya_id)
             };
+            console.log('✅ AuthContext: Profile Loaded:', profile.id, profile.role);
+            return profile;
 
         } catch (err) {
-            console.error("[Auth] Critical Profile Exception:", err);
+            console.error('❌ AuthContext: Critical Profile EXCEPTION:', err);
             setState(prev => ({ ...prev, connectionError: true }));
             return null;
         }
@@ -114,21 +117,29 @@ export function AuthProvider({
 
     // --- MAIN AUTH LISTENER ---
     useEffect(() => {
+        console.log('🔄 AuthContext: Effect Running - Initial Mount');
         isMounted.current = true;
 
         const initAuth = async () => {
+            console.log('🔄 AuthContext: initAuth() starting...');
             // 1. Get Session directly first (faster than waiting for event)
             const { data: { session }, error } = await supabase.auth.getSession();
+            console.log('🔄 AuthContext: getSession result - Session exists:', !!session, 'Error:', error?.message || 'none');
 
             if (error) {
-                console.error("[Auth] Session Init Error:", error);
-                if (isMounted.current) setState(prev => ({ ...prev, loading: false }));
+                console.error('❌ AuthContext: Session Init Error:', error);
+                if (isMounted.current) {
+                    console.log('⏳ AuthContext: Loading State -> FALSE (session error)');
+                    setState(prev => ({ ...prev, loading: false }));
+                }
                 return;
             }
 
             if (session?.user) {
+                console.log('🔄 AuthContext: Session found, fetching profile for:', session.user.id);
                 const profile = await fetchProfile(session.user.id);
                 if (isMounted.current) {
+                    console.log('⏳ AuthContext: Loading State -> FALSE (profile loaded)');
                     setState(prev => ({
                         ...prev,
                         session,
@@ -138,7 +149,11 @@ export function AuthProvider({
                     }));
                 }
             } else {
-                if (isMounted.current) setState(prev => ({ ...prev, loading: false }));
+                console.log('🔄 AuthContext: No session found');
+                if (isMounted.current) {
+                    console.log('⏳ AuthContext: Loading State -> FALSE (no session)');
+                    setState(prev => ({ ...prev, loading: false }));
+                }
             }
         };
 
