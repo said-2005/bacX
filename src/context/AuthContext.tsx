@@ -67,69 +67,39 @@ export function AuthProvider({
 
     const isMounted = useRef(false);
 
-    // --- HELPER: ROBUST PROFILE FETCH WITH TIMEOUT ---
+    // --- HELPER: CLEAN PROFILE FETCH ---
     const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
         console.log('👤 AuthContext: Fetching Profile for user:', userId);
 
-        // Timeout wrapper to prevent infinite hanging
-        const timeoutMs = 10000; // 10 seconds
-        const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('PROFILE_FETCH_TIMEOUT')), timeoutMs);
-        });
-
         try {
-            const queryPromise = supabase
+            const { data, error } = await supabase
                 .from("profiles")
-                .select('*')
+                .select(`
+                    *,
+                    majors (name),
+                    wilayas (name)
+                `)
                 .eq("id", userId)
                 .single();
 
-            // Race between query and timeout
-            const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
             if (error) {
                 console.error('❌ AuthContext: Profile Fetch FAILED:', error.message, error.code);
-
-                // CRITICAL: If fetch fails (RLS/Network), return a Safe Fallback instead of null
-                // This allows the user to access the app (maybe in read-only mode)
-                // rather than getting stuck in a spinner.
-
-                // Check if it's a connection issue (Network or 500)
-                if (error.message && (error.message.includes('fetch') || error.code === '500')) {
-                    setState(prev => ({ ...prev, connectionError: true }));
-                }
-
-                // Fallback Profile
-                return {
-                    id: userId,
-                    email: "", // Will be filled from Auth User
-                    role: "student",
-                    is_profile_complete: false,
-                    created_at: new Date().toISOString()
-                };
+                return null;
             }
 
             const profile = {
                 ...data,
-                wilaya: data.wilaya_id || "Unknown",
-                major: data.major_id || "Unknown",
+                wilaya: data.wilayas?.name || data.wilaya_id || "",
+                major: data.majors?.name || data.major_id || "",
                 is_profile_complete: !!(data.major_id && data.wilaya_id)
             };
+
             console.log('✅ AuthContext: Profile Loaded:', profile.id, profile.role);
             return profile;
 
         } catch (err: any) {
-            console.error('❌ AuthContext: Critical Profile EXCEPTION:', err.message || err);
-            setState(prev => ({ ...prev, connectionError: true }));
-
-            // Return fallback profile on timeout/error instead of null
-            return {
-                id: userId,
-                email: "",
-                role: "student",
-                is_profile_complete: false,
-                created_at: new Date().toISOString()
-            };
+            console.error('❌ AuthContext: Profile Exception:', err.message || err);
+            return null;
         }
     }, [supabase]);
 

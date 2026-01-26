@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import {
     User, MapPin, Loader2, BookOpen, GraduationCap, Shield, FileText,
-    Edit3, X, Save, Clock, CheckCircle, AlertTriangle, RefreshCw, ShieldOff
+    Edit3, X, Save, Clock, CheckCircle, AlertTriangle, RefreshCw
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -28,11 +28,8 @@ const WILAYAS = [
 export default function ProfilePage() {
     const { profile: contextProfile } = useAuth();
 
-    // NEW: Production-grade hook with timeout, retry, and RLS detection
-    const { profile: fetchedProfile, loading, error, isAccessDenied, retry } = useProfileData({
-        timeoutMs: 10000,
-        maxRetries: 3
-    });
+    // Clean profile data hook
+    const { profile: fetchedProfile, loading, error, retry } = useProfileData();
 
     const [pendingRequest, setPendingRequest] = useState<any>(null);
 
@@ -135,21 +132,6 @@ export default function ProfilePage() {
         );
     }
 
-    // Access Denied State (RLS blocked)
-    if (isAccessDenied) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-                <GlassCard className="p-12 text-center max-w-md mx-auto space-y-4 border-red-500/20">
-                    <div className="w-20 h-20 rounded-full bg-red-500/10 mx-auto flex items-center justify-center">
-                        <ShieldOff className="w-10 h-10 text-red-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-white">تم رفض الوصول</h2>
-                    <p className="text-white/60">ليس لديك صلاحية للوصول إلى هذا الملف الشخصي.</p>
-                </GlassCard>
-            </div>
-        );
-    }
-
     // Error State
     if (error) {
         return (
@@ -158,11 +140,9 @@ export default function ProfilePage() {
                     <div className="w-20 h-20 rounded-full bg-yellow-500/10 mx-auto flex items-center justify-center">
                         <AlertTriangle className="w-10 h-10 text-yellow-400" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white">خطأ في الاتصال</h2>
-                    <p className="text-white/60">
-                        {error === "CONNECTION_TIMEOUT" ? "انتهت مهلة الاتصال. تحقق من اتصالك بالإنترنت." :
-                            error === "AUTH_FAILED" ? "يرجى تسجيل الدخول مرة أخرى." :
-                                "حدث خطأ أثناء تحميل الملف الشخصي."}
+                    <h2 className="text-2xl font-bold text-white">خطأ في التحميل</h2>
+                    <p className="text-white/60 text-sm font-mono bg-black/30 p-2 rounded">
+                        {error}
                     </p>
                     <button
                         onClick={retry}
