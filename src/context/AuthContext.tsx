@@ -76,8 +76,8 @@ export function AuthProvider({
                 .from("profiles")
                 .select(`
                     *,
-                    majors:major_id ( name ),
-                    wilayas:wilaya_id ( name )
+                    majors:major_id ( label ),
+                    wilayas:wilaya_id ( full_label )
                 `)
                 .eq("id", userId)
                 .single();
@@ -94,8 +94,8 @@ export function AuthProvider({
                 ...rawData,
                 // Map nested objects to flat strings
                 // Use optional chaining just in case the join returns null (though it shouldn't if ID exists)
-                wilaya: rawData.wilayas?.name || "",
-                major: rawData.majors?.name || "",
+                wilaya: rawData.wilayas?.full_label || "",
+                major: rawData.majors?.label || "",
                 // Ensure IDs are strings
                 wilaya_id: rawData.wilaya_id || "",
                 major_id: rawData.major_id || "",
