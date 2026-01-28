@@ -68,36 +68,32 @@ export function AuthProvider({
     const isMounted = useRef(false);
 
     // --- HELPER: CLEAN PROFILE FETCH ---
+    // --- HELPER: CLEAN PROFILE FETCH ---
     const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
-        console.log('👤 AuthContext: Fetching Profile for user:', userId);
-
         try {
+            console.log("👤 AuthContext: Fetching SIMPLE Profile (No Joins)...");
+
+            // 👇 التغيير الكبير: نحينا majors(...) و wilayas(...)
+            // رانا نطلبو غير الجدول الرئيسي باش نتأكدوا أن الطريق سالكة
             const { data, error } = await supabase
-                .from("profiles")
+                .from('profiles')
                 .select('*')
-                .eq("id", userId)
+                .eq('id', userId)
                 .single();
 
             if (error) {
-                console.error('❌ AuthContext: Profile Fetch FAILED:', error.message, error.code);
+                console.error("❌ Profile Fetch Error:", error.message);
                 return null;
             }
 
-            const profile = {
-                ...data,
-                // Use raw IDs for now (no FK joins)
-                wilaya: data.wilaya_id || "",
-                major: data.major_id || "",
-                is_profile_complete: !!(data.major_id && data.wilaya_id)
-            };
+            console.log("✅ Profile Loaded Instantly:", data);
+            return data as UserProfile;
 
-            console.log('✅ AuthContext: Profile Loaded:', profile.id, profile.role);
-            return profile;
-
-        } catch (err: any) {
-            console.error('❌ AuthContext: Profile Exception:', err.message || err);
+        } catch (err) {
+            console.error("💥 Critical Fetch Error:", err);
             return null;
         }
+        // ملاحظة: الـ finally راهو مخدوم الفوق في initAuth، ما نحتاجوهش هنا
     }, [supabase]);
 
     // --- MAIN AUTH LISTENER ---
