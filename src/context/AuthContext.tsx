@@ -68,32 +68,36 @@ export function AuthProvider({
     const isMounted = useRef(false);
 
     // --- HELPER: CLEAN PROFILE FETCH ---
-    // --- HELPER: CLEAN PROFILE FETCH ---
     const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
-        try {
-            console.log("👤 AuthContext: Fetching SIMPLE Profile (No Joins)...");
+        console.log('👤 AuthContext: Fetching Profile for user:', userId);
 
-            // 👇 التغيير الكبير: نحينا majors(...) و wilayas(...)
-            // رانا نطلبو غير الجدول الرئيسي باش نتأكدوا أن الطريق سالكة
+        try {
             const { data, error } = await supabase
-                .from('profiles')
+                .from("profiles")
                 .select('*')
-                .eq('id', userId)
+                .eq("id", userId)
                 .single();
 
             if (error) {
-                console.error("❌ Profile Fetch Error:", error.message);
+                console.error('❌ AuthContext: Profile Fetch FAILED:', error.message, error.code);
                 return null;
             }
 
-            console.log("✅ Profile Loaded Instantly:", data);
-            return data as UserProfile;
+            const profile = {
+                ...data,
+                // Use raw IDs for now (no FK joins)
+                wilaya: data.wilaya_id || "",
+                major: data.major_id || "",
+                is_profile_complete: !!(data.major_id && data.wilaya_id)
+            };
 
-        } catch (err) {
-            console.error("💥 Critical Fetch Error:", err);
+            console.log('✅ AuthContext: Profile Loaded:', profile.id, profile.role);
+            return profile;
+
+        } catch (err: any) {
+            console.error('❌ AuthContext: Profile Exception:', err.message || err);
             return null;
         }
-        // ملاحظة: الـ finally راهو مخدوم الفوق في initAuth، ما نحتاجوهش هنا
     }, [supabase]);
 
     // --- MAIN AUTH LISTENER ---
@@ -216,30 +220,6 @@ export function AuthProvider({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchProfile, router]); // Removed supabase - it's a singleton but reference changes
-
-    // --- DEBUG: SAFETY TIMEOUT ---
-    useEffect(() => {
-        let safetyTimer: NodeJS.Timeout;
-
-        if (state.loading) {
-            safetyTimer = setTimeout(() => {
-                console.error("🚨 DEBUG: LOADER TIMED OUT! Forcing UI to render to see errors.");
-
-                setState(prev => {
-                    console.log("🚨 DEBUG STATE REPORT:", {
-                        user: prev.user,
-                        session: prev.session,
-                        error: prev.error,
-                        profile: prev.profile
-                    });
-                    return { ...prev, loading: false };
-                });
-            }, 4000);
-        }
-
-        return () => clearTimeout(safetyTimer);
-    }, [state.loading]);
-
 
     // --- ACTIONS ---
 
