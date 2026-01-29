@@ -1,13 +1,31 @@
 /*
- * GLOBAL SECURITY LOCKDOWN - ZERO TRUST PROTOCOL
+ * GLOBAL SECURITY LOCKDOWN - ZERO TRUST PROTOCOL (v2 - RECURSION FIXED)
  * -----------------------------------------------------------------------------
  * OBJECTIVE: Enable RLS on ALL tables and enforce strict Role-Based Access.
- * STRATEGY: 
- *   1. Clean Slate: Drop all relevant policies.
- *   2. Enforce: Enable RLS on all tables.
- *   3. Categorize: Apply Private, Public, or Restricted policies.
+ * UPDATES: Uses is_admin() security definer to prevent infinite loops.
  * -----------------------------------------------------------------------------
  */
+
+-- -------------------------------------------------------------------------
+-- STEP 0: HELPER FUNCTIONS
+-- -------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.is_admin() 
+RETURNS BOOLEAN 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 
+    FROM public.profiles 
+    WHERE id = auth.uid() 
+    AND role = 'admin'
+  );
+END;
+$$;
+
 
 DO $$
 DECLARE
@@ -32,14 +50,12 @@ END $$;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Private: Users view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Private: Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
--- Note: Insert often handled by trigger, but explicit allow for safety:
 CREATE POLICY "Private: Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- PAYMENT_RECEIPTS
 ALTER TABLE public.payment_receipts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Private: Users view own receipts" ON public.payment_receipts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Private: Users upload receipts" ON public.payment_receipts FOR INSERT WITH CHECK (auth.uid() = user_id);
--- Update/Delete restricted to admins (handled in Admin Block or implicit deny)
 
 -- PROFILE_CHANGE_REQUESTS
 ALTER TABLE public.profile_change_requests ENABLE ROW LEVEL SECURITY;
@@ -52,9 +68,6 @@ CREATE POLICY "Private: Users create requests" ON public.profile_change_requests
 -- -------------------------------------------------------------------------
 -- Tables: subjects, majors, wilayas, subscription_plans, global_notifications, 
 --         lessons, units, lesson_resources
-
--- Helper macro for Read-Only tables
--- (We repeat the pattern for clarity and specific table targeting)
 
 -- SUBJECTS
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
@@ -93,9 +106,6 @@ CREATE POLICY "Public: View resources" ON public.lesson_resources FOR SELECT USI
 -- STEP 4: CATEGORY 3 - SYSTEM & ADMIN (Restricted - No Public Access)
 -- -------------------------------------------------------------------------
 -- Tables: admin_logs, security_logs, system_settings, system_config
--- LOGIC: ENABLE RLS. DEFINE ZERO POLICIES.
--- This effectively denies all access to 'authenticated' and 'anon' roles.
--- Only 'service_role' or direct database owners can access.
 
 ALTER TABLE public.admin_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.security_logs ENABLE ROW LEVEL SECURITY;
@@ -104,48 +114,22 @@ ALTER TABLE public.system_config ENABLE ROW LEVEL SECURITY;
 
 
 -- -------------------------------------------------------------------------
--- STEP 5: ADMIN OVERRIDE (Optional but Recommended)
+-- STEP 5: ADMIN OVERRIDE (Using is_admin function)
 -- -------------------------------------------------------------------------
--- allow admins to see everything. 
--- We verify admin status via the public.profiles table.
 
 -- PROFILES (Admin View All)
-CREATE POLICY "Admin: View all profiles" ON public.profiles FOR SELECT USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
+CREATE POLICY "Admin: View all profiles" ON public.profiles FOR SELECT USING ( is_admin() );
 
 -- PAYMENTS (Admin View/Update All)
-CREATE POLICY "Admin: Manage receipts" ON public.payment_receipts FOR ALL USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
+CREATE POLICY "Admin: Manage receipts" ON public.payment_receipts FOR ALL USING ( is_admin() );
 
 -- CONTENT MANAGEMENT (Admins can CRUD content)
--- We apply a generic "Admin Full Access" policy to content tables
-CREATE POLICY "Admin: Manage subjects" ON public.subjects FOR ALL USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
-CREATE POLICY "Admin: Manage units" ON public.units FOR ALL USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
-CREATE POLICY "Admin: Manage lessons" ON public.lessons FOR ALL USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
-CREATE POLICY "Admin: Manage plans" ON public.subscription_plans FOR ALL USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
-CREATE POLICY "Admin: Manage notifications" ON public.global_notifications FOR ALL USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
+CREATE POLICY "Admin: Manage subjects" ON public.subjects FOR ALL USING ( is_admin() );
+CREATE POLICY "Admin: Manage units" ON public.units FOR ALL USING ( is_admin() );
+CREATE POLICY "Admin: Manage lessons" ON public.lessons FOR ALL USING ( is_admin() );
+CREATE POLICY "Admin: Manage plans" ON public.subscription_plans FOR ALL USING ( is_admin() );
+CREATE POLICY "Admin: Manage notifications" ON public.global_notifications FOR ALL USING ( is_admin() );
 
 -- SYSTEM LOGS (Admins can View)
--- Even though these are restricted, Admins might need to view them via dashboard if built.
--- If no frontend admin dashboard exists for logs, keep them locked. 
--- Uncomment below if Admin Dashboard needs access:
-
-CREATE POLICY "Admin: View admin_logs" ON public.admin_logs FOR SELECT USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
-CREATE POLICY "Admin: View security_logs" ON public.security_logs FOR SELECT USING (
-  exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.role = 'admin')
-);
-
+CREATE POLICY "Admin: View admin_logs" ON public.admin_logs FOR SELECT USING ( is_admin() );
+CREATE POLICY "Admin: View security_logs" ON public.security_logs FOR SELECT USING ( is_admin() );
