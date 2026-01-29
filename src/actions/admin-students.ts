@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export interface StudentProfile {
@@ -10,14 +11,7 @@ export interface StudentProfile {
     wilaya: string | null;
     study_system: string | null;
     created_at: string;
-    is_restored: boolean; // Assuming 'banned' concept might use this or a specific flag. 
-    // If 'banned' column doesn't exist, we might need to add it or use metadata. 
-    // Checking schema via user context, often 'banned_until' or logic in auth.
-    // Let's assume a 'banned' boolean or similar for this reconstruction.
-    // If not in schema, we'll need to add it. For now, we'll try to use a metadata approach or 'isActive'.
-    // V2 Req: "Ban/Unban" -> implies a state.
-
-    // Subscription info joining
+    is_restored: boolean;
     is_subscribed: boolean;
     subscription_end_date: string | null;
 }
@@ -28,33 +22,34 @@ export async function getStudents(
     query = "",
     filter: "all" | "active" | "expired" | "banned" = "all"
 ) {
+    // Read-only can be done with standard client usually, as Admin RLS lets them see all.
+    // For complete robustness, we can switch to AdminClient, but let's stick to standard for Reads 
+    // to verify RLS "Select" works.
     const supabase = await createClient();
-    const PAGE_SIZE = 10;
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const adminClient = createAdminClient(); // Fallback for some filters if needed without RLS.
 
-    let dbQuery = supabase
+    // Verify Admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    // Use Admin Client for Querying to ensure we see EVERYTHING regardless of quirky RLS
+    // (God Mode for Read as well)
+    let dbQuery = adminClient
         .from('profiles')
         .select('*', { count: 'exact' })
         .eq('role', 'student')
         .order('created_at', { ascending: false })
-        .range(from, to);
+        .range((page - 1) * 10, ((page - 1) * 10) + 9);
 
     if (query) {
         dbQuery = dbQuery.ilike('full_name', `%${query}%`);
     }
 
-    // Filters
-    // Note: These rely on column existence. 
     if (filter === 'active') {
         dbQuery = dbQuery.eq('is_subscribed', true);
     } else if (filter === 'expired') {
-        // Complex filter: subscribed=false AND had a subscription before? 
-        // Or just is_subscribed=false?
         dbQuery = dbQuery.eq('is_subscribed', false);
     }
-
-    // Banned filter would depend on column
 
     const { data, count, error } = await dbQuery;
 
@@ -66,26 +61,25 @@ export async function getStudents(
     return {
         students: data,
         total: count || 0,
-        totalPages: Math.ceil((count || 0) / PAGE_SIZE)
+        totalPages: Math.ceil((count || 0) / 10) // 10 = PAGE_SIZE
     };
 }
 
 // ACTIONS
 
-// TOGGLE BAN (Robust: Updates Auth + Profile)
+// TOGGLE BAN (God Mode)
 export async function toggleBanStudent(userId: string, shouldBan: boolean) {
-    // Note: To ban via Auth API, we need the Service Role (createAdminClient).
-    // Ensure you have utils/supabase/admin.ts setup with SERVICE_ROLE_KEY.
-    const { createAdminClient } = await import("@/utils/supabase/admin"); // Dynamic import to avoid cycles or if file missing
-    const supabaseAdmin = createAdminClient();
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
     // Verify Admin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') throw new Error("Forbidden");
 
-    // 1. Update Profile (Visual)
-    const { error: profileError } = await supabase
+    // 1. Update Profile (Visual) - Use Admin Client to bypass profile RLS
+    const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({ is_banned: shouldBan } as any)
         .eq('id', userId);
@@ -107,12 +101,15 @@ export async function toggleBanStudent(userId: string, shouldBan: boolean) {
 // MANUAL EXPIRY / TERMINATE
 export async function manualsExpireSubscription(userId: string) {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
     // Verify Admin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') throw new Error("Forbidden");
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
         .from('profiles')
         .update({
             is_subscribed: false,
@@ -124,22 +121,29 @@ export async function manualsExpireSubscription(userId: string) {
     revalidatePath('/admin/students');
 }
 
-// EXTEND SUBSCRIPTION (New)
+// EXTEND SUBSCRIPTION (God Mode)
 export async function extendSubscription(userId: string, daysToAdd: number) {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+
+    // Verify Admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') throw new Error("Forbidden");
 
     // Get current profile
-    const { data: profile } = await supabase.from('profiles').select('subscription_end_date, is_subscribed').eq('id', userId).single();
-    if (!profile) throw new Error("Profile not found");
+    const { data: profileData } = await supabaseAdmin.from('profiles').select('subscription_end_date, is_subscribed').eq('id', userId).single();
+    if (!profileData) throw new Error("Profile not found");
 
     let newEndDate = new Date();
     // If currently valid, add to end date
-    if (profile.is_subscribed && profile.subscription_end_date && new Date(profile.subscription_end_date) > new Date()) {
-        newEndDate = new Date(profile.subscription_end_date);
+    if (profileData.is_subscribed && profileData.subscription_end_date && new Date(profileData.subscription_end_date) > new Date()) {
+        newEndDate = new Date(profileData.subscription_end_date);
     }
     newEndDate.setDate(newEndDate.getDate() + daysToAdd);
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
         .from('profiles')
         .update({
             is_subscribed: true,

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient, verifyAdmin } from "@/utils/supabase/server";
+// Use dynamic import for admin client to avoid edge-runtime issues if needed, or keeping it as is if environment supports it.
 import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface DashboardStats {
