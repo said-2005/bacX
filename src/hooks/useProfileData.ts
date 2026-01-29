@@ -10,8 +10,8 @@ interface ProfileData {
     wilaya_id: string;
     major_id: string;
     majors: { name: string } | null;
-    branches?: { name: string } | null; // Added branches
-    wilayas: { name: string } | null;
+    branches?: { id: string, name: string } | null;
+    wilayas?: { id: number, name_ar: string, name_en: string } | null;
     major_name: string;
     wilaya_name: string;
     study_system: string;
@@ -61,7 +61,7 @@ export function useProfileData(): UseProfileDataResult {
             // We assume major_id matches to branches table or there is a configured relation.
             const { data, error: profileError } = await supabase
                 .from('profiles')
-                .select('*, branches(id, name)')
+                .select('*, branches(id, name), wilayas(id, name_ar, name_en)')
                 .eq('id', user.id)
                 .single();
 
@@ -82,15 +82,15 @@ export function useProfileData(): UseProfileDataResult {
                 wilaya_id: data?.wilaya_id || "",
                 major_id: data?.major_id || "",
                 majors: null,
-                wilayas: null,
                 major_name: majorName,
                 wilaya_name: data?.wilaya_id || "", // Will be formatted in UI using helper
                 study_system: data?.study_system || "",
                 bio: data?.bio || "",
                 role: data?.role || "student",
                 avatar_url: data?.avatar_url || "",
-                // Store the raw branch object if needed
-                branches: data?.branches || null
+                // Store relationships
+                branches: data?.branches || null,
+                wilayas: data?.wilayas || null
             };
 
             if (isMountedRef.current) {

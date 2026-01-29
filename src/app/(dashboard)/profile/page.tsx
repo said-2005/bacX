@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { createClient } from "@/utils/supabase/client";
 import {
     User, MapPin, Loader2, BookOpen, GraduationCap, Shield, FileText,
     Edit3, X, Save, Clock, CheckCircle, AlertTriangle, RefreshCw
@@ -10,9 +11,9 @@ import { useAuth } from "@/context/AuthContext";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { SmartButton } from "@/components/ui/SmartButton";
 import { toast } from "sonner";
-import { submitProfileChangeRequest, getPendingChangeRequest } from "@/actions/profile";
+import { getPendingChangeRequest, submitProfileChangeRequest } from "@/actions/profile";
 import { useProfileData } from "@/hooks/useProfileData";
-import { getWilayaName, WILAYAS as WILAYAS_LIST } from "@/utils/wilayas";
+// import { getWilayaName, WILAYAS as WILAYAS_LIST } from "@/utils/wilayas"; // Removed hardcoded import
 
 export default function ProfilePage() {
     const { profile: contextProfile } = useAuth();
@@ -34,6 +35,50 @@ export default function ProfilePage() {
         study_system: "",
         bio: ""
     });
+
+    // [NEW] Dynamic Branches & Wilayas State
+    const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+    const [wilayas, setWilayas] = useState<{ id: number; name_ar: string; name_en: string }[]>([]);
+    const [loadingParams, setLoadingParams] = useState(true);
+
+    // [NEW] Fetch Branches on Mount
+    useEffect(() => {
+        const fetchBranches = async () => {
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase
+                    .from('branches')
+                    .select('id, name')
+                    .order('name');
+
+                if (error) throw error;
+                if (data) setBranches(data);
+            } catch (err) {
+                console.error("Failed to fetch branches:", err);
+                toast.error("تعذر تحميل قائمة الشعب");
+            } finally {
+                setLoadingParams(false);
+            }
+        };
+
+        const fetchWilayas = async () => {
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase
+                    .from('wilayas')
+                    .select('*')
+                    .order('id');
+
+                if (error) throw error;
+                if (data) setWilayas(data);
+            } catch (err) {
+                console.error("Failed to fetch wilayas", err);
+            }
+        }
+
+        fetchBranches();
+        fetchWilayas();
+    }, []);
 
     // Sync form data when profile loads from hook
     useEffect(() => {
@@ -261,14 +306,21 @@ export default function ProfilePage() {
                                 value={formData.wilaya}
                                 onChange={(e) => handleInputChange("wilaya", e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
+                                disabled={loadingParams}
                             >
-                                <option value="">اختر الولاية</option>
-                                {WILAYAS_LIST.map((w, index) => (
-                                    <option key={w} value={index + 1} className="bg-zinc-900">{index + 1} - {w}</option>
+                                <option value="">{loadingParams ? "جاري التحميل..." : "اختر الولاية"}</option>
+                                {wilayas.map((w) => (
+                                    <option key={w.id} value={w.id} className="bg-zinc-900">
+                                        {w.id} - {w.name_ar}
+                                    </option>
                                 ))}
                             </select>
                         ) : (
-                            <p className="text-lg font-medium text-white">{getWilayaName(displayProfile.wilaya_id) || "لم يتم التحديد"}</p>
+                            <p className="text-lg font-medium text-white">
+                                {displayProfile.wilayas
+                                    ? `${displayProfile.wilayas.id} - ${displayProfile.wilayas.name_ar}`
+                                    : "لم يتم التحديد"}
+                            </p>
                         )}
                     </div>
 
@@ -283,14 +335,14 @@ export default function ProfilePage() {
                                 value={formData.major}
                                 onChange={(e) => handleInputChange("major", e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
+                                disabled={loadingParams}
                             >
-                                <option value="">اختر الشعبة</option>
-                                <option value="science" className="bg-zinc-900">علوم تجريبية</option>
-                                <option value="math" className="bg-zinc-900">رياضيات</option>
-                                <option value="tech" className="bg-zinc-900">تقني رياضي</option>
-                                <option value="gest" className="bg-zinc-900">تسيير واقتصاد</option>
-                                <option value="letter" className="bg-zinc-900">آداب وفلسفة</option>
-                                <option value="lang" className="bg-zinc-900">لغات أجنبية</option>
+                                <option value="">{loadingParams ? "جاري التحميل..." : "اختر الشعبة"}</option>
+                                {branches.map((branch) => (
+                                    <option key={branch.id} value={branch.id} className="bg-zinc-900">
+                                        {branch.name}
+                                    </option>
+                                ))}
                             </select>
                         ) : (
                             <p className="text-lg font-medium text-white">
