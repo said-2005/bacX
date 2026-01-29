@@ -10,6 +10,7 @@ interface ProfileData {
     wilaya_id: string;
     major_id: string;
     majors: { name: string } | null;
+    branches?: { name: string } | null; // Added branches
     wilayas: { name: string } | null;
     major_name: string;
     wilaya_name: string;
@@ -55,10 +56,12 @@ export function useProfileData(): UseProfileDataResult {
 
             console.log('[useProfileData] Fetching profile for:', user.id);
 
-            // Step 2: Simple profile fetch (no FK joins for now)
+            // Step 2: Profile fetch with FK joins
+            // User requested explicit branches(id, name) join.
+            // We assume major_id matches to branches table or there is a configured relation.
             const { data, error: profileError } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('*, branches(id, name)')
                 .eq('id', user.id)
                 .single();
 
@@ -69,7 +72,9 @@ export function useProfileData(): UseProfileDataResult {
 
             console.log('[useProfileData] Raw data:', data);
 
-            // Step 3: Build profile object (using raw data, no FK joins)
+            // Step 3: Build profile object
+            const majorName = (data?.branches as any)?.name || "غير محدد"; // Default from join
+
             const profileData: ProfileData = {
                 id: user.id,
                 email: user.email || null,
@@ -78,13 +83,14 @@ export function useProfileData(): UseProfileDataResult {
                 major_id: data?.major_id || "",
                 majors: null,
                 wilayas: null,
-                // Use IDs for now until we add proper FK joins
-                major_name: data?.major_id || "",
-                wilaya_name: data?.wilaya_id || "",
+                major_name: majorName,
+                wilaya_name: data?.wilaya_id || "", // Will be formatted in UI using helper
                 study_system: data?.study_system || "",
                 bio: data?.bio || "",
                 role: data?.role || "student",
                 avatar_url: data?.avatar_url || "",
+                // Store the raw branch object if needed
+                branches: data?.branches || null
             };
 
             if (isMountedRef.current) {

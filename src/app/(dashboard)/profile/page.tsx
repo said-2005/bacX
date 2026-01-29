@@ -12,18 +12,7 @@ import { SmartButton } from "@/components/ui/SmartButton";
 import { toast } from "sonner";
 import { submitProfileChangeRequest, getPendingChangeRequest } from "@/actions/profile";
 import { useProfileData } from "@/hooks/useProfileData";
-
-// Algerian Wilayas List
-const WILAYAS = [
-    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar",
-    "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers",
-    "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma",
-    "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh",
-    "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued",
-    "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent",
-    "Ghardaïa", "Relizane", "El M'Ghair", "El Meniaa", "Ouled Djellal", "Bordj Baji Mokhtar",
-    "Béni Abbès", "Timimoun", "Touggourt", "Djanet", "In Salah", "In Guezzam"
-];
+import { getWilayaName, WILAYAS as WILAYAS_LIST } from "@/utils/wilayas";
 
 export default function ProfilePage() {
     const { profile: contextProfile } = useAuth();
@@ -261,7 +250,7 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* Wilaya */}
+                    {/* Wilaya - Display updated */}
                     <div className="space-y-2">
                         <label className="text-sm text-white/40 flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
@@ -274,16 +263,16 @@ export default function ProfilePage() {
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
                             >
                                 <option value="">اختر الولاية</option>
-                                {WILAYAS.map((w) => (
-                                    <option key={w} value={w} className="bg-zinc-900">{w}</option>
+                                {WILAYAS_LIST.map((w, index) => (
+                                    <option key={w} value={index + 1} className="bg-zinc-900">{index + 1} - {w}</option>
                                 ))}
                             </select>
                         ) : (
-                            <p className="text-lg font-medium text-white">{displayProfile.wilaya_name || "لم يتم التحديد"}</p>
+                            <p className="text-lg font-medium text-white">{getWilayaName(displayProfile.wilaya_id) || "لم يتم التحديد"}</p>
                         )}
                     </div>
 
-                    {/* Major */}
+                    {/* Major / Branch - Display updated */}
                     <div className="space-y-2">
                         <label className="text-sm text-white/40 flex items-center gap-2">
                             <BookOpen className="w-4 h-4" />
@@ -305,7 +294,8 @@ export default function ProfilePage() {
                             </select>
                         ) : (
                             <p className="text-lg font-medium text-white">
-                                {displayProfile.major_name || "لم يتم التحديد"}
+                                {/* Use branch name from join, or major_name from hook logic */}
+                                {displayProfile.branches?.name || displayProfile.major_name || "لم يتم التحديد"}
                             </p>
                         )}
                     </div>
