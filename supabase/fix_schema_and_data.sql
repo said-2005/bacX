@@ -19,29 +19,28 @@ BEGIN
     END IF;
 END $$;
 
--- Ensure the constraint exists (idempotent)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_branch_id_fkey') THEN
-        ALTER TABLE public.profiles 
-        ADD CONSTRAINT profiles_branch_id_fkey 
-        FOREIGN KEY (branch_id) REFERENCES public.branches(id);
-    END IF;
-END $$;
-
-
 -- PART 2: DATA CLEANUP (SUBJECTS)
--- 1. Delete invalid legacy subjects
+-- 1. Delete invalid legacy subjects (string IDs)
 DELETE FROM public.subjects 
 WHERE id IN ('math', 'physics', 'science', 'tech', 'gest', 'letter', 'lang');
 
--- 2. Insert correct subjects with UUIDs
--- REMOVED branch_id as it does not exist in the table currently.
+-- 2. Insert correct subjects with UUIDs (Safe Insert Check)
 INSERT INTO public.subjects (id, name, icon)
-VALUES 
-  (gen_random_uuid(), 'Mathematics', 'Calculator'),
-  (gen_random_uuid(), 'Physics', 'Atom'),
-  (gen_random_uuid(), 'Natural Sciences', 'Dna'),
-  (gen_random_uuid(), 'Literature', 'Book'),
-  (gen_random_uuid(), 'English', 'Languages')
-ON CONFLICT (name) DO NOTHING;
+SELECT gen_random_uuid(), 'Mathematics', 'Calculator'
+WHERE NOT EXISTS (SELECT 1 FROM public.subjects WHERE name = 'Mathematics');
+
+INSERT INTO public.subjects (id, name, icon)
+SELECT gen_random_uuid(), 'Physics', 'Atom'
+WHERE NOT EXISTS (SELECT 1 FROM public.subjects WHERE name = 'Physics');
+
+INSERT INTO public.subjects (id, name, icon)
+SELECT gen_random_uuid(), 'Natural Sciences', 'Dna'
+WHERE NOT EXISTS (SELECT 1 FROM public.subjects WHERE name = 'Natural Sciences');
+
+INSERT INTO public.subjects (id, name, icon)
+SELECT gen_random_uuid(), 'Literature', 'Book'
+WHERE NOT EXISTS (SELECT 1 FROM public.subjects WHERE name = 'Literature');
+
+INSERT INTO public.subjects (id, name, icon)
+SELECT gen_random_uuid(), 'English', 'Languages'
+WHERE NOT EXISTS (SELECT 1 FROM public.subjects WHERE name = 'English');
