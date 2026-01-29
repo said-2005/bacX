@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getDashboardData } from "@/actions/dashboard";
 import { GlassCard } from "@/components/ui/GlassCard";
 import CinematicHero from "@/components/dashboard/CinematicHero";
-import { CrystalSubjectCard } from "@/components/dashboard/CrystalSubjectCard";
+import { SubjectCard } from "@/components/dashboard/SubjectCard"; // UPDATED IMPORT
 import { Clock, TrendingUp, Zap } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
@@ -83,7 +83,7 @@ export default async function DashboardPage({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {filteredSubjects.length > 0 ? (
                         filteredSubjects.map((subject: any) => (
-                            <CrystalSubjectCard key={subject.id} subject={subject} />
+                            <SubjectCard key={subject.id} subject={subject} />
                         ))
                     ) : (
                         <div className="col-span-1 md:col-span-2 py-12 flex flex-col items-center justify-center text-center opacity-50 space-y-4 rounded-2xl border border-white/5 bg-white/5">
