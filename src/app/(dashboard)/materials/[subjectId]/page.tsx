@@ -1,90 +1,194 @@
-// Force TS Update
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
-import SubjectView from "./SubjectViewComp";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+"use client";
 
-interface PageProps {
-    params: Promise<{ subjectId: string }>;
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import {
+    AlertTriangle,
+    ArrowLeft,
+    BookOpen,
+    Clock,
+    FileText,
+    Layout,
+    Loader2,
+    Lock,
+    PlayCircle,
+    Video
+} from "lucide-react";
+import Link from "next/link";
+import { GlassCard } from "@/components/ui/GlassCard";
+import EncodedVideoPlayer from "@/components/lesson/VideoPlayer";
+
+// --- Types ---
+interface Lesson {
+    id: string;
+    title: string;
+    duration: string | null;
+    video_url: string | null;
+    pdf_url: string | null;
+    is_free: boolean;
+    unit_id: string;
+    created_at: string;
 }
 
-export default async function SubjectPage({ params }: PageProps) {
-    const { subjectId } = await params;
+interface Unit {
+    id: string;
+    title: string;
+    subject_id: string;
+    created_at: string;
+    lessons: Lesson[];
+}
 
-    // 0. ID Validation (DISABLED FOR DEBUGGING)
-    // const idRegex = /^[a-zA-Z0-9-_]+$/;
-    // if (!idRegex.test(subjectId)) {
-    //      return ( ... ); 
-    // }
+interface Subject {
+    id: string;
+    name: string;
+    icon_url?: string | null;
+    units: Unit[];
+}
 
-    // DEBUG: Pass everything through
-    console.log("DEBUG: Subject ID received:", subjectId);
+export default function SubjectDetailsPage() {
+    const params = useParams();
+    const subjectId = params?.subjectId as string;
 
-    const supabase = await createClient();
+    // State
+    const [loading, setLoading] = useState(true);
+    const [subject, setSubject] = useState<Subject | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    // 1. Auth Check
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-        // redirect("/login"); // DISABLED FOR DEBUG
+    const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+    const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
+
+    // Supabase Client
+    const supabase = createClient();
+
+    // --- Data Fetching ---
+    useEffect(() => {
+        if (!subjectId) return;
+
+        const fetchSubjectData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // 1. Validate ID format (basic UUID check)
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(subjectId)) {
+                    throw new Error("Invalid ID format");
+                }
+
+                // 2. Fetch Hierarchy
+                // Query: Subject -> Units -> Lessons
+                const { data, error: fetchError } = await supabase
+                    .from('subjects')
+                    .select('*, units(*, lessons(*))')
+                    .eq('id', subjectId)
+                    .single();
+
+                if (fetchError) {
+                    if (fetchError.code === 'PGRST116') { // code for no rows found
+                        throw new Error("Subject not found in Database");
+                    }
+                    console.error("Supabase Error:", fetchError);
+                    throw new Error("Connection Failed");
+                }
+
+                if (!data) {
+                    throw new Error("Subject not found in Database");
+                }
+
+                // 3. Format & Sort Data
+                // Ensure lessons/units are sorted by created_at or sequence if available
+                const formattedSubject: Subject = {
+                    ...data,
+                    units: (data.units || []).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                        .map((unit: any) => ({
+                            ...unit,
+                            lessons: (unit.lessons || []).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                        }))
+                };
+
+                setSubject(formattedSubject);
+
+                // 4. Set Initial State
+                if (formattedSubject.units.length > 0) {
+                    // Expand first unit
+                    const firstUnit = formattedSubject.units[0];
+                    setExpandedUnits(new Set([firstUnit.id]));
+
+                    // Select first lesson if available
+                    if (firstUnit.lessons.length > 0) {
+                        setActiveLesson(firstUnit.lessons[0]);
+                    }
+                }
+
+            } catch (err: any) {
+                console.error("Fetch Error:", err);
+                setError(err.message || "An unexpected error occurred");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSubjectData();
+
+        // --- Realtime Subscription (Admin Panel Compatibility) ---
+        // Listen for changes in units or lessons to refresh data
+        // For simplicity, we re-fetch on any change related to this subject's units/lessons
+        // Ideally we would listen to specific filters, but 'public' schema events work broadly.
+        const channel = supabase.channel('subject-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'units', filter: `subject_id=eq.${subjectId}` }, () => {
+                fetchSubjectData();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, () => {
+                // We'd ideally filter lessons by unit_id -> subject_id, but without complex filters, 
+                // we can just re-fetch to be safe (client-side this is cheap for single user)
+                fetchSubjectData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+
+    }, [subjectId]);
+
+    // --- Helper Functions ---
+    const toggleUnit = (unitId: string) => {
+        setExpandedUnits(prev => {
+            const next = new Set(prev);
+            if (next.has(unitId)) next.delete(unitId);
+            else next.add(unitId);
+            return next;
+        });
+    };
+
+    // --- Render States ---
+
+    // 1. Loading
+    if (loading) {
         return (
-            <div className="p-10 bg-red-900 text-white border-2 border-red-500 m-10 rounded text-xl">
-                <h1>🚨 DEBUG MODE: AUTH FAILED</h1>
-                <p>User is not logged in.</p>
-                <p>Auth Error: {authError?.message}</p>
+            <div className="flex h-screen items-center justify-center bg-black/95">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                    <p className="text-white/50 text-sm animate-pulse">جاري تحميل المادة...</p>
+                </div>
             </div>
         );
     }
 
-    // 2. Fetch User Profile with Plan
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, is_subscribed, active_plan_id')
-        .eq('id', user.id)
-        .single();
-
-    if (!profile) redirect("/login");
-
-    const isAdmin = profile.role === 'admin';
-
-    // 3. Fetch Subject
-    // 3. Fetch Subject (Defensive)
-    let subject = null;
-    try {
-        const { data, error } = await supabase
-            .from('subjects')
-            .select('*')
-            .eq('id', subjectId)
-            .single();
-
-        if (error) throw error;
-        subject = data;
-    } catch (err: any) {
-        console.error("Subject Fetch Critical Error:", err);
+    // 2. Error
+    if (error) {
         return (
-            <div className="p-10 bg-red-900 text-white border-2 border-red-500 m-10 rounded text-xl" style={{ direction: 'ltr' }}>
-                <h1>🚨 DEBUG MODE</h1>
-                <p>The redirect was stopped manually.</p>
-                <p>Error Message: {err?.message || "Unknown Error"}</p>
-                <p>Subject ID received: {subjectId}</p>
-                <pre className="mt-4 text-sm bg-black p-4 rounded">{JSON.stringify(err, null, 2)}</pre>
-            </div>
-        );
-    }
-
-    if (!subject) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-                <GlassCard className="p-8 text-center max-w-md border-yellow-500/20">
-                    <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-white mb-2">المادة غير متوفرة</h2>
-                    <p className="text-white/60 mb-6">
-                        لم يتم العثور على المادة "Subject ID: {subjectId}". قد تكون حذفت أو غير متاحة.
-                    </p>
+            <div className="flex h-screen items-center justify-center bg-black/95 p-4">
+                <GlassCard className="max-w-md w-full p-8 border-red-500/20 text-center">
+                    <div className="bg-red-500/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertTriangle className="w-8 h-8 text-red-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-2">حدث خطأ</h2>
+                    <p className="text-white/60 mb-6">{error}</p>
                     <Link
                         href="/materials"
-                        className="inline-flex items-center gap-2 px-6 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 rounded-lg transition-colors border border-yellow-500/20"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors border border-white/10 w-full"
                     >
                         <ArrowLeft size={16} />
                         العودة للمواد
@@ -94,72 +198,179 @@ export default async function SubjectPage({ params }: PageProps) {
         );
     }
 
-    // 4. Fetch Units (Public)
-    const { data: units } = await supabase
-        .from('units')
-        .select('*')
-        .eq('subject_id', subjectId)
-        .order('created_at');
-
-    let unitsWithLessons = [];
-
-    if (units && units.length > 0) {
-        // Fetch ALL lessons (we will filter/sanitize in memory for complex permission logic)
-        // Note: Ideally, we use complex RLS or a View, but for granular 'plan' check, 
-        // JS logic is often easier unless we join tables in RLS.
-        const { data: allLessons } = await supabase
-            .from('lessons')
-            .select('*')
-            .in('unit_id', units.map(u => u.id))
-            .order('created_at');
-
-        unitsWithLessons = units.map(unit => {
-            const unitLessons = allLessons?.filter(l => l.unit_id === unit.id) || [];
-
-            return {
-                ...unit,
-                lessons: unitLessons.map(lesson => {
-                    // Start with full access assumption for admin
-                    let hasAccess = isAdmin;
-
-                    if (!isAdmin) {
-                        // Check if lesson requires a plan
-                        if (lesson.required_plan_id) {
-                            // Must correspond to user's active plan
-                            hasAccess = profile.active_plan_id === lesson.required_plan_id;
-                        } else {
-                            // If no specific plan required, fallback to general subscription or free
-                            // Assuming 'is_free' flag exists or default to subscribed
-                            // If user is just 'subscribed' (legacy) and lesson has NO plan requirement, do they get access?
-                            // Yes, if is_subscribed is true.
-                            // Or if lesson is explicitly free (legacy field).
-                            // Let's assume: is_free OR (is_subscribed AND !required_plan_id)
-                            hasAccess = !!lesson.is_free || !!profile.is_subscribed;
-                        }
-                    }
-
-                    // Sanitize if no access
-                    if (hasAccess) {
-                        return lesson;
-                    } else {
-                        return {
-                            ...lesson,
-                            video_url: null, // REDACTED
-                            youtube_id: null,
-                            pdf_url: null,    // REDACTED
-                            is_locked: true   // UI Flag
-                        };
-                    }
-                })
-            };
-        });
-    }
+    // 3. Success (Empty State?)
+    if (!subject) return null; // Should be handled by error state, but typescript safety
 
     return (
-        <SubjectView
-            subject={subject}
-            units={unitsWithLessons}
-            isSubscribed={profile.is_subscribed || isAdmin} // General UI state, specific locks handled in lesson data
-        />
+        <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans" dir="rtl">
+            {/* Header */}
+            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/materials"
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors border border-white/5"
+                    >
+                        <ArrowLeft size={20} />
+                    </Link>
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                                {subject.name}
+                            </h1>
+                            <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">
+                                {subject.units.length} وحدات
+                            </span>
+                        </div>
+                        <p className="text-white/40 text-sm mt-1 flex items-center gap-2">
+                            <BookOpen size={14} />
+                            تصفح الدروس والمحتوى التعليمي
+                        </p>
+                    </div>
+                </div>
+
+                {/* Progress Bar (Mockup for Visual) */}
+                <div className="w-full md:w-64">
+                    <div className="flex justify-between text-xs text-white/50 mb-2">
+                        <span>نسبة الإنجاز</span>
+                        <span>0%</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 w-[0%] rounded-full" />
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+
+                {/* Left: Video Area (Taking up 8 cols) */}
+                <div className="lg:col-span-8 flex flex-col gap-6">
+                    <div className="relative w-full aspect-video bg-black/40 rounded-2xl border border-white/10 overflow-hidden shadow-2xl flex items-center justify-center group">
+                        {activeLesson ? (
+                            activeLesson.video_url ? (
+                                <EncodedVideoPlayer
+                                    encodedVideoId={activeLesson.video_url}
+                                // onEnded={() => {}} // Could attach progress logic here
+                                />
+                            ) : (
+                                <div className="text-center p-8">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <Lock className="w-8 h-8 text-white/30" />
+                                    </div>
+                                    <p className="text-white/50">لا يوجد فيديو لهذا الدرس</p>
+                                </div>
+                            )
+                        ) : (
+                            <div className="text-center p-8">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Video className="w-8 h-8 text-white/30" />
+                                </div>
+                                <p className="text-white/50">اختر درساً للبدء</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Active Lesson Details */}
+                    {activeLesson && (
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-2">{activeLesson.title}</h2>
+                                    <div className="flex items-center gap-4 text-sm text-white/50">
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock size={16} className="text-blue-400" />
+                                            {activeLesson.duration || "غير محدد"}
+                                        </div>
+                                        {/* Add more metadata if needed */}
+                                    </div>
+                                </div>
+                                {activeLesson.pdf_url && (
+                                    <a
+                                        href={activeLesson.pdf_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg transition-colors border border-blue-600/20 text-sm font-medium"
+                                    >
+                                        <FileText size={18} />
+                                        تحميل PDF
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right: Units List (Taking up 4 cols) */}
+                <div className="lg:col-span-4 flex flex-col h-full bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="p-4 border-b border-white/5">
+                        <h3 className="font-bold text-lg flex items-center gap-2">
+                            <Layout size={20} className="text-white/60" />
+                            محتوى المادة
+                        </h3>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                        {subject.units.length > 0 ? (
+                            subject.units.map((unit) => (
+                                <div key={unit.id} className="bg-white/5 rounded-xl overflow-hidden border border-white/5">
+                                    <button
+                                        onClick={() => toggleUnit(unit.id)}
+                                        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-right"
+                                    >
+                                        <span className="font-bold text-white/90">{unit.title}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs px-2 py-1 bg-black/40 rounded-md text-white/50">
+                                                {unit.lessons.length}
+                                            </span>
+                                            {/* Chevron could go here */}
+                                        </div>
+                                    </button>
+
+                                    {/* Lessons List */}
+                                    {expandedUnits.has(unit.id) && (
+                                        <div className="bg-black/20 border-t border-white/5 p-2 space-y-1">
+                                            {unit.lessons.length > 0 ? (
+                                                unit.lessons.map((lesson) => (
+                                                    <button
+                                                        key={lesson.id}
+                                                        onClick={() => setActiveLesson(lesson)}
+                                                        className={`w-full flex items-center gap-3 p-3 rounded-lg text-right transition-all group
+                                                            ${activeLesson?.id === lesson.id
+                                                                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                                                : 'hover:bg-white/5 text-white/70 border border-transparent'
+                                                            }
+                                                        `}
+                                                    >
+                                                        <div className={`
+                                                            w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors
+                                                            ${activeLesson?.id === lesson.id ? 'bg-blue-500/20' : 'bg-white/5 group-hover:bg-white/10'}
+                                                        `}>
+                                                            <PlayCircle size={16} className={activeLesson?.id === lesson.id ? "fill-blue-500/20" : ""} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium truncate">{lesson.title}</p>
+                                                            <p className="text-[10px] text-white/30 truncate mt-0.5">{lesson.duration || "00:00"}</p>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="p-4 text-center text-xs text-white/30">
+                                                    لا توجد دروس
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-white/30">
+                                لا توجد وحدات
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+        </div>
     );
 }
