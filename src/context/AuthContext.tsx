@@ -71,14 +71,15 @@ export function AuthProvider({
     const isMounted = useRef(false);
 
     // --- FETCH STRATEGY: TIMEOUT-GUARDED SPLIT FETCH ---
+    // --- FETCH STRATEGY: TIMEOUT-GUARDED SPLIT FETCH ---
     const fetchProfile = useCallback(async (userId: string) => {
         console.log("👤 Connecting to Real DB with 3s Timeout...");
         try {
             // STEP 1: Define the Real Request (Optimized Columns)
-            // Adapting 'name' -> 'full_name' and 'avatar' -> 'avatar_url' to match schema/interface
+            // ✅ CORRECTION: 'full_name' is the real column, 'avatar_url' does NOT exist.
             const dbQuery = supabase
                 .from('profiles')
-                .select('id, full_name, role, avatar_url, major_id, wilaya_id, is_profile_complete')
+                .select('id, full_name, role, email, major_id, wilaya_id, is_profile_complete')
                 .eq('id', userId)
                 .single();
 
@@ -126,8 +127,11 @@ export function AuthProvider({
             await Promise.all(promises);
 
             // STEP 5: Merge and Return
+            // 🔄 MAPPING: full_name -> name, avatar -> null
             const finalProfile = {
                 ...profile,
+                name: profile.full_name, // Map for compatibility
+                avatar: null,            // Hardcode null (no column)
                 major_name: majorName,
                 wilaya_name: wilayaName
             } as any;
