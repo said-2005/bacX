@@ -70,11 +70,17 @@ export default function MaterialsClient() {
             }
 
             if (data) {
-                setSubjects(data.map((s: any) => ({
-                    ...s,
-                    unitCount: s.unitCount || 0,
-                    lessonCount: s.lessonCount || 0
-                })));
+                setSubjects(data
+                    .filter((s: any) => {
+                        const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.id);
+                        if (!isValid) console.warn("skipping invalid id subject", s.id);
+                        return isValid;
+                    })
+                    .map((s: any) => ({
+                        ...s,
+                        unitCount: s.unitCount || 0,
+                        lessonCount: s.lessonCount || 0
+                    })));
             }
         } catch (e: any) {
             console.error("[MaterialsClient] Fetch error:", e);

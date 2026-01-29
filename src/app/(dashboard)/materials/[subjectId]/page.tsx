@@ -73,7 +73,8 @@ export default function SubjectDetailsPage() {
                 // 1. Validate ID format (basic UUID check)
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 if (!uuidRegex.test(subjectId)) {
-                    throw new Error("Invalid ID format");
+                    console.error("❌ Invalid ID format received:", subjectId);
+                    throw new Error(`Invalid ID format: "${subjectId}"`);
                 }
 
                 // 2. Fetch Hierarchy

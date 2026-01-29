@@ -73,7 +73,7 @@ export function AuthProvider({
     // --- FETCH STRATEGY: TIMEOUT-GUARDED SPLIT FETCH ---
     // --- FETCH STRATEGY: TIMEOUT-GUARDED SPLIT FETCH ---
     const fetchProfile = useCallback(async (userId: string) => {
-        console.log("👤 Connecting to Real DB with 3s Timeout...");
+        console.log("👤 Connecting to Real DB with 15s Timeout...");
         try {
             // STEP 1: Define the Real Request (Optimized Columns)
             // ✅ CORRECTION: 'full_name' is the real column, 'avatar_url' does NOT exist.

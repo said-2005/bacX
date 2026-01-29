@@ -40,7 +40,11 @@ export function SubjectCards({ query }: SubjectCardsProps) {
 
             if (error) throw error;
 
-            setSubjects(data || []);
+            setSubjects((data || []).filter((s: any) => {
+                const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.id);
+                if (!isValidUUID) console.warn("⚠️ Skipping Subject with Invalid ID:", s.id, s.name);
+                return isValidUUID;
+            }));
         } catch (err: any) {
             console.error("Fetch failed", err);
             setError(err.message || "Failed to load subjects");
