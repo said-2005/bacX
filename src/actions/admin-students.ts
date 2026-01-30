@@ -42,7 +42,14 @@ export async function getStudents(
         .range((page - 1) * 10, ((page - 1) * 10) + 9);
 
     if (query) {
-        dbQuery = dbQuery.ilike('full_name', `%${query}%`);
+        // Search by Name, Email, or Phone (if exists in metadata/profile)
+        // Note: 'phone' might not be a top-level column on profiles depending on schema.
+        // Assuming 'full_name' is on profiles. 'email' is usually on profiles too for convenience,
+        // or we have to join auth.users (which we can't easily do with client sdk).
+        // Let's assume profiles has these fields as per "StudentProfile" interface above?
+        // Wait, interface only has: full_name, email, wilaya...
+        // Let's check if 'phone' is in schema. If not, we search what we can.
+        dbQuery = dbQuery.or(`full_name.ilike.%${query}%,email.ilike.%${query}%`);
     }
 
     if (filter === 'active') {
@@ -152,5 +159,148 @@ export async function extendSubscription(userId: string, daysToAdd: number) {
         .eq('id', userId);
 
     if (error) throw error;
+    revalidatePath('/admin/students');
+}
+// ------------------------------------------------------------------
+// NEW: Student Detail View Actions
+// ------------------------------------------------------------------
+
+export async function getStudentDetails(studentId: string) {
+    const supabaseAdmin = createAdminClient();
+
+    // 1. Fetch Profile (Identity)
+    const { data: profile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', studentId)
+        .single();
+
+    if (profileError || !profile) {
+        console.error("Profile fetch error:", profileError);
+        return null;
+    }
+
+    // 2. Fetch Payments (Financial History)
+    // Assuming 'payment_receipts' table
+    const { data: payments } = await supabaseAdmin
+        .from('payment_receipts')
+        .select('*')
+        .eq('user_id', studentId)
+        .order('created_at', { ascending: false });
+
+    // 3. Fetch Activity Log (Progress/Auth)
+    // a. Security Logs (Last 5)
+    const { data: securityLogs } = await supabaseAdmin
+        .from('security_logs')
+        .select('*')
+        .eq('user_id', studentId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+    // b. Progress (Last 5 Lessons)
+    // We need to join with lessons to get titles
+    const { data: progress } = await supabaseAdmin
+        .from('user_progress')
+        .select('*, lessons(title)')
+        .eq('user_id', studentId)
+        .order('updated_at', { ascending: false })
+        .limit(5);
+
+    return {
+        profile,
+        payments: payments || [],
+        securityLogs: securityLogs || [],
+        recentProgress: progress || []
+    };
+}
+
+// ------------------------------------------------------------------
+// NEW: Masquerade / Magic Link
+// ------------------------------------------------------------------
+
+export async function generateImpersonationLink(userId: string) {
+    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+
+    // 1. Verify Admin (Redundant check but safe)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    // 2. Get Student Email
+    const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+    if (!profile?.email) throw new Error("Student email not found");
+
+    // 3. Generate Magic Link
+    // Note: This sends an email by default unless we use 'generateLink' which returns the link.
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: profile.email,
+        options: {
+            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+        }
+    });
+
+    if (error) {
+        console.error("Masquerade failed:", error);
+        throw new Error("Failed to generate link");
+    }
+
+    return data.properties?.action_link;
+}
+// ------------------------------------------------------------------
+// NEW: Bulk Actions
+// ------------------------------------------------------------------
+
+export async function bulkUpdateStudents(
+    userIds: string[],
+    action: 'ban' | 'unban' | 'expire'
+) {
+    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+
+    // 1. Verify Admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    // 2. Perform Actions
+    if (action === 'ban' || action === 'unban') {
+        const shouldBan = action === 'ban';
+
+        // Update Profiles
+        const { error } = await supabaseAdmin
+            .from('profiles')
+            .update({ is_banned: shouldBan } as any)
+            .in('id', userIds);
+
+        if (error) throw error;
+
+        // Update Auth (Loop needed for admin API usually, or parallel promises)
+        // Optimization: We can't batch update auth users easily with one query.
+        await Promise.all(userIds.map(async (uid) => {
+            if (shouldBan) {
+                await supabaseAdmin.auth.admin.updateUserById(uid, { ban_duration: "876000h" });
+                await supabaseAdmin.auth.admin.signOut(uid);
+            } else {
+                await supabaseAdmin.auth.admin.updateUserById(uid, { ban_duration: "0" });
+            }
+        }));
+
+    } else if (action === 'expire') {
+        const { error } = await supabaseAdmin
+            .from('profiles')
+            .update({
+                is_subscribed: false,
+                subscription_end_date: new Date().toISOString()
+            })
+            .in('id', userIds);
+
+        if (error) throw error;
+    }
+
     revalidatePath('/admin/students');
 }

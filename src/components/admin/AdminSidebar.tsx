@@ -11,7 +11,8 @@ import {
     Layers,
     Settings,
     Hexagon,
-    LogOut
+    LogOut,
+    ShieldAlert
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -26,6 +27,7 @@ export function AdminSidebar() {
         { name: "Payments", href: "/admin/payments", icon: Receipt },
         { name: "Offers", href: "/admin/offers", icon: CreditCard },
         { name: "Content", href: "/admin/content", icon: Layers },
+        { name: "Logs", href: "/admin/logs", icon: ShieldAlert },
         { name: "Controls", href: "/admin/controls", icon: Settings },
     ];
 
