@@ -17,10 +17,29 @@ import { toggleBanStudent, manualsExpireSubscription } from "@/actions/admin-stu
 import { bulkBroadcast } from "@/actions/admin-broadcast";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce"; // [NEW] Import Hook
 
 export function StudentTable({ students, totalPages }: { students: any[], totalPages: number }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+
+    // [NEW] Debounced Search Logic
+    const [searchTerm, setSearchTerm] = useState(
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get("query") || "" : ""
+    );
+    const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms Delay
+
+    // Effect: Trigger Router ONLY when debounced value changes
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (debouncedSearchTerm) {
+            params.set("query", debouncedSearchTerm);
+        } else {
+            params.delete("query");
+        }
+        params.set("page", "1");
+        router.replace(`?${params.toString()}`);
+    }, [debouncedSearchTerm, router]);
 
     // Filter Logic can be added here pushing to URL
     // e.g. ?filter=expired
@@ -123,19 +142,9 @@ export function StudentTable({ students, totalPages }: { students: any[], totalP
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                     <input
                         placeholder="Search name, email, or phone..."
-                        defaultValue={new URLSearchParams(window.location.search).get("query") || ""}
+                        value={searchTerm} // Controlled Input
+                        onChange={(e) => setSearchTerm(e.target.value)} // Instant local update
                         className="w-full pl-12 pr-4 py-3 bg-black/20 border border-white/5 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
-                        onChange={(e) => {
-                            const params = new URLSearchParams(window.location.search);
-                            if (e.target.value) {
-                                params.set("query", e.target.value);
-                            } else {
-                                params.delete("query");
-                            }
-                            // Reset page on search
-                            params.set("page", "1");
-                            router.replace(`?${params.toString()}`);
-                        }}
                     />
                 </div>
                 <div className="flex gap-2">

@@ -180,31 +180,35 @@ export async function getStudentDetails(studentId: string) {
         return null;
     }
 
-    // 2. Fetch Payments (Financial History)
-    // Assuming 'payment_receipts' table
-    const { data: payments } = await supabaseAdmin
-        .from('payment_receipts')
-        .select('*')
-        .eq('user_id', studentId)
-        .order('created_at', { ascending: false });
+    // 2. Parallel Fetch: Payments, Logs, Progress
+    const [paymentsResult, securityLogsResult, progressResult] = await Promise.all([
+        // Fetch Payments
+        supabaseAdmin
+            .from('payment_receipts')
+            .select('*')
+            .eq('user_id', studentId)
+            .order('created_at', { ascending: false }),
 
-    // 3. Fetch Activity Log (Progress/Auth)
-    // a. Security Logs (Last 5)
-    const { data: securityLogs } = await supabaseAdmin
-        .from('security_logs')
-        .select('*')
-        .eq('user_id', studentId)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        // Fetch Security Logs
+        supabaseAdmin
+            .from('security_logs')
+            .select('*')
+            .eq('user_id', studentId)
+            .order('created_at', { ascending: false })
+            .limit(5),
 
-    // b. Progress (Last 5 Lessons)
-    // We need to join with lessons to get titles
-    const { data: progress } = await supabaseAdmin
-        .from('user_progress')
-        .select('*, lessons(title)')
-        .eq('user_id', studentId)
-        .order('updated_at', { ascending: false })
-        .limit(5);
+        // Fetch Progress
+        supabaseAdmin
+            .from('user_progress')
+            .select('*, lessons(title)')
+            .eq('user_id', studentId)
+            .order('updated_at', { ascending: false })
+            .limit(5)
+    ]);
+
+    const payments = paymentsResult.data || [];
+    const securityLogs = securityLogsResult.data || [];
+    const progress = progressResult.data || [];
 
     return {
         profile,
