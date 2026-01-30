@@ -308,3 +308,52 @@ export async function bulkUpdateStudents(
 
     revalidatePath('/admin/students');
 }
+
+// ------------------------------------------------------------------
+// NEW: Manual Plan Assignment (The "Linker")
+// ------------------------------------------------------------------
+
+export async function setStudentPlan(userId: string, planId: string | null, isSubscribed: boolean) {
+    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
+
+    // Verify Admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') throw new Error("Forbidden");
+
+    // Construct Update Object
+    const updateData: any = {
+        is_subscribed: isSubscribed,
+    };
+
+    if (isSubscribed) {
+        if (!planId) throw new Error("Plan ID is required for active subscriptions");
+        updateData.plan_id = planId;
+        
+        // If enabling subscription, ensure valid end date if expired
+        // We can fetch plan duration to be precise, or default to 1 year.
+        // For MANUAL linkage, if we are just "fixing" a record, we might preserve existing date 
+        // OR reset it. Let's reset to 1 year from now to be safe, or 30 days if not specified.
+        // BETTER: Fetch Plan Duration.
+        if (planId) {
+             const { data: plan } = await supabaseAdmin.from('subscription_plans').select('duration_days').eq('id', planId).single();
+             const days = plan?.duration_days || 365;
+             updateData.subscription_end_date = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+        }
+    } else {
+        // If deactivating, maybe clear plan_id? Or keep it for history?
+        // Usually we keep it or set active_plan_id to null if we had that column.
+        // Here we just set is_subscribed false.
+        updateData.subscription_end_date = new Date().toISOString(); // Expire now
+    }
+
+    const { error } = await supabaseAdmin
+        .from('profiles')
+        .update(updateData)
+        .eq('id', userId);
+
+    if (error) throw error;
+    revalidatePath('/admin/students');
+}

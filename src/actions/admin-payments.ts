@@ -65,12 +65,22 @@ export async function approvePayment(receiptId: string, userId: string, planId: 
     // 3. ENFORCE DATA INTEGRITY (The "Big Company" Standard)
     // Directly update the profile to ensure is_subscribed AND plan_id are set.
     // This is a redundant double-check against the RPC, ensuring the app state is correct.
+
+    // Fetch Plan Duration
+    const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('duration_days')
+        .eq('id', planId)
+        .single();
+
+    const durationDays = planData?.duration_days || 365;
+
     const { error: profileError } = await supabase
         .from('profiles')
         .update({
             is_subscribed: true,
             plan_id: planId, // <--- GUARANTEED ASSIGNMENT
-            subscription_end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // Default 1 year if not set by RPC
+            subscription_end_date: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString()
         })
         .eq('id', userId);
 

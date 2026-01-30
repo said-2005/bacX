@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Check, X, Eye, Calendar, User } from "lucide-react";
-import { SubscriptionCard } from "@/components/shared/SubscriptionCard"; // Used if we want to show which plan
+import { useState, useEffect } from "react";
+import { Check, X, Eye, Calendar, User, AlertTriangle } from "lucide-react";
+import { SubscriptionCard } from "@/components/shared/SubscriptionCard";
 import { approvePayment, rejectPayment, PaymentProof } from "@/actions/admin-payments";
+import { getActivePlans, SubscriptionPlan } from "@/actions/admin-plans"; // [NEW]
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -11,7 +12,21 @@ import Image from "next/image";
 export default function PaymentQueueClient({ payments }: { payments: any[] }) {
     const router = useRouter();
     const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
+    const [activePlans, setActivePlans] = useState<SubscriptionPlan[]>([]); // [NEW]
+    const [selectedPlanId, setSelectedPlanId] = useState<string>(""); // [NEW]
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // [NEW] Fetch Plans on Mount
+    useEffect(() => {
+        getActivePlans().then(setActivePlans).catch(console.error);
+    }, []);
+
+    // [NEW] Sync Plan ID when Receipt Selected
+    useEffect(() => {
+        if (selectedReceipt) {
+            setSelectedPlanId(selectedReceipt.plan_id || "");
+        }
+    }, [selectedReceipt]);
 
     const handleApprove = async () => {
         if (!selectedReceipt) return;
@@ -19,17 +34,13 @@ export default function PaymentQueueClient({ payments }: { payments: any[] }) {
 
         setIsProcessing(true);
         try {
-            // Need Plan ID logic. Assuming the receipt record has 'plan_id' or we ask admin to select one.
-            // Requirement said "Approve (Activate account)".
-            // If the user selected a plan during upload, it's in the DB.
-            // If NOT, we might need a selector.
-            // Let's assume for V1 reconstruction the `payment_receipts` table has `plan_id`.
-            // If not, I'll fallback to a default or ask admin. 
-            // For this UI, I will assume `plan_id` is present or I simply activate logic without specific plan if null (fallback).
-            // Actually, server action expects planId.
-            // I'll assume the receipt object has it.
+            if (!selectedPlanId) {
+                toast.error("Please select a plan to assign.");
+                setIsProcessing(false);
+                return;
+            }
 
-            await approvePayment(selectedReceipt.id, selectedReceipt.user_id, selectedReceipt.plan_id);
+            await approvePayment(selectedReceipt.id, selectedReceipt.user_id, selectedPlanId);
             toast.success("Account Activated");
             setSelectedReceipt(null);
             router.refresh();
@@ -109,6 +120,28 @@ export default function PaymentQueueClient({ payments }: { payments: any[] }) {
                                 )}
                             </div>
 
+                            <div className="w-full max-w-md mb-6">
+                                <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Assign Plan</label>
+                                <select
+                                    value={selectedPlanId}
+                                    onChange={(e) => setSelectedPlanId(e.target.value)}
+                                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                >
+                                    <option value="" disabled>Select Plan...</option>
+                                    {activePlans.map(plan => (
+                                        <option key={plan.id} value={plan.id}>
+                                            {plan.name} ({plan.price} DZD)
+                                        </option>
+                                    ))}
+                                </select>
+                                {!selectedReceipt.plan_id && (
+                                    <div className="flex items-center gap-2 mt-2 text-amber-500 text-xs">
+                                        <AlertTriangle size={12} />
+                                        <span>User did not select a plan. Please assign one manually.</span>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex items-center gap-4 w-full max-w-md">
                                 <button
                                     onClick={handleReject}
@@ -119,8 +152,8 @@ export default function PaymentQueueClient({ payments }: { payments: any[] }) {
                                 </button>
                                 <button
                                     onClick={handleApprove}
-                                    disabled={isProcessing}
-                                    className="flex-1 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2"
+                                    disabled={isProcessing || !selectedPlanId}
+                                    className="flex-1 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Check size={20} /> Activate Account
                                 </button>

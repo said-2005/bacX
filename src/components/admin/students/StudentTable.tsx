@@ -11,13 +11,15 @@ import {
     Clock,
     Filter,
     MessageSquare,
-    Send
+    Send,
+    Edit // [NEW]
 } from "lucide-react";
 import { toggleBanStudent, manualsExpireSubscription } from "@/actions/admin-students";
 import { bulkBroadcast } from "@/actions/admin-broadcast";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/useDebounce"; // [NEW] Import Hook
+import { useDebounce } from "@/hooks/useDebounce";
+import { ManageSubscriptionModal } from "./ManageSubscriptionModal"; // [NEW]
 
 export function StudentTable({ students, totalPages }: { students: any[], totalPages: number }) {
     const router = useRouter();
@@ -61,6 +63,7 @@ export function StudentTable({ students, totalPages }: { students: any[], totalP
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
     const [broadcastMessage, setBroadcastMessage] = useState("");
+    const [managingStudent, setManagingStudent] = useState<any | null>(null); // [NEW] State for Modal
 
     // BULK ACTIONS
     const handleSelectAll = (checked: boolean) => {
@@ -254,6 +257,17 @@ export function StudentTable({ students, totalPages }: { students: any[], totalP
                                                 <XCircle size={16} />
                                             </button>
                                         )}
+
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setManagingStudent(student);
+                                            }}
+                                            className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
+                                            title="Manage Subscription"
+                                        >
+                                            <Edit size={16} />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -367,6 +381,16 @@ export function StudentTable({ students, totalPages }: { students: any[], totalP
                         </div>
                     </div>
                 </div>
+            )}
+            {/* MANAGE SUBSCRIPTION MODAL */}
+            {managingStudent && (
+                <ManageSubscriptionModal
+                    student={managingStudent}
+                    onClose={() => setManagingStudent(null)}
+                    onSuccess={() => {
+                        router.refresh(); // Refresh table data
+                    }}
+                />
             )}
         </div>
     );
