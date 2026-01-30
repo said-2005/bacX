@@ -20,12 +20,14 @@ export interface UserProfile {
     is_profile_complete: boolean;
     is_subscribed?: boolean;
     subscription_end_date?: string;
+    plan_id?: string; // LINK TO PLAN
     avatar_url?: string;
     created_at: string;
     last_session_id?: string;
     // Extended properties
     major_name?: string;
     wilaya_name?: string;
+    plan_name?: string; // Extended
 }
 
 export interface AuthState {
@@ -79,7 +81,7 @@ export function AuthProvider({
             // ✅ CORRECTION: 'full_name' is the real column, 'avatar_url' does NOT exist.
             const dbQuery = supabase
                 .from('profiles')
-                .select('id, full_name, role, email, major_id, wilaya_id, is_profile_complete')
+                .select('id, full_name, role, email, major_id, wilaya_id, is_profile_complete, is_subscribed, subscription_end_date, plan_id')
                 .eq('id', userId)
                 .single();
 
@@ -103,9 +105,10 @@ export function AuthProvider({
 
             console.log("✅ Real Data Loaded (row only):", profile);
 
-            // STEP 4: Fetch Details in Parallel (Majors/Wilayas)
+            // STEP 4: Fetch Details in Parallel (Majors/Wilayas/Plans)
             let majorName = null;
             let wilayaName = null;
+            let planName = null;
             const promises = [];
 
             if (profile.major_id) {
@@ -124,6 +127,14 @@ export function AuthProvider({
                 );
             }
 
+            if (profile.plan_id) {
+                promises.push(
+                    supabase.from('subscription_plans').select('name').eq('id', profile.plan_id).single()
+                        .then(({ data }: { data: any }) => { if (data) planName = data.name; })
+                        .catch((err: any) => console.warn("⚠️ Failed to fetch plan:", err))
+                );
+            }
+
             await Promise.all(promises);
 
             // STEP 5: Merge and Return
@@ -133,7 +144,8 @@ export function AuthProvider({
                 name: profile.full_name, // Map for compatibility
                 avatar: null,            // Hardcode null (no column)
                 major_name: majorName,
-                wilaya_name: wilayaName
+                wilaya_name: wilayaName,
+                plan_name: planName
             } as any;
 
             console.log("✅ Profile Fully Loaded:", finalProfile);

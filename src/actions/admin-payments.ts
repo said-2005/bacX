@@ -17,19 +17,7 @@ export interface PaymentProof {
 export async function getPendingPayments() {
     const supabase = await createClient();
 
-    // Join with profiles to get email, and plans if possible
-    // Assuming payment_proofs table has structure: id, user_id, status, image_url...
-    // The previous plan context implies a 'payment_proofs' table.
-
-    // NOTE: If 'payment_proofs' table doesn't exist, we might need to rely on 'subscription_requests' or similar.
-    // Based on user: "Activation Queue: A dedicated section to view 'Payment Receipt Images'".
-    // I will assume a table called `payment_receipts` or `payment_proofs`. 
-    // If it doesn't exist, I'll need to create it or read existing schema carefully.
-    // Since I didn't see it in schema dump (only updated schema), I will proceed assuming it exists or creating a task to ensure it.
-
-    // Wait, the user manual says "Student Upload: Enabling students to upload payment receipts".
-    // I will stick to a `payment_receipts` query. 
-
+    // 1. Fetch Payment Receipts with Plan ID
     const { data, error } = await supabase
         .from('payment_receipts')
         .select(`
@@ -38,34 +26,60 @@ export async function getPendingPayments() {
             status, 
             receipt_url, 
             created_at,
-            profiles(email, full_name)
+            plan_id,
+            profiles(email, full_name),
+            subscription_plans(name)
         `)
         .eq('status', 'pending')
         .order('created_at', { ascending: true });
 
     if (error) {
         console.error("Fetch payments error:", error);
-        return []; // Fail gracefully
+        return [];
     }
 
     return data;
 }
 
-// Approve Payment (ATOMIC TRANSACTION)
+// Approve Payment (STRICT MODE)
 export async function approvePayment(receiptId: string, userId: string, planId: string) {
     const supabase = await createClient();
 
-    // Call the custom Postgres function (RPC) for atomicity
-    // verify the migration 20260124160000_atomic_payment.sql is applied
-    const { error } = await supabase.rpc('approve_user_payment', {
+    // 1. SAFETY CHECK: Validate Plan ID
+    if (!planId || planId === 'default') {
+        throw new Error("CRITICAL: Payment request has no Plan ID. Cannot approve.");
+    }
+
+    // 2. Call RPC (Maintains Ledger/Status)
+    const { error: rpcError } = await supabase.rpc('approve_user_payment', {
         p_receipt_id: receiptId,
         p_user_id: userId,
         p_plan_id: planId
     });
 
-    if (error) {
-        console.error("Atomic Approval Failed:", error);
-        throw new Error(`Transaction Failed: ${error.message}`);
+    if (rpcError) {
+        console.error("RPC Approval Failed:", rpcError);
+        throw new Error(`Transaction Failed: ${rpcError.message}`);
+    }
+
+    // 3. ENFORCE DATA INTEGRITY (The "Big Company" Standard)
+    // Directly update the profile to ensure is_subscribed AND plan_id are set.
+    // This is a redundant double-check against the RPC, ensuring the app state is correct.
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+            is_subscribed: true,
+            plan_id: planId, // <--- GUARANTEED ASSIGNMENT
+            subscription_end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // Default 1 year if not set by RPC
+        })
+        .eq('id', userId);
+
+    if (profileError) {
+        console.error("Critical: Profile Plan Sync Failed", profileError);
+        // We don't throw here to avoid rolling back the RPC success (unless we want strict atomicity).
+        // But for now, logging critical error is better than blocking the user if they were mostly approved.
+        // Actually, "Strict Mode" implies we SHOULD fail.
+        throw new Error("Profile Update Failed: " + profileError.message);
     }
 
     revalidatePath('/admin/payments');

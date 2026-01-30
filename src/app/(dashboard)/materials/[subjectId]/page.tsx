@@ -31,6 +31,11 @@ interface Lesson {
     unit_id: string;
     created_at: string;
     required_plan_id?: string | null; // Granular Access
+    subscription_plans?: {
+        id: string;
+        name: string;
+        price: number;
+    } | null;
 }
 
 interface Unit {
@@ -86,7 +91,7 @@ export default function SubjectDetailsPage() {
                 const [subjectResult, userResult] = await Promise.all([
                     supabase
                         .from('subjects')
-                        .select('*, units(*, lessons(*))')
+                        .select('*, units(*, lessons(*, subscription_plans(id, name, price)))')
                         .eq('id', subjectId)
                         .single(),
                     supabase.auth.getUser().then(({ data }: { data: { user: any } }) =>
@@ -213,15 +218,21 @@ export default function SubjectDetailsPage() {
     // 3. Success (Empty State?)
     if (!subject) return null; // Should be handled by error state, but typescript safety
 
-    // 4. Access Check Helper
+    // 4. Access Check Helper (STRICT MODE)
     const hasAccess = (lesson: Lesson) => {
         if (!userProfile) return false;
         if (userProfile.role === 'admin' || userProfile.role === 'super_admin') return true;
         if (lesson.is_free) return true;
 
-        // Plan Check
-        if (userProfile.is_subscribed) return true; // Full Access
-        // Granular check if implemented: if (lesson.required_plan_id === userProfile.plan_id) ...
+        // Granular Check
+        if (lesson.required_plan_id) {
+            // If lesson requires a specific plan, you MUST have it (or be admin)
+            // We ignore 'is_subscribed' here because a basic sub shouldn't view VIP content
+            return userProfile.plan_id === lesson.required_plan_id;
+        }
+
+        // Legacy/Fallback: If no specific plan required, any active subscription works
+        if (userProfile.is_subscribed) return true;
 
         return false;
     };
@@ -286,7 +297,11 @@ export default function SubjectDetailsPage() {
                                     </div>
                                 )
                             ) : (
-                                <PremiumLockScreen />
+                                <PremiumLockScreen
+                                    planName={activeLesson.subscription_plans?.name}
+                                    planId={activeLesson.subscription_plans?.id}
+                                    price={activeLesson.subscription_plans?.price?.toString()}
+                                />
                             )
                         ) : (
                             <div className="text-center p-8">

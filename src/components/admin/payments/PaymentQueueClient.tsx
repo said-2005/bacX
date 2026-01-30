@@ -29,7 +29,7 @@ export default function PaymentQueueClient({ payments }: { payments: any[] }) {
             // Actually, server action expects planId.
             // I'll assume the receipt object has it.
 
-            await approvePayment(selectedReceipt.id, selectedReceipt.user_id, selectedReceipt.plan_id || 'default');
+            await approvePayment(selectedReceipt.id, selectedReceipt.user_id, selectedReceipt.plan_id);
             toast.success("Account Activated");
             setSelectedReceipt(null);
             router.refresh();

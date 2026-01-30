@@ -69,10 +69,10 @@ export async function POST(request: Request) {
         // 5. AUTHORIZATION (The Real Fix)
         // Query DB: Does Lesson exist? Does User have plan?
 
-        // Fetch User's Plan
+        // Fetch User's Plan (Standardized to plan_id)
         const { data: profile } = await supabase
             .from('profiles')
-            .select('active_plan_id, role, is_subscribed')
+            .select('plan_id, role, is_subscribed')
             .eq('id', user.id)
             .single();
 
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
             hasAccess = true;
         } else if (lesson.required_plan_id) {
             // Strict Plan Match
-            hasAccess = profile.active_plan_id === lesson.required_plan_id;
+            hasAccess = profile.plan_id === lesson.required_plan_id;
         } else {
             // Legacy/Fallback
             hasAccess = !!profile.is_subscribed;

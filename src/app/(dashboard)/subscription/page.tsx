@@ -71,11 +71,11 @@ export default function SubscriptionPage() {
         fetchData();
     }, [user, supabase]);
 
-    // Computed Real Plan State
+    // Computed Real Plan State (Strict Mode)
     const currentPlan = profile?.is_subscribed
         ? {
-            name: "باقة VIP المميزة",
-            type: "Premium Member",
+            name: profile.plan_name || "باقة غير معروفة", // Fetched from DB relation
+            type: "VIP Member",
             expiry: profile.subscription_end_date ? new Date(profile.subscription_end_date).toLocaleDateString('ar-DZ') : "غير محدود",
             progress: 45 // TODO: Calculate dynamically based on dates
         }

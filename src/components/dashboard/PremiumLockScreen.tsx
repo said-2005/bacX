@@ -1,9 +1,16 @@
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { Lock, Crown, Phone } from "lucide-react";
+import { Lock, Crown, Phone, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
-export function PremiumLockScreen() {
+interface PremiumLockScreenProps {
+    price?: string;
+    planName?: string;
+    planId?: string;
+}
+
+export function PremiumLockScreen({ price, planName = "الباقة الذهبية (VIP)", planId }: PremiumLockScreenProps) {
     return (
         <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black/40 border border-white/10 backdrop-blur-sm flex items-center justify-center p-6 group">
             {/* Background Ambience */}
@@ -17,7 +24,7 @@ export function PremiumLockScreen() {
 
                 <h3 className="text-2xl font-bold text-white mb-2 font-serif">محتوى خاص بالمشتركين</h3>
                 <p className="text-white/60 mb-6 text-sm leading-relaxed">
-                    هذا الدرس متاح فقط لطلاب الباقة الذهبية (VIP). لتفعيل اشتراكك، يرجى التواصل مع الدكتور سعيد.
+                    هذا الدرس متاح فقط لطلاب <span className="text-white font-bold">{planName}</span>. لتفعيل اشتراكك، يرجى الاشتراك الآن.
                 </p>
 
                 <div className="space-y-3">
@@ -26,15 +33,22 @@ export function PremiumLockScreen() {
                             <Crown size={16} />
                         </div>
                         <div className="flex-1 text-right">
-                            <p className="text-xs text-purple-200 font-bold">الاشتراك السنوي</p>
+                            <p className="text-xs text-purple-200 font-bold">{planName}</p>
                             <p className="text-[10px] text-purple-300/60">وصول كامل لجميع المواد</p>
                         </div>
+                        {price && <div className="text-lg font-bold text-white">{price} <span className="text-xs font-normal opacity-50">دج</span></div>}
                     </div>
 
-                    <button className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
-                        <Phone size={16} />
-                        تواصل للتفعيل عبر Baridimob
-                    </button>
+                    {planId ? (
+                        <Link href={`/checkout/${planId}`} className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
+                            اشترك الآن <ArrowUpRight size={16} />
+                        </Link>
+                    ) : (
+                        <button className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
+                            <Phone size={16} />
+                            تواصل للتفعيل عبر Baridimob
+                        </button>
+                    )}
                 </div>
             </GlassCard>
         </div>
