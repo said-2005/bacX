@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import {
     Shield, Key, Loader2, Settings, Bell, Smartphone,
-    LogOut, Monitor, Clock, Mail, MessageSquare
+    LogOut, Monitor, Clock, Mail
 } from "lucide-react";
 import { toast } from "sonner";
 import { SmartButton } from "@/components/ui/SmartButton";
@@ -33,10 +33,11 @@ export default function SettingsPage() {
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [isSigningOutOthers, setIsSigningOutOthers] = useState(false);
 
-    // Notification States - Default to true/false, will be overwritten by DB
+    // =====================================================
+    // [REFACTOR] EMAIL NOTIFICATIONS ONLY - SMS REMOVED
+    // =====================================================
     const [notifyEmail, setNotifyEmail] = useState(true);
-    const [notifySms, setNotifySms] = useState(false);
-    const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+    const [isSavingEmail, setIsSavingEmail] = useState(false);
     const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
     // Device Info - MUST be inside useEffect to avoid SSR hydration errors
@@ -52,7 +53,7 @@ export default function SettingsPage() {
     });
 
     // =====================================================
-    // MAIN INITIALIZATION EFFECT - FRESH REWRITE
+    // INITIALIZATION: DEVICE DETECTION & EMAIL PREF FETCH
     // =====================================================
     useEffect(() => {
         let mounted = true;
@@ -62,7 +63,6 @@ export default function SettingsPage() {
         // -------------------------------------------------
         if (typeof window !== "undefined" && window.navigator) {
             const ua = window.navigator.userAgent;
-            console.log("DEBUG: Raw User Agent:", ua);
 
             let os = "نظام غير معروف";
             if (ua.includes("Win")) os = "Windows";
@@ -77,62 +77,44 @@ export default function SettingsPage() {
             else if (ua.includes("Firefox")) browser = "Firefox";
             else if (ua.includes("Safari")) browser = "Safari";
 
-            console.log("DEBUG: Detected OS:", os, "| Browser:", browser);
             if (mounted) setSessionInfo({ os, browser });
         }
 
         // -------------------------------------------------
-        // 2. FETCH NOTIFICATION PREFERENCES FROM DATABASE
+        // 2. FETCH EMAIL NOTIFICATION PREFERENCE ONLY
         // -------------------------------------------------
-        async function fetchSettings() {
+        async function fetchEmailPreference() {
             if (!user) {
-                console.log("DEBUG: No user found, skipping fetch");
                 if (mounted) setIsLoadingSettings(false);
                 return;
             }
 
-            console.log("DEBUG: Fetching settings for user:", user.id);
-
             try {
-                // CRITICAL: Use the CORRECT column names that exist in the database
+                // [REFACTOR] Only fetch email_notifications column
                 const { data, error } = await supabase
                     .from("profiles")
-                    .select("email_notifications, sms_notifications")
+                    .select("email_notifications")
                     .eq("id", user.id)
                     .single();
 
-                console.log("DEBUG: Supabase Response - data:", data);
-                console.log("DEBUG: Supabase Response - error:", error);
-
                 if (error) {
-                    // Log specific error for debugging
-                    console.error("DEBUG: Fetch failed with code:", error.code);
-                    console.error("DEBUG: Fetch failed with message:", error.message);
-                    console.error("DEBUG: Fetch failed with details:", error.details);
-                    console.error("DEBUG: Fetch failed with hint:", error.hint);
-                    // Keep defaults, don't crash
+                    console.error("Failed to fetch email preference:", error.message);
+                    // Keep default (true), don't crash
                     return;
                 }
 
                 if (mounted && data) {
-                    // Use nullish coalescing - only default if null/undefined
-                    const emailPref = data.email_notifications ?? true;
-                    const smsPref = data.sms_notifications ?? false;
-
-                    console.log("DEBUG: Setting email pref to:", emailPref);
-                    console.log("DEBUG: Setting sms pref to:", smsPref);
-
-                    setNotifyEmail(emailPref);
-                    setNotifySms(smsPref);
+                    // Default to true if null/undefined
+                    setNotifyEmail(data.email_notifications ?? true);
                 }
             } catch (err) {
-                console.error("DEBUG: Critical fetch error:", err);
+                console.error("Critical fetch error:", err);
             } finally {
                 if (mounted) setIsLoadingSettings(false);
             }
         }
 
-        fetchSettings();
+        fetchEmailPreference();
 
         return () => { mounted = false; };
     }, [user, supabase]);
@@ -176,21 +158,25 @@ export default function SettingsPage() {
     };
 
     // =====================================================
-    // SIGN OUT OTHER DEVICES HANDLER
+    // [AUDIT 1] SIGN OUT OTHER DEVICES - Uses Supabase Auth
+    // The Supabase SDK supports { scope: 'others' } to sign out
+    // all sessions except the current one. Wrapped in try/catch.
     // =====================================================
     const handleSignOutOtherDevices = async () => {
         setIsSigningOutOthers(true);
         try {
+            // Supabase Auth: scope: 'others' signs out all other sessions
             const { error } = await supabase.auth.signOut({ scope: "others" });
 
             if (error) {
                 toast.error("حدث خطأ أثناء تسجيل الخروج من الأجهزة الأخرى");
-                console.error(error);
+                console.error("Sign out others error:", error);
                 return;
             }
 
             toast.success("تم تسجيل الخروج من جميع الأجهزة الأخرى");
         } catch (error) {
+            // Fallback error handling
             console.error("Sign out others error:", error);
             toast.error("حدث خطأ غير متوقع");
         } finally {
@@ -199,50 +185,60 @@ export default function SettingsPage() {
     };
 
     // =====================================================
-    // SAVE NOTIFICATION PREFERENCES HANDLER
+    // [REFACTOR 3] EMAIL TOGGLE HANDLER - Optimistic UI
+    // Immediately updates UI, then persists to database.
+    // Reverts on error with toast feedback.
     // =====================================================
-    const handleSaveNotifications = async () => {
-        if (!user) {
-            console.log("DEBUG: Cannot save - no user");
-            return;
-        }
+    const handleEmailToggle = async () => {
+        if (!user || isLoadingSettings) return;
 
-        console.log("DEBUG: Saving notifications - email:", notifyEmail, "| sms:", notifySms);
-        setIsSavingNotifications(true);
+        // Store previous value for rollback
+        const previousValue = notifyEmail;
+        const newValue = !notifyEmail;
+
+        // OPTIMISTIC UI: Update immediately
+        setNotifyEmail(newValue);
+        setIsSavingEmail(true);
 
         try {
-            const updatePayload = {
-                email_notifications: notifyEmail,
-                sms_notifications: notifySms,
-                updated_at: new Date().toISOString()
-            };
-
-            console.log("DEBUG: Update payload:", updatePayload);
-
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from("profiles")
-                .update(updatePayload)
-                .eq("id", user.id)
-                .select();
-
-            console.log("DEBUG: Update response - data:", data);
-            console.log("DEBUG: Update response - error:", error);
+                .update({
+                    email_notifications: newValue,
+                    updated_at: new Date().toISOString()
+                })
+                .eq("id", user.id);
 
             if (error) {
-                toast.error("حدث خطأ أثناء حفظ التفضيلات");
-                console.error("DEBUG: Update error code:", error.code);
-                console.error("DEBUG: Update error message:", error.message);
+                // ROLLBACK on error
+                setNotifyEmail(previousValue);
+                toast.error("فشل حفظ الإعداد");
+                console.error("Email toggle error:", error);
                 return;
             }
 
-            toast.success("تم حفظ تفضيلات الإشعارات");
+            // SUCCESS feedback
+            toast.success(newValue ? "تم تفعيل إشعارات البريد" : "تم إيقاف إشعارات البريد");
         } catch (error) {
-            console.error("Save notifications error:", error);
+            // ROLLBACK on exception
+            setNotifyEmail(previousValue);
+            console.error("Email toggle exception:", error);
             toast.error("حدث خطأ غير متوقع");
         } finally {
-            setIsSavingNotifications(false);
+            setIsSavingEmail(false);
         }
     };
+
+    // =====================================================
+    // [AUDIT 2] DELETE ACCOUNT MAILTO LINK BUILDER
+    // Dynamically builds mailto: href with encoded params
+    // =====================================================
+    const userEmail = user?.email || "";
+    const deleteAccountMailto = `mailto:support@bac-x.com?subject=${encodeURIComponent(
+        "Account Deletion Request"
+    )}&body=${encodeURIComponent(
+        `User Email: ${userEmail}\n\nI would like to request the deletion of my account.\n\nReason:\n[Please specify your reason here]`
+    )}`;
 
     return (
         <div className="max-w-4xl mx-auto pb-20 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-6">
@@ -354,6 +350,7 @@ export default function SettingsPage() {
                                 إذا كنت تشك في أن حسابك قد تم استخدامه من جهاز آخر، يمكنك تسجيل الخروج من جميع الأجهزة الأخرى.
                             </p>
 
+                            {/* [AUDIT 1] Sign Out Other Devices - with loading state */}
                             <SmartButton
                                 isLoading={isSigningOutOthers}
                                 onClick={handleSignOutOtherDevices}
@@ -365,7 +362,11 @@ export default function SettingsPage() {
                         </div>
                     </GlassCard>
 
-                    {/* Notification Preferences */}
+                    {/* =====================================================
+                        [REFACTOR 3] NOTIFICATION PREFERENCES - EMAIL ONLY
+                        SMS toggle and all sms_notifications references removed.
+                        Email toggle now uses optimistic UI pattern.
+                    ===================================================== */}
                     <GlassCard className="p-6 space-y-6 border-white/10">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -376,7 +377,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="space-y-4">
-                            {/* Email Toggle */}
+                            {/* Email Toggle - Optimistic UI */}
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
@@ -384,47 +385,27 @@ export default function SettingsPage() {
                                     </div>
                                     <div>
                                         <p className="text-white font-medium">إشعارات البريد الإلكتروني</p>
-                                        <p className="text-white/40 text-xs">استلام التحديثات عبر البريد</p>
+                                        <p className="text-white/40 text-xs">استلام التحديثات والتنبيهات عبر البريد</p>
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => setNotifyEmail(!notifyEmail)}
-                                    disabled={isLoadingSettings}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${notifyEmail ? "bg-blue-600" : "bg-white/20"} ${isLoadingSettings ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    onClick={handleEmailToggle}
+                                    disabled={isLoadingSettings || isSavingEmail}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${notifyEmail ? "bg-blue-600" : "bg-white/20"} ${(isLoadingSettings || isSavingEmail) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                    aria-label="Toggle email notifications"
                                 >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${notifyEmail ? "right-1" : "left-1"}`} />
+                                    {isSavingEmail ? (
+                                        <Loader2 className="w-4 h-4 text-white absolute top-1 left-1/2 -translate-x-1/2 animate-spin" />
+                                    ) : (
+                                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${notifyEmail ? "right-1" : "left-1"}`} />
+                                    )}
                                 </button>
                             </div>
 
-                            {/* SMS Toggle */}
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                                        <MessageSquare className="w-5 h-5 text-green-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-white font-medium">إشعارات SMS</p>
-                                        <p className="text-white/40 text-xs">استلام التنبيهات العاجلة عبر الرسائل</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setNotifySms(!notifySms)}
-                                    disabled={isLoadingSettings}
-                                    className={`relative w-12 h-6 rounded-full transition-colors ${notifySms ? "bg-green-600" : "bg-white/20"} ${isLoadingSettings ? "opacity-50 cursor-not-allowed" : ""}`}
-                                >
-                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${notifySms ? "right-1" : "left-1"}`} />
-                                </button>
-                            </div>
-
-                            <SmartButton
-                                isLoading={isSavingNotifications}
-                                onClick={handleSaveNotifications}
-                                disabled={isLoadingSettings}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg"
-                            >
-                                <Bell className="w-4 h-4 ml-2" />
-                                حفظ تفضيلات الإشعارات
-                            </SmartButton>
+                            {/* Status indicator */}
+                            <p className="text-white/40 text-xs">
+                                {notifyEmail ? "✓ الإشعارات مفعّلة" : "✗ الإشعارات متوقفة"}
+                            </p>
                         </div>
                     </GlassCard>
                 </div>
@@ -444,15 +425,19 @@ export default function SettingsPage() {
                         </ul>
                     </GlassCard>
 
-                    {/* DELETE ACCOUNT - HARDCODED MAILTO LINK */}
+                    {/* =====================================================
+                        [AUDIT 2] DELETE ACCOUNT - Functional mailto: link
+                        Uses encodeURIComponent for subject and body.
+                        Email is dynamically retrieved from user state.
+                    ===================================================== */}
                     <GlassCard className="p-6 border-white/10 bg-red-600/5">
                         <h3 className="text-lg font-bold text-white mb-2">حذف الحساب</h3>
                         <p className="text-sm text-white/60 mb-4">
                             لأسباب أمنية وتاريخية، لا يمكن حذف الحساب تلقائيًا. يرجى التواصل مع الدعم.
                         </p>
-                        {/* HARDCODED MAILTO - NO JAVASCRIPT */}
+                        {/* Functional mailto: anchor tag */}
                         <a
-                            href={`mailto:support@bac-x.com?subject=${encodeURIComponent("طلب حذف الحساب - " + (user?.email || ""))}&body=${encodeURIComponent("مرحباً فريق الدعم،\n\nأرغب في طلب حذف حسابي المرتبط بالبريد الإلكتروني: " + (user?.email || "") + "\n\nالسبب:\n[اكتب السبب هنا]\n\nشكراً")}`}
+                            href={deleteAccountMailto}
                             className="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-300 underline transition-colors"
                         >
                             <Mail className="w-4 h-4" />
