@@ -206,7 +206,7 @@ export default function EncodedVideoPlayer({ encodedVideoId, shouldMute = false,
             {/* 1. THE IFRAME (GHOST MODE) */}
             <iframe
                 ref={iframeRef}
-                src={`https://www.youtube-nocookie.com/embed/${decodedId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=0&disablekb=1&playsinline=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                src={`https://www.youtube-nocookie.com/embed/${decodedId}?enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&playsinline=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                 className={cn(
                     "w-full h-full object-cover pointer-events-none scale-[1.01] transition-opacity duration-700 ease-in-out",
                     isReady ? "opacity-100" : "opacity-0"
@@ -291,7 +291,7 @@ export default function EncodedVideoPlayer({ encodedVideoId, shouldMute = false,
             </div>
 
             {/* Loading Spinner / Big Play Button Overlay */}
-            {(!isPlaying && !isBuffering) && (
+            {(!isPlaying && !isBuffering && isReady) && (
                 <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center">
                     <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center animate-in fade-in zoom-in duration-300">
                         <Play size={32} fill="white" className="text-white ml-1" />
@@ -301,7 +301,7 @@ export default function EncodedVideoPlayer({ encodedVideoId, shouldMute = false,
 
             {/* [NEW] Buffering / Initial Load Spinner */}
             {(isBuffering || !isReady) && (
-                <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center bg-black">
                     <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
                 </div>
             )}
