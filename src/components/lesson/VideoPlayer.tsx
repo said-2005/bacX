@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 // import { GlassCard } from "../ui/GlassCard"; // Unused
