@@ -54,7 +54,7 @@ export function useProfileData(): UseProfileDataResult {
                 throw new Error("No authenticated user");
             }
 
-            console.log('[useProfileData] Fetching profile for:', user.id);
+            // Fetching profile (log removed)
 
             // Step 2: Profile fetch with FK joins
             // User requested explicit branches(id, name) join.
@@ -70,7 +70,7 @@ export function useProfileData(): UseProfileDataResult {
                 throw new Error(profileError.message);
             }
 
-            console.log('[useProfileData] Raw data:', data);
+            // Raw data loaded (log removed)
 
             // Step 3: Build profile object
             const majorName = (data?.branches as any)?.name || "غير محدد"; // Default from join
@@ -95,7 +95,7 @@ export function useProfileData(): UseProfileDataResult {
 
             if (isMountedRef.current) {
                 setProfile(profileData);
-                console.log('[useProfileData] ✅ Profile loaded:', profileData.full_name);
+                // Profile loaded (log removed)
             }
 
         } catch (err: any) {

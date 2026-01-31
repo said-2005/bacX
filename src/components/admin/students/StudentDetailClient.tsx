@@ -14,11 +14,45 @@ import {
     generateImpersonationLink
 } from "@/actions/admin-students";
 
+interface Student {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    role: string;
+    created_at: string;
+    is_banned: boolean;
+    is_subscribed: boolean;
+    subscription_end_date?: string | null;
+}
+
+interface Payment {
+    id: string;
+    amount: number;
+    status: 'approved' | 'pending' | 'rejected';
+    created_at: string;
+    receipt_url?: string;
+}
+
+interface ActivityLog {
+    id: string;
+    event: string;
+    created_at: string;
+}
+
+interface Progress {
+    id: string;
+    updated_at: string;
+    lessons: {
+        title: string;
+    } | null;
+}
+
 interface StudentDetailProps {
-    student: any;
-    payments: any[];
-    activityLogs: any[];
-    progress: any[];
+    student: Student;
+    payments: Payment[];
+    activityLogs: ActivityLog[];
+    progress: Progress[];
 }
 
 export default function StudentDetailClient({ student, payments, activityLogs, progress }: StudentDetailProps) {
@@ -31,7 +65,7 @@ export default function StudentDetailClient({ student, payments, activityLogs, p
         ? new Date(student.subscription_end_date).toLocaleDateString(undefined, { dateStyle: 'long' })
         : "N/A";
 
-    const isSubscribed = student.is_subscribed && new Date(student.subscription_end_date) > new Date();
+    const isSubscribed = student.is_subscribed && student.subscription_end_date && new Date(student.subscription_end_date) > new Date();
 
     // HANDLERS
 
@@ -270,12 +304,12 @@ export default function StudentDetailClient({ student, payments, activityLogs, p
 }
 
 function Badge({ status }: { status: string }) {
-    const styles = {
+    const styles: Record<string, string> = {
         approved: "bg-green-500/10 text-green-400 border-green-500/20",
         pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
         rejected: "bg-red-500/10 text-red-400 border-red-500/20"
     };
-    // @ts-ignore
+
     const style = styles[status] || "bg-zinc-500/10 text-zinc-400";
 
     return (

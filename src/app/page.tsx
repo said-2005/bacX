@@ -5,7 +5,7 @@ import { HeroSection } from "@/components/sections/HeroSection";
 import { MasterclassSection } from "@/components/home/MasterclassSection";
 import { PricingSection } from "@/components/home/PricingSection";
 import { getActivePlans } from "@/actions/admin-plans";
-import { AuthStatusBtn } from "@/components/marketing/AuthStatusBtn";
+import { AuthButton } from "@/components/marketing/AuthButton";
 
 export const metadata: Metadata = {
   title: "BRAINY - منصة التفوق الأكاديمي",
@@ -23,7 +23,7 @@ export default function LandingPage() {
 
       {/* HEADER / NAVIGATION (Anti-Band Fixed & Transparent) - CLIENT AUTH */}
       <LandingNavbar
-        authButton={<AuthStatusBtn />}
+        authButton={<AuthButton />}
       />
 
       {/* 1. HERO SECTION (The Masterpiece) */}

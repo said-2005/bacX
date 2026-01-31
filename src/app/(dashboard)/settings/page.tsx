@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import SettingsForm from "./SettingsForm";
 import { SettingsSkeleton } from "@/components/skeletons/SettingsSkeleton";
+import { getUserSettings } from "@/services/user.service";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,16 +12,12 @@ async function SettingsPageContent() {
 
     if (!user) return <div>Unauthorized</div>;
 
-    // Fetch Email Preference (Fast Single Query)
-    const { data } = await supabase
-        .from("profiles")
-        .select("email_notifications")
-        .eq("id", user.id)
-        .single();
+    // Fetch via Service Layer
+    const { emailNotifications } = await getUserSettings(user.id);
 
     return (
         <SettingsForm
-            initialEmailPrefs={data?.email_notifications ?? true}
+            initialEmailPrefs={emailNotifications}
         />
     );
 }

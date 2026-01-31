@@ -3,8 +3,7 @@ import { updateSession } from '@/utils/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
     // 🔍 DEBUG LOGGING
-    console.log('⚡ MIDDLEWARE HIT:', request.nextUrl.pathname);
-    console.log('🍪 Middleware Cookies:', request.cookies.getAll().length);
+    // 🔍 DEBUG LOGGING REMOVED
 
     // 1. PERFORMANCE FIX: Static Environment Check
     // Set NEXT_PUBLIC_MAINTENANCE_MODE="true" in Vercel/System Env to activate.

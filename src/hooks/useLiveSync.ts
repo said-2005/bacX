@@ -35,7 +35,7 @@ export function useLiveSync({
 
         // Check if we fell behind
         if (drift > threshold) {
-            console.log(`[LiveSync] Drift detected: ${drift.toFixed(1)}s. Syncing to edge...`);
+            // Drift detected, syncing...
 
             const targetTime = duration - targetBuffer;
             onSeek(targetTime);
