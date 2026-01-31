@@ -35,7 +35,7 @@ const LandingNavbarComponent = function LandingNavbar({ authButton }: { authButt
                     <img
                         src="/images/brainy-logo-black.png"
                         alt="Brainy"
-                        className="h-[35px] md:h-[50px] w-auto object-contain transition-all duration-300 ease-in-out drop-shadow-xl"
+                        className="h-[50px] md:h-[65px] w-auto object-contain transition-all duration-300 ease-in-out drop-shadow-xl"
                         style={{ filter: 'invert(1) brightness(2)' }}
                     />
                 </div>

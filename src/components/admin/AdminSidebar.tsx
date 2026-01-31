@@ -41,12 +41,12 @@ export function AdminSidebar() {
         <aside className="w-64 h-full border-r border-white/5 bg-black/20 backdrop-blur-xl flex flex-col p-4 z-50 transition-all duration-300">
             {/* Logo Area */}
             <div className="flex items-center gap-3 mb-10 px-2 pt-2">
-                <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-                    <Hexagon className="text-blue-500" size={24} />
+                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                    <Hexagon className="text-blue-500" size={28} />
                 </div>
                 <div>
-                    <h1 className="font-bold text-lg tracking-wider text-white">COMMAND</h1>
-                    <p className="text-[10px] text-blue-400 font-mono tracking-widest uppercase">CENTER v2.0</p>
+                    <h1 className="font-bold text-2xl tracking-wider text-white">COMMAND</h1>
+                    <p className="text-[11px] text-blue-400 font-mono tracking-widest uppercase">CENTER v2.0</p>
                 </div>
             </div>
 

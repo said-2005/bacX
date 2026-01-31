@@ -25,7 +25,7 @@ export default function AuthLayout({
 
             {/* Logo Section - Fixed at Top */}
             <div className="relative z-20 mb-8 flex flex-col items-center animate-fade-in">
-                <div className="relative w-14 h-14 mb-3">
+                <div className="relative w-20 h-20 mb-4">
                     <Image
                         src="/images/brainy-logo-black.png"
                         alt="Brainy"
@@ -35,7 +35,7 @@ export default function AuthLayout({
                         priority
                     />
                 </div>
-                <span className="text-xl font-semibold tracking-wide text-white/90">Brainy</span>
+                <span className="text-4xl font-bold tracking-tight text-white/90">Brainy</span>
             </div>
 
             {/* Glass Card Container */}
