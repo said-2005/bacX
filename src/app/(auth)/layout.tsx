@@ -1,23 +1,58 @@
+import Image from "next/image";
+
 export default function AuthLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen relative overflow-hidden bg-[#050505] text-white flex items-center justify-center font-tajawal">
-            {/* Deep Space Background with Galaxy Glow */}
-            <div className="absolute inset-0 z-0">
-                {/* Photorealistic Earth/Planet suggestion - keeping abstract for now per request for 'Galaxy Glow' */}
-                <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-900/10 blur-[150px] rounded-full opacity-40 mix-blend-screen animate-pulse-slow" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-indigo-900/10 blur-[150px] rounded-full opacity-40 mix-blend-screen animate-pulse-slow delay-1000" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.03)_0%,transparent_70%)]" />
-                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03]" />
+        <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white font-tajawal relative overflow-hidden">
+            {/* Grid Pattern Background */}
+            <div
+                className="absolute inset-0 z-0"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                                      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
+                    backgroundSize: '64px 64px',
+                }}
+            />
+
+            {/* Spotlight Effect at Top */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-radial from-blue-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none" />
+
+            {/* Secondary Glow */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-radial from-indigo-600/8 to-transparent rounded-full blur-[100px] pointer-events-none" />
+
+            {/* Logo Section - Fixed at Top */}
+            <div className="relative z-20 mb-8 flex flex-col items-center animate-fade-in">
+                <div className="relative w-14 h-14 mb-3">
+                    <Image
+                        src="/images/brainy-logo-black.png"
+                        alt="Brainy"
+                        fill
+                        className="object-contain"
+                        style={{ filter: 'invert(1) brightness(1.8)' }}
+                        priority
+                    />
+                </div>
+                <span className="text-xl font-semibold tracking-wide text-white/90">Brainy</span>
             </div>
 
-            {/* Content Container */}
-            <div className="relative z-10 w-full max-w-md lg:max-w-full lg:p-0">
-                {children}
+            {/* Glass Card Container */}
+            <div className="relative z-10 w-full max-w-md px-4">
+                <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl shadow-2xl p-8 md:p-10 relative overflow-hidden">
+                    {/* Inner Shine */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none" />
+
+                    {/* Content */}
+                    <div className="relative z-10">
+                        {children}
+                    </div>
+                </div>
             </div>
+
+            {/* Card ground shadow */}
+            <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-[350px] h-[20px] bg-black/30 blur-[25px] rounded-full pointer-events-none" />
         </div>
     );
 }
