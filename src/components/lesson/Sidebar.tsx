@@ -24,12 +24,12 @@ interface Unit {
 }
 
 interface SidebarProps {
-    units: Unit[];
+    units?: Unit[];
     activeLessonId?: string;
-    subjectId: string;
+    subjectId?: string;
 }
 
-export function Sidebar({ units = [], activeLessonId, subjectId }: SidebarProps) {
+export function Sidebar({ units = [], activeLessonId, subjectId = "" }: SidebarProps) {
     const [activeTab, setActiveTab] = useState<'syllabus' | 'chat'>('syllabus');
 
     // Auto-expand the unit containing the active lesson
