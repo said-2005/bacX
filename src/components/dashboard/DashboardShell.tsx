@@ -5,7 +5,7 @@ import RightGlassSidebar from "./RightGlassSidebar";
 import StickyGlassMenu from "./StickyGlassMenu";
 import MobileBottomNav from "./MobileBottomNav"; // [NEW]
 import LiveBanner from "./LiveBanner"; // [NEW]
-import BroadcastReceiver from "./BroadcastReceiver"; // [NEW]
+
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query"; // [NEW]
@@ -55,10 +55,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                     ${isMobile ? "mr-0" : (isCollapsed ? "mr-[90px]" : "mr-[288px]")}
                 `}
             >
-                {/* BROADCAST RECEIVER */}
-                <div className="max-w-7xl mx-auto pt-6">
-                    <BroadcastReceiver />
-                </div>
+
 
                 {children}
             </main>
