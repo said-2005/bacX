@@ -92,23 +92,16 @@ const GlassSidebarComponent = function GlassSidebar() {
                 `}
             >
                 {/* Header: Logo & Toggle */}
-                <div className="flex items-center justify-between p-6 h-24 border-b border-white/5">
-                    <AnimatePresence mode="wait">
-                        {!isCollapsed && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                className="flex items-center gap-3 overflow-hidden"
-                            >
-                                <Logo className="w-16 h-16" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                <div className="flex flex-col items-center p-4 border-b border-white/5">
+                    {/* Logo - Only shown when expanded */}
+                    {!isCollapsed && (
+                        <Logo className="w-16 h-16 my-2 invert" />
+                    )}
 
+                    {/* Toggle Button */}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-2 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                        className="p-2 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors self-start"
                     >
                         {isCollapsed ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
                     </button>
