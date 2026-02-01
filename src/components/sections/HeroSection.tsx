@@ -72,7 +72,7 @@ export function HeroSection() {
                     </motion.div>
 
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none">
-                        <Logo className="w-[600px] h-[600px] opacity-[0.03] blur-xl text-white" />
+                        <Logo className="w-[600px] h-[600px] opacity-[0.03] blur-xl invert brightness-0" />
                     </div>
 
                     {/* GPU Accelerated Text - LCP PRIORITY - Rendered initially visible, then animated */}

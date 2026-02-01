@@ -41,7 +41,7 @@ export function BrainyNav() {
                         href="/dashboard"
                         className="flex items-center gap-2 px-4 py-2 hover:bg-white/5 rounded-full transition-all duration-200"
                     >
-                        <Logo className="h-10 text-emerald-400" />
+                        <Logo className="h-10" />
                     </Link>
 
                     {/* Desktop Divider */}

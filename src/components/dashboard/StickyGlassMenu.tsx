@@ -49,7 +49,7 @@ const StickyGlassMenuComponent = function StickyGlassMenu() {
                         {/* Logo / Home Link */}
                         <Link href="/dashboard" className="flex items-center gap-3 group">
                             <div className="h-[45px] md:h-[60px] w-auto transition-transform duration-300 group-hover:scale-110">
-                                <Logo className="h-full w-auto text-white" />
+                                <Logo className="h-full w-auto invert brightness-0" />
                             </div>
                         </Link>
                     </div>

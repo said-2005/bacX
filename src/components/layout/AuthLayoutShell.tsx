@@ -14,7 +14,7 @@ export function AuthLayoutShell({ children, title }: { children: React.ReactNode
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] -translate-x-1/2 translate-y-1/2"></div>
 
                 <div className="relative z-10 p-12 text-center">
-                    <Logo className="h-24 mx-auto mb-8 text-white" />
+                    <Logo className="h-24 mx-auto mb-8 invert brightness-0" />
                     <h1 className="text-4xl font-bold text-white mb-4">Master Your Future</h1>
                     <p className="text-zinc-400 text-lg max-w-sm mx-auto">
                         Join thousands of students achieving excellence with Brainy.
