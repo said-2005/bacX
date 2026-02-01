@@ -1,17 +1,21 @@
 "use client";
 
 import { LiveInteraction } from "@/hooks/useLiveInteraction";
-import { Check, Mic, PhoneOff, User, Volume2 } from "lucide-react";
+import { Check, Mic, PhoneOff, User, Volume2, XCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ParticipationQueueProps {
     queue: LiveInteraction[];
     currentSpeaker: LiveInteraction | null;
     onAccept: (interaction: LiveInteraction) => void;
     onEndCall: () => void;
+    onLowerAll: () => void;
 }
 
-export function ParticipationQueue({ queue, currentSpeaker, onAccept, onEndCall }: ParticipationQueueProps) {
+export function ParticipationQueue({ queue, currentSpeaker, onAccept, onEndCall, onLowerAll }: ParticipationQueueProps) {
+    const { profile } = useAuth();
     const waitingList = queue.filter(q => q.status === 'waiting');
+    const isAdmin = profile?.role === 'admin';
 
     return (
         <div className="space-y-6">
@@ -57,10 +61,23 @@ export function ParticipationQueue({ queue, currentSpeaker, onAccept, onEndCall 
 
             {/* WAITING LIST */}
             <div>
-                <h3 className="text-sm font-bold text-white/60 mb-4 flex items-center gap-2 justify-between">
-                    <span>قائمة الانتظار</span>
-                    <span className="bg-white/10 px-2 py-0.5 rounded text-xs text-white">{waitingList.length}</span>
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-white/60 flex items-center gap-2">
+                        <span>قائمة الانتظار</span>
+                        <span className="bg-white/10 px-2 py-0.5 rounded text-xs text-white">{waitingList.length}</span>
+                    </h3>
+
+                    {/* Teacher Action: Lower All Hands */}
+                    {isAdmin && waitingList.length > 0 && (
+                        <button
+                            onClick={onLowerAll}
+                            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+                        >
+                            <XCircle size={12} />
+                            إنزال الأيادي
+                        </button>
+                    )}
+                </div>
 
                 <div className="space-y-3">
                     {waitingList.length === 0 && (
